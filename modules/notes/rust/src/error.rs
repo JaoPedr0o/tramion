@@ -16,6 +16,12 @@ pub enum NotesError {
     InTrash,
     /// A operação só vale para notas na lixeira (excluir de vez).
     NotInTrash,
+    /// A página de destino não existe.
+    ParentNotFound,
+    /// A página de destino está na lixeira.
+    ParentInTrash,
+    /// Mover a página para dentro dela mesma ou de uma descendente criaria um ciclo.
+    Cycle,
     /// A nota mudou desde que o chamador a leu. `current_updated_at` é a versão atual.
     Conflict {
         current_updated_at: i64,
@@ -32,6 +38,9 @@ impl NotesError {
             NotesError::NotFound => "notes.not-found",
             NotesError::InTrash => "notes.in-trash",
             NotesError::NotInTrash => "notes.not-in-trash",
+            NotesError::ParentNotFound => "notes.parent-not-found",
+            NotesError::ParentInTrash => "notes.parent-in-trash",
+            NotesError::Cycle => "notes.cycle",
             NotesError::Conflict { .. } => "notes.conflict",
             NotesError::Storage(_) | NotesError::Internal(_) => "notes.internal",
         }
@@ -48,6 +57,11 @@ impl fmt::Display for NotesError {
             NotesError::NotFound => write!(f, "nota não encontrada"),
             NotesError::InTrash => write!(f, "a nota está na lixeira"),
             NotesError::NotInTrash => write!(f, "a nota não está na lixeira"),
+            NotesError::ParentNotFound => write!(f, "a página de destino não existe"),
+            NotesError::ParentInTrash => write!(f, "a página de destino está na lixeira"),
+            NotesError::Cycle => {
+                write!(f, "não é possível mover uma página para dentro dela mesma")
+            }
             NotesError::Conflict { current_updated_at } => write!(
                 f,
                 "a nota foi alterada por outra edição (versão atual: {current_updated_at})"

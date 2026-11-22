@@ -7,6 +7,7 @@ const COMMANDS: &[&str] = &[
     "list_trash",
     "update",
     "set_pinned",
+    "move_note",
     "delete",
     "restore",
     "purge",

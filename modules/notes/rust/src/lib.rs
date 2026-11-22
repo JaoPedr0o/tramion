@@ -16,10 +16,16 @@ use tauri::plugin::{Builder, TauriPlugin};
 pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
     module: "notes",
     depends_on: &[],
-    migrations: &[Migration {
-        version: 1,
-        sql: include_str!("../migrations/0001_create_notes.sql"),
-    }],
+    migrations: &[
+        Migration {
+            version: 1,
+            sql: include_str!("../migrations/0001_create_notes.sql"),
+        },
+        Migration {
+            version: 2,
+            sql: include_str!("../migrations/0002_page_hierarchy.sql"),
+        },
+    ],
 };
 
 /// O plugin do Tauri deste módulo. A interface o chama por `plugin:notes|<comando>`.
@@ -32,6 +38,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::list_trash,
             commands::update,
             commands::set_pinned,
+            commands::move_note,
             commands::delete,
             commands::restore,
             commands::purge,

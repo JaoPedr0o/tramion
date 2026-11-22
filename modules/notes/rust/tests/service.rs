@@ -16,6 +16,7 @@ fn new(db: &Database, title: &str, body: &str) -> Note {
         NewNote {
             title: title.into(),
             body: body.into(),
+            parent_id: None,
         },
     )
     .unwrap()
@@ -82,6 +83,7 @@ fn criar_recusa_titulo_vazio_ou_so_espacos_sem_gravar_nada() {
             NewNote {
                 title: title.into(),
                 body: String::new(),
+                parent_id: None,
             },
         );
         assert!(
@@ -101,7 +103,8 @@ fn titulo_e_medido_em_caracteres_e_nao_em_bytes() {
             db.connection(),
             NewNote {
                 title: "é".repeat(MAX_TITLE_CHARS),
-                body: String::new()
+                body: String::new(),
+                parent_id: None
             }
         )
         .is_ok()
@@ -112,6 +115,7 @@ fn titulo_e_medido_em_caracteres_e_nao_em_bytes() {
         NewNote {
             title: "é".repeat(MAX_TITLE_CHARS + 1),
             body: String::new(),
+            parent_id: None,
         },
     );
     assert!(matches!(result, Err(NotesError::TitleTooLong { max: 200 })));
@@ -216,6 +220,8 @@ fn editar_nota_inexistente_ou_na_lixeira_da_o_erro_certo() {
         created_at: 0,
         updated_at: 0,
         deleted_at: None,
+        parent_id: None,
+        position: 0,
     };
     assert!(matches!(
         edit(&db, &ghost, "y", ""),
@@ -233,13 +239,10 @@ fn editar_nota_inexistente_ou_na_lixeira_da_o_erro_certo() {
 // ───────── fixar ─────────
 
 #[test]
-fn fixar_sobe_a_nota_para_o_topo_sem_mexer_na_versao() {
+fn fixar_marca_a_nota_sem_mexer_na_versao_nem_na_posicao() {
     let db = db();
     let a = new(&db, "A", "");
     let b = new(&db, "B", "");
-    // Garante B como a mais recente.
-    let b = edit(&db, &b, "B", "mais recente").unwrap();
-    assert_eq!(active_ids(&db), [b.id.clone(), a.id.clone()]);
 
     let pinned = service::set_pinned(db.connection(), &a.id, true).unwrap();
 
@@ -248,10 +251,14 @@ fn fixar_sobe_a_nota_para_o_topo_sem_mexer_na_versao() {
         pinned.updated_at, a.updated_at,
         "organizar não é editar o conteúdo"
     );
+    assert_eq!(pinned.position, a.position);
+    // Fixar não reordena a árvore: "Fixadas" é uma seção da interface, não uma posição.
     assert_eq!(active_ids(&db), [a.id.clone(), b.id.clone()]);
+    let listed = service::list(db.connection()).unwrap();
+    assert!(listed.iter().find(|n| n.id == a.id).unwrap().pinned);
 
-    service::set_pinned(db.connection(), &a.id, false).unwrap();
-    assert_eq!(active_ids(&db), [b.id, a.id]);
+    let unpinned = service::set_pinned(db.connection(), &a.id, false).unwrap();
+    assert!(!unpinned.pinned);
 }
 
 #[test]
@@ -367,27 +374,18 @@ fn excluir_de_vez_so_vale_na_lixeira_e_nunca_apaga_nota_ativa() {
 // ───────── listagem ─────────
 
 #[test]
-fn listagem_traz_fixadas_primeiro_depois_as_mais_recentes_e_so_ativas() {
+fn listagem_traz_so_as_ativas_na_ordem_das_posicoes() {
     let db = db();
-    let old = new(&db, "antiga", "");
-    let recent = new(&db, "recente", "");
-    let pinned = new(&db, "fixada", "");
+    let first = new(&db, "primeira", "");
+    let second = new(&db, "segunda", "");
+    let third = new(&db, "terceira", "");
     let gone = new(&db, "apagada", "");
-    service::set_pinned(db.connection(), &pinned.id, true).unwrap();
+    service::set_pinned(db.connection(), &third.id, true).unwrap();
     service::delete(db.connection(), &gone.id).unwrap();
-    repository_set_updated_at(&db, &old.id, 100);
-    repository_set_updated_at(&db, &recent.id, 300);
+    // Editar a primeira muda a versão dela, mas NÃO a posição.
+    edit(&db, &first, "primeira (editada)", "").unwrap();
 
-    assert_eq!(active_ids(&db), [pinned.id, recent.id, old.id]);
-}
-
-fn repository_set_updated_at(db: &Database, id: &str, at: i64) {
-    db.connection()
-        .execute(
-            "UPDATE notes_note SET updated_at = ?2 WHERE id = ?1",
-            (id, at),
-        )
-        .unwrap();
+    assert_eq!(active_ids(&db), [first.id, second.id, third.id]);
 }
 
 #[test]

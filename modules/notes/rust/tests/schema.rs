@@ -57,15 +57,15 @@ fn titulo_vazio_ou_gigante_e_recusado_pelo_proprio_banco() {
 }
 
 #[test]
-fn lista_so_as_ativas_com_fixadas_primeiro_e_depois_as_mais_recentes() {
+fn lista_so_as_ativas_na_ordem_das_posicoes() {
     let db = db();
     db.connection()
         .execute_batch(
-            "INSERT INTO notes_note (id, title, pinned, updated_at) VALUES
-                ('a', 'antiga',    0, 100),
-                ('b', 'recente',   0, 300),
-                ('c', 'fixada',    1, 50),
-                ('d', 'apagada',   0, 999);
+            "INSERT INTO notes_note (id, title, pinned, updated_at, position) VALUES
+                ('a', 'terceira', 0, 100, 2),
+                ('b', 'primeira', 0, 300, 0),
+                ('c', 'segunda',  1,  50, 1),
+                ('d', 'apagada',  0, 999, 3);
              UPDATE notes_note SET deleted_at = 1 WHERE id = 'd';",
         )
         .unwrap();
@@ -76,5 +76,5 @@ fn lista_so_as_ativas_com_fixadas_primeiro_e_depois_as_mais_recentes() {
         .map(|n| n.id)
         .collect();
 
-    assert_eq!(ids, ["c", "b", "a"]);
+    assert_eq!(ids, ["b", "c", "a"]);
 }
