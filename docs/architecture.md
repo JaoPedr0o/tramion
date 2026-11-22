@@ -16,7 +16,7 @@ aesthetic-ugly-notes/
 │  ├─ contracts/        Só tipos e interfaces, sem lógica. Todos podem depender dele
 │  ├─ core/             Registro de módulos, barramento de eventos, erros
 │  ├─ ui/               (futuro) tokens, temas e componentes base
-│  └─ infra-*/          (futuro) implementações técnicas, como infra-sqlite
+│  └─ infra-sqlite/     Crate Rust: abertura segura do SQLite, migrações por módulo e backup
 ├─ modules/             Funcionalidades do produto (notes, tasks, ...), cada uma um pacote
 ├─ docs/                Esta documentação e as ADRs
 └─ tests/               Testes que atravessam módulos (integração/e2e)
@@ -51,6 +51,16 @@ Regras resumidas:
 3. Imports dentro do mesmo pacote são livres.
 
 O motivo técnico de a regra olhar o nome do pacote está em [ADR 0004](adr/0004-fronteiras-verificadas-por-lint.md).
+
+## Camada Rust
+
+Os crates Rust formam um **workspace do Cargo** (`Cargo.toml` na raiz): `apps/desktop/src-tauri` e
+`packages/infra-sqlite` compartilham o `target/` e o `Cargo.lock`. Perfis de compilação (como
+`[profile.release]`) só valem na raiz.
+
+`aun-infra-sqlite` não conhece nenhum módulo. Cada módulo entregará suas migrações
+(`ModuleMigrations`) e o crate as aplica na ordem de `depends_on`, com backup e verificação de integridade.
+Detalhes e garantias em [ADR 0008](adr/0008-persistencia-em-crates-rust-por-modulo.md).
 
 ## Segurança do Tauri
 

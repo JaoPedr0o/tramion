@@ -28,12 +28,15 @@ renderização por software e o app funciona normalmente.
 ## Testes e verificações
 
 ```bash
-pnpm check        # tudo: lint + formatação + tipos + testes
+pnpm check        # tudo: lint + formatação + tipos + testes + verificações do Rust
 pnpm lint         # ESLint, inclui as fronteiras de arquitetura
 pnpm format       # aplica o Prettier
 pnpm typecheck    # TypeScript em todos os pacotes
 pnpm test         # Vitest
+pnpm check:rust   # rustfmt + clippy + cargo test (precisa do cargo no PATH: `. ~/.cargo/env`)
 ```
+
+`rustfmt` e `clippy` não vêm no perfil mínimo do rustup: `rustup component add rustfmt clippy`.
 
 ## Criar um novo módulo
 

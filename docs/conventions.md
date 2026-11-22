@@ -11,3 +11,8 @@
 - **Dependências:** justificar antes de adicionar. Preferir poucas, pequenas e bem mantidas.
 - **Imports relativos com extensão** (`./errors.ts`): o resolvedor do plugin de fronteiras só encontra
   o arquivo assim. Um import relativo sem extensão para outro pacote escaparia da regra (ADR 0004).
+- **Rust:** formatado com `cargo fmt` e sem avisos do `cargo clippy -D warnings`. Erros são valores
+  (`Result<T, E>` com um `enum` por crate); evitar `unwrap()` fora de testes. Testes de API pública em
+  `tests/`, de lógica interna em `#[cfg(test)]`.
+- **Testes que protegem de verdade:** ao escrever uma verificação, quebre o código de propósito e
+  confirme que ela falha. Verificação que nunca falhou não prova nada.

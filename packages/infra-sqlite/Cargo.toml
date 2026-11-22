@@ -1,0 +1,13 @@
+[package]
+name = "aun-infra-sqlite"
+version = "0.1.0"
+description = "Infraestrutura de persistência SQLite: abertura segura, migrações por módulo e backup"
+edition = "2024"
+publish = false
+
+[dependencies]
+rusqlite = { version = "0.43.0", features = ["bundled"] }
+sha2 = "0.11.1"
+
+[dev-dependencies]
+tempfile = "3.27.0"
