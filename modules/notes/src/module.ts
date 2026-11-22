@@ -1,5 +1,6 @@
 import type { ModuleManifest } from "@aun/contracts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
+import { createNotesService } from "./application/notes-service.ts";
 import { createTauriNotesGateway } from "./infrastructure/tauri-notes-gateway.ts";
 import { createNotesView } from "./ui/NotesView.tsx";
 
@@ -10,8 +11,9 @@ export function createNotesModule(
   return {
     id: "notes",
     version: "0.1.0",
-    register({ views }) {
-      views.register({ id: "notes", title: "Notas", component: createNotesView(gateway) });
+    register({ events, views }) {
+      const service = createNotesService({ gateway, events });
+      views.register({ id: "notes", title: "Notas", component: createNotesView(service) });
     },
   };
 }

@@ -16,3 +16,7 @@
   `tests/`, de lógica interna em `#[cfg(test)]`.
 - **Testes que protegem de verdade:** ao escrever uma verificação, quebre o código de propósito e
   confirme que ela falha. Verificação que nunca falhou não prova nada.
+- **Vitest: o que um `beforeEach` devolve é executado como função de limpeza.** Use chaves
+  (`beforeEach(() => { mock.mockReset(); })`); um arrow function que devolve o mock o chamaria depois de cada teste.
+- **Eventos entre módulos:** levam só o `id`, são publicados depois da confirmação da operação e ficam em
+  `packages/contracts/src/events/`.

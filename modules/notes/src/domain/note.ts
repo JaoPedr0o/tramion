@@ -15,18 +15,15 @@ export interface Note extends NoteSummary {
   readonly createdAt: number;
 }
 
-/** Erro devolvido pelo Rust: um código estável e um texto técnico. */
-export interface NotesErrorPayload {
-  readonly code: string;
-  readonly message: string;
+export interface NewNote {
+  readonly title: string;
+  readonly body: string;
 }
 
-/** Códigos de erro estáveis do módulo (definidos no Rust). A interface os traduz em mensagens. */
-export type NotesErrorCode =
-  | "notes.title-empty"
-  | "notes.title-too-long"
-  | "notes.not-found"
-  | "notes.in-trash"
-  | "notes.not-in-trash"
-  | "notes.conflict"
-  | "notes.internal";
+export interface UpdateNote {
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+  /** O `updatedAt` que quem edita viu ao abrir a nota. Se a nota já mudou, a edição é recusada. */
+  readonly expectedUpdatedAt: number;
+}

@@ -48,3 +48,16 @@ O módulo de notas é o primeiro e deve provar que a arquitetura modular funcion
 15. **Título:** espaços das pontas são removidos e o limite (200) conta **caracteres**, não bytes.
 16. **Camadas no Rust:** `repository` só tem SQL; `service` tem as regras e os erros; `commands` só traduz
     entre o Tauri e o serviço. Códigos de erro (`notes.*`) são estáveis e cobertos por teste.
+
+## Atualização (passo 5c): serviço de aplicação e eventos
+
+17. **Evento só depois da confirmação.** Cada operação espera o Rust confirmar e só então publica; se o Rust
+    rejeitar, o erro sobe intacto e **nenhum** evento é publicado. Quem escuta nunca reage a algo que não aconteceu.
+18. **Cinco eventos** (em `contracts/src/events/notes.ts`), todos só com o `id`: `note.created`, `note.updated`
+    (edição ou fixar/desafixar), `note.deleted` (lixeira), `note.restored` e `note.purged` (apagar de vez).
+    `restored` e `purged` existem porque, sem eles, quem escuta ficaria com a lista velha.
+19. **`AppEvents` é a união dos eventos de cada módulo** (`type AppEvents = NotesEvents & ...`), um arquivo por módulo.
+20. **Assinante com defeito não derruba a operação:** vale a garantia do barramento (ADR 0007), coberta por teste.
+21. **O que vem do Rust é dado não confiável.** O adaptador converte qualquer rejeição em `NotesError`; um código
+    desconhecido (ou algo que não seja o formato esperado) vira `notes.internal` e nunca é repassado cru.
+22. **Sem validação duplicada em TypeScript:** o serviço só orquestra; as regras são do Rust.

@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 5b (módulo de notas, lado Rust completo)**: criar, ler, editar, fixar, excluir
-> (lixeira), restaurar e apagar de vez, com detecção de conflito. Próximo: o lado TypeScript e a interface.
+> Status: **etapa 5c (módulo de notas, serviço e eventos)**: o módulo publica `note.*` depois de cada
+> operação confirmada. Próximo: a interface (lista, editor, lixeira) e testá-la no app real.
 
 ## Documentação
 

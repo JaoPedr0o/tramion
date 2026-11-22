@@ -1,18 +1,19 @@
 // Contratos compartilhados: SOMENTE tipos e interfaces, nenhuma lógica.
 // É a "língua comum" entre core, módulos e infraestrutura.
 import type { ComponentType } from "react";
+import type { NotesEvents } from "./events/notes.ts";
+
+export type { NotesEvents } from "./events/notes.ts";
 
 /** Função que cancela uma assinatura. */
 export type Unsubscribe = () => void;
 
 /**
  * Catálogo de eventos da aplicação: nome do evento → formato do conteúdo.
- * Cada módulo que publica eventos adiciona os seus aqui (em arquivos próprios deste
- * pacote), para que outros módulos possam escutá-los sem importar o módulo que os publica.
- * Vazio por enquanto: o primeiro evento chega com o módulo de notas.
+ * É a união dos eventos de cada módulo (um arquivo por módulo em `events/`). Ao criar eventos num
+ * módulo novo, componha aqui: `type AppEvents = NotesEvents & TasksEvents;`
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AppEvents {}
+export type AppEvents = NotesEvents;
 
 /** Barramento de eventos tipado. A implementação vive em @aun/core. */
 export interface EventBus<E extends object> {

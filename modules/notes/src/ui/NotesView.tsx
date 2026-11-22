@@ -1,19 +1,19 @@
 import { useEffect, useState, type ComponentType } from "react";
-import type { NotesGateway } from "../application/notes-gateway.ts";
+import type { NotesService } from "../application/notes-service.ts";
 import type { NoteSummary } from "../domain/note.ts";
 import "./notes.css";
 
 type State =
   { status: "loading" } | { status: "ready"; notes: readonly NoteSummary[] } | { status: "error" };
 
-/** Cria a tela de notas ligada a um gateway (o de verdade no app, um falso nos testes). */
-export function createNotesView(gateway: NotesGateway): ComponentType {
+/** Cria a tela de notas ligada ao serviço do módulo. */
+export function createNotesView(service: NotesService): ComponentType {
   return function NotesView() {
     const [state, setState] = useState<State>({ status: "loading" });
 
     useEffect(() => {
       let cancelled = false;
-      gateway.list().then(
+      service.list().then(
         (notes) => !cancelled && setState({ status: "ready", notes }),
         () => !cancelled && setState({ status: "error" }),
       );

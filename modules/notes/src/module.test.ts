@@ -1,12 +1,13 @@
-import { createModuleRegistry, createEventBus, createViewRegistry } from "@aun/core";
+import { createEventBus, createModuleRegistry, createViewRegistry } from "@aun/core";
 import { describe, expect, it } from "vitest";
 import { createNotesModule } from "./module.ts";
+import { gatewayStub } from "./test-support.ts";
 
 describe("módulo de notas", () => {
   it("registra a tela 'Notas' quando iniciado", () => {
     const views = createViewRegistry();
     const registry = createModuleRegistry({ events: createEventBus(), views });
-    registry.add(createNotesModule({ list: async () => [] }));
+    registry.add(createNotesModule(gatewayStub()));
 
     expect(registry.start()).toEqual(["notes"]);
 
