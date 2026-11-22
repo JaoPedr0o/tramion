@@ -33,3 +33,18 @@ O módulo de notas é o primeiro e deve provar que a arquitetura modular funcion
 - O `infra-sqlite` reexporta o `rusqlite` para que todos usem a mesma versão.
 - Migração aplicada **não pode ser editada** (checksum). Em desenvolvimento, apagar o banco local recria tudo.
 - O app ligou-se ao módulo em dois pontos apenas: `bootstrap.ts` (TypeScript) e `src-tauri/src/lib.rs` (Rust).
+
+## Atualização (passo 5b): regras do serviço Rust
+
+11. **Concorrência otimista.** `update` exige o `updatedAt` que quem edita viu; se a nota mudou desde então,
+    o Rust recusa com `notes.conflict` em vez de sobrescrever. Protege, sobretudo, o salvamento automático
+    disputando consigo mesmo.
+12. **A versão (`updated_at`) sempre aumenta:** o novo valor é `max(agora, anterior + 1)`. Sem isso, duas edições
+    no mesmo milissegundo repetiriam a versão e a checagem de conflito deixaria passar uma edição velha.
+13. **Fixar, excluir e restaurar não mudam `updated_at`:** organizar não é editar o conteúdo, e não pode causar
+    conflito em quem está com a nota aberta.
+14. **Lixeira:** `delete` e `restore` são idempotentes (repetir não é erro); só nota inexistente é erro.
+    `purge` (apagar de vez) só vale para nota que já está na lixeira: uma nota ativa nunca se perde por engano.
+15. **Título:** espaços das pontas são removidos e o limite (200) conta **caracteres**, não bytes.
+16. **Camadas no Rust:** `repository` só tem SQL; `service` tem as regras e os erros; `commands` só traduz
+    entre o Tauri e o serviço. Códigos de erro (`notes.*`) são estáveis e cobertos por teste.

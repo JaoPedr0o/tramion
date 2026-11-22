@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 5a (fatia mínima do módulo de notas)**: o app abre o banco, aplica a migração do
-> módulo e exibe a tela de Notas (ainda vazia). Próximo: CRUD completo.
+> Status: **etapa 5b (módulo de notas, lado Rust completo)**: criar, ler, editar, fixar, excluir
+> (lixeira), restaurar e apagar de vez, com detecção de conflito. Próximo: o lado TypeScript e a interface.
 
 ## Documentação
 

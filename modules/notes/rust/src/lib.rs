@@ -3,8 +3,10 @@
 //! O app usa duas coisas daqui: [`MIGRATIONS`] (para abrir o banco) e [`init`] (o plugin do Tauri).
 
 mod commands;
+pub mod error;
 pub mod model;
 pub mod repository;
+pub mod service;
 
 use aun_infra_sqlite::{Migration, ModuleMigrations};
 use tauri::Runtime;
@@ -23,6 +25,16 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
 /// O plugin do Tauri deste módulo. A interface o chama por `plugin:notes|<comando>`.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("notes")
-        .invoke_handler(tauri::generate_handler![commands::list])
+        .invoke_handler(tauri::generate_handler![
+            commands::create,
+            commands::get,
+            commands::list,
+            commands::list_trash,
+            commands::update,
+            commands::set_pinned,
+            commands::delete,
+            commands::restore,
+            commands::purge,
+        ])
         .build()
 }

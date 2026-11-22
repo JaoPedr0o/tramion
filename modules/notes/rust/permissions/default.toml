@@ -1,3 +1,13 @@
 [default]
 description = "Permissões padrão do módulo de notas"
-permissions = ["allow-list"]
+permissions = [
+  "allow-create",
+  "allow-get",
+  "allow-list",
+  "allow-list-trash",
+  "allow-update",
+  "allow-set-pinned",
+  "allow-delete",
+  "allow-restore",
+  "allow-purge",
+]

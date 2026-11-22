@@ -1,9 +1,11 @@
-//! Camada fina entre o Tauri e a lógica do módulo: recebe o pedido da interface, chama o
-//! repositório e devolve o resultado. Nenhuma regra de negócio mora aqui.
+//! Camada fina entre o Tauri e a lógica do módulo: recebe o pedido da interface, chama o serviço e
+//! devolve o resultado. Nenhuma regra de negócio mora aqui.
 
-use crate::model::NoteSummary;
-use crate::repository;
+use crate::error::NotesError;
+use crate::model::{NewNote, Note, NoteSummary, UpdateNote};
+use crate::service;
 use aun_infra_sqlite::SharedDatabase;
+use aun_infra_sqlite::rusqlite::Connection;
 use serde::Serialize;
 use tauri::State;
 
@@ -14,19 +16,94 @@ pub struct CommandError {
     pub message: String,
 }
 
-impl CommandError {
-    fn internal(message: impl ToString) -> Self {
+impl From<NotesError> for CommandError {
+    fn from(error: NotesError) -> Self {
         Self {
-            code: "notes.internal",
-            message: message.to_string(),
+            code: error.code(),
+            message: error.to_string(),
         }
     }
 }
 
-// `async` faz o Tauri rodar o comando fora da thread da janela: um comando síncrono seguraria a
-// interface durante o acesso ao banco.
+/// Trava o banco (um acesso por vez), roda a operação e converte o erro.
+fn with_db<T>(
+    db: &SharedDatabase,
+    operation: impl FnOnce(&Connection) -> Result<T, NotesError>,
+) -> Result<T, CommandError> {
+    let guard = db
+        .lock()
+        .map_err(|_| NotesError::Internal("trava do banco envenenada".to_string()))?;
+    Ok(operation(guard.connection())?)
+}
+
+// Todos os comandos são `async`: o Tauri os roda fora da thread da janela. Um comando síncrono
+// seguraria a interface durante o acesso ao banco.
+
+#[tauri::command]
+pub async fn create(
+    db: State<'_, SharedDatabase>,
+    title: String,
+    body: String,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| service::create(conn, NewNote { title, body }))
+}
+
+#[tauri::command]
+pub async fn get(db: State<'_, SharedDatabase>, id: String) -> Result<Note, CommandError> {
+    with_db(&db, |conn| service::get(conn, &id))
+}
+
 #[tauri::command]
 pub async fn list(db: State<'_, SharedDatabase>) -> Result<Vec<NoteSummary>, CommandError> {
-    let db = db.lock().map_err(CommandError::internal)?;
-    repository::list_active(db.connection()).map_err(CommandError::internal)
+    with_db(&db, service::list)
+}
+
+#[tauri::command]
+pub async fn list_trash(db: State<'_, SharedDatabase>) -> Result<Vec<NoteSummary>, CommandError> {
+    with_db(&db, service::list_trash)
+}
+
+#[tauri::command]
+pub async fn update(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    title: String,
+    body: String,
+    expected_updated_at: i64,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        service::update(
+            conn,
+            UpdateNote {
+                id,
+                title,
+                body,
+                expected_updated_at,
+            },
+        )
+    })
+}
+
+#[tauri::command]
+pub async fn set_pinned(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    pinned: bool,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| service::set_pinned(conn, &id, pinned))
+}
+
+#[tauri::command]
+pub async fn delete(db: State<'_, SharedDatabase>, id: String) -> Result<(), CommandError> {
+    with_db(&db, |conn| service::delete(conn, &id))
+}
+
+#[tauri::command]
+pub async fn restore(db: State<'_, SharedDatabase>, id: String) -> Result<(), CommandError> {
+    with_db(&db, |conn| service::restore(conn, &id))
+}
+
+#[tauri::command]
+pub async fn purge(db: State<'_, SharedDatabase>, id: String) -> Result<(), CommandError> {
+    with_db(&db, |conn| service::purge(conn, &id))
 }

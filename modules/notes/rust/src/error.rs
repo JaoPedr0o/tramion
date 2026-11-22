@@ -1,0 +1,67 @@
+use aun_infra_sqlite::rusqlite;
+use std::fmt;
+
+/// O que pode dar errado nas operações de notas.
+///
+/// Cada variante tem um [`code`](NotesError::code) estável: é ele que a interface usa para escolher
+/// a mensagem ao usuário. O texto de `Display` é técnico, para logs.
+#[derive(Debug)]
+pub enum NotesError {
+    TitleEmpty,
+    TitleTooLong {
+        max: usize,
+    },
+    NotFound,
+    /// A nota está na lixeira e a operação só vale para notas ativas.
+    InTrash,
+    /// A operação só vale para notas na lixeira (excluir de vez).
+    NotInTrash,
+    /// A nota mudou desde que o chamador a leu. `current_updated_at` é a versão atual.
+    Conflict {
+        current_updated_at: i64,
+    },
+    Storage(rusqlite::Error),
+    Internal(String),
+}
+
+impl NotesError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            NotesError::TitleEmpty => "notes.title-empty",
+            NotesError::TitleTooLong { .. } => "notes.title-too-long",
+            NotesError::NotFound => "notes.not-found",
+            NotesError::InTrash => "notes.in-trash",
+            NotesError::NotInTrash => "notes.not-in-trash",
+            NotesError::Conflict { .. } => "notes.conflict",
+            NotesError::Storage(_) | NotesError::Internal(_) => "notes.internal",
+        }
+    }
+}
+
+impl fmt::Display for NotesError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NotesError::TitleEmpty => write!(f, "o título não pode ser vazio"),
+            NotesError::TitleTooLong { max } => {
+                write!(f, "o título excede o máximo de {max} caracteres")
+            }
+            NotesError::NotFound => write!(f, "nota não encontrada"),
+            NotesError::InTrash => write!(f, "a nota está na lixeira"),
+            NotesError::NotInTrash => write!(f, "a nota não está na lixeira"),
+            NotesError::Conflict { current_updated_at } => write!(
+                f,
+                "a nota foi alterada por outra edição (versão atual: {current_updated_at})"
+            ),
+            NotesError::Storage(e) => write!(f, "erro de armazenamento: {e}"),
+            NotesError::Internal(why) => write!(f, "erro interno: {why}"),
+        }
+    }
+}
+
+impl std::error::Error for NotesError {}
+
+impl From<rusqlite::Error> for NotesError {
+    fn from(e: rusqlite::Error) -> Self {
+        NotesError::Storage(e)
+    }
+}
