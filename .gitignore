@@ -1,0 +1,12 @@
+node_modules/
+dist/
+target/
+*.log
+.DS_Store
+.env
+.env.*
+coverage/
+# Banco local de desenvolvimento
+*.db
+*.db-journal
+*.sqlite
