@@ -1,2 +1,4 @@
-// Núcleo: registro de módulos, eventos e erros. Preenchido na etapa 3.
-export {};
+// API pública do núcleo. Tudo que não é exportado aqui é privado.
+export { AppError, type CoreErrorCode } from "./errors.ts";
+export { createEventBus, type EventBusOptions } from "./event-bus.ts";
+export { createModuleRegistry, type ModuleRegistry } from "./module-registry.ts";

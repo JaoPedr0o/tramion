@@ -37,4 +37,18 @@ pnpm test         # Vitest
 
 ## Criar um novo módulo
 
-_Será documentado na etapa 3, quando o contrato de módulo existir._
+1. Crie `modules/<nome>/` com `package.json` (`name: "@aun/<nome>"`, `main` e `exports` apontando para
+   `src/index.ts`, dependências `workspace:*` só de `@aun/contracts`, `@aun/core` e `@aun/ui`).
+2. Exporte em `src/index.ts` um `ModuleManifest` (`id`, `version`, `dependsOn`, `register`).
+3. Se o módulo publica eventos, declare-os em `AppEvents` no pacote `@aun/contracts`.
+4. No app, importe o manifesto pelo nome do pacote e cadastre-o com `registry.add(...)`.
+5. Rode `pnpm install` e `pnpm check`. O lint recusa qualquer import de outro módulo.
+
+_O primeiro módulo real (`notes`) chega na etapa 5 e servirá de exemplo._
+
+## Núcleo (`@aun/core`)
+
+- `createEventBus<E>()`: barramento tipado e síncrono (ADR 0007).
+- `createModuleRegistry({ events })`: `add(manifest)` e `start()`, que registra os módulos pela ordem de
+  `dependsOn`. Valida tudo antes de iniciar: ou sobe tudo, ou nada começa.
+- `AppError`: erro com `code` estável e `cause` preservada.

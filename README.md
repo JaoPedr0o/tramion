@@ -7,7 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 2 (fundação)** concluída. Ainda não há funcionalidades; a próxima etapa é o núcleo.
+> Status: **etapa 3 (núcleo)** concluída: contrato de módulo, registro, eventos e erros.
+> Ainda não há funcionalidades; a próxima etapa é a persistência (SQLite).
 
 ## Documentação
 

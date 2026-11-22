@@ -9,3 +9,5 @@
 - **Testes:** `*.test.ts` ao lado do código; testes que cruzam módulos ficam em `tests/`.
 - **Commits:** mensagens curtas e descritivas, em português, no imperativo.
 - **Dependências:** justificar antes de adicionar. Preferir poucas, pequenas e bem mantidas.
+- **Imports relativos com extensão** (`./errors.ts`): o resolvedor do plugin de fronteiras só encontra
+  o arquivo assim. Um import relativo sem extensão para outro pacote escaparia da regra (ADR 0004).

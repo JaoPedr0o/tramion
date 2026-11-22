@@ -32,5 +32,6 @@ Correção:
 ## Consequências
 
 - Violações viram erros de `pnpm lint` (editor e CI).
-- Convém manter testes com violações propositais. Previsto para a etapa 3, quando existirem
-  pacotes reais para servir de fixture.
+- `tests/architecture/boundaries.test.ts` roda o ESLint em arquivos virtuais com imports proibidos e
+  permitidos. Foi validado desligando `checkAllOrigins` de propósito: o teste falhou, como deveria.
+- Imports relativos precisam da extensão `.ts` para o plugin resolvê-los (ver `docs/conventions.md`).
