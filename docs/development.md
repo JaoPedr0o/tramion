@@ -40,14 +40,39 @@ pnpm check:rust   # rustfmt + clippy + cargo test (precisa do cargo no PATH: `. 
 
 ## Criar um novo módulo
 
-1. Crie `modules/<nome>/` com `package.json` (`name: "@aun/<nome>"`, `main` e `exports` apontando para
-   `src/index.ts`, dependências `workspace:*` só de `@aun/contracts`, `@aun/core` e `@aun/ui`).
-2. Exporte em `src/index.ts` um `ModuleManifest` (`id`, `version`, `dependsOn`, `register`).
-3. Se o módulo publica eventos, declare-os em `AppEvents` no pacote `@aun/contracts`.
-4. No app, importe o manifesto pelo nome do pacote e cadastre-o com `registry.add(...)`.
-5. Rode `pnpm install` e `pnpm check`. O lint recusa qualquer import de outro módulo.
+O módulo `modules/notes` é o exemplo de referência. Um módulo é uma fatia vertical:
 
-_O primeiro módulo real (`notes`) chega na etapa 5 e servirá de exemplo._
+**Lado TypeScript** (`modules/<nome>/`):
+
+1. `package.json` com `name: "@aun/<nome>"`, `main` e `exports` apontando para `src/index.ts`, e dependências
+   `workspace:*` apenas de `@aun/contracts`, `@aun/core` e `@aun/ui`. O lint recusa qualquer outro módulo.
+2. `src/index.ts` exporta a função que cria o `ModuleManifest` (`id`, `version`, `dependsOn`, `register`).
+3. No `register`, o módulo registra suas telas em `views` e assina/publica eventos em `events`.
+4. Camadas: `domain/` (tipos), `application/` (casos de uso e a interface do gateway),
+   `infrastructure/` (adaptador que chama o Rust), `ui/` (React).
+5. Eventos novos entram em `AppEvents` no pacote `@aun/contracts`.
+
+**Lado Rust** (`modules/<nome>/rust/`, crate `aun-<nome>`):
+
+1. `Cargo.toml` com `links = "tauri-plugin-<nome>"`, e `build.rs` listando os comandos
+   (`tauri_plugin::Builder::new(COMMANDS).build()`).
+2. `migrations/NNNN_*.sql` (versões 1, 2, 3... sem buracos; **nunca edite uma migração já aplicada**).
+3. `src/lib.rs` expõe `MIGRATIONS` (um `ModuleMigrations`) e `init()` (o plugin do Tauri).
+4. `permissions/default.toml` define o conjunto padrão de permissões do módulo.
+
+**Ligar ao app** (as duas únicas linhas que conhecem o módulo):
+
+- `apps/desktop/src/bootstrap.ts`: `registry.add(createXModule())`.
+- `apps/desktop/src-tauri/src/lib.rs`: `.plugin(aun_x::init())` e incluir `aun_x::MIGRATIONS` na lista.
+- `apps/desktop/src-tauri/capabilities/default.json`: habilitar `"<nome>:default"`.
+- Dependência do crate no `Cargo.toml` do `src-tauri` e do pacote no `package.json` do app.
+
+Rode `pnpm install` e `pnpm check`.
+
+## Dados locais
+
+O app grava em `~/.local/share/dev.aun.notes/` (banco `aesthetic-ugly-notes.db` e pasta `backups/`).
+Em desenvolvimento, apagar essa pasta recria o banco do zero.
 
 ## Núcleo (`@aun/core`)
 

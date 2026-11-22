@@ -2,7 +2,7 @@
 # compartilhando o diretório target/ e o Cargo.lock da raiz.
 [workspace]
 resolver = "3"
-members = ["apps/desktop/src-tauri", "packages/infra-sqlite"]
+members = ["apps/desktop/src-tauri", "packages/infra-sqlite", "modules/notes/rust"]
 
 # Perfis de compilação só valem na raiz do workspace.
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

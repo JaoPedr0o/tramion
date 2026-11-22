@@ -3,9 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { AppError } from "./errors.ts";
 import { createEventBus } from "./event-bus.ts";
 import { createModuleRegistry } from "./module-registry.ts";
+import { createViewRegistry } from "./view-registry.ts";
 
 function newRegistry() {
-  return createModuleRegistry({ events: createEventBus() });
+  return createModuleRegistry({ events: createEventBus(), views: createViewRegistry() });
 }
 
 function manifest(id: string, dependsOn: string[] = [], register = () => {}): ModuleManifest {
@@ -38,7 +39,9 @@ describe("createModuleRegistry", () => {
 
     registry.start();
 
-    expect(register).toHaveBeenCalledWith(expect.objectContaining({ events: expect.anything() }));
+    expect(register).toHaveBeenCalledWith(
+      expect.objectContaining({ events: expect.anything(), views: expect.anything() }),
+    );
   });
 
   it("rejeita ids duplicados", () => {

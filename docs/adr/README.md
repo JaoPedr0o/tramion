@@ -13,3 +13,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0006](0006-css-com-variaveis.md)                       | Estilo: CSS com variáveis (tokens)                                | Aceita |
 | [0007](0007-barramento-de-eventos-tipado-e-sincrono.md) | Barramento de eventos tipado e síncrono                           | Aceita |
 | [0008](0008-persistencia-em-crates-rust-por-modulo.md)  | Persistência: infraestrutura em crate Rust e migrações por módulo | Aceita |
+| [0009](0009-desenho-do-modulo-de-notas.md)              | Desenho do módulo de notas (fatia vertical)                       | Aceita |

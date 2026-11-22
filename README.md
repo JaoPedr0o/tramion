@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 4, fase 1 (persistência)** concluída: infraestrutura SQLite com migrações,
-> backup e verificação de integridade. Ainda não há funcionalidades; a próxima é o módulo de notas.
+> Status: **etapa 5a (fatia mínima do módulo de notas)**: o app abre o banco, aplica a migração do
+> módulo e exibe a tela de Notas (ainda vazia). Próximo: CRUD completo.
 
 ## Documentação
 

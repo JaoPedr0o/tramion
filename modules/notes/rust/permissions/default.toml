@@ -1,0 +1,3 @@
+[default]
+description = "Permissões padrão do módulo de notas"
+permissions = ["allow-list"]

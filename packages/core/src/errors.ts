@@ -4,7 +4,8 @@ export type CoreErrorCode =
   | "module.missing-dependency"
   | "module.dependency-cycle"
   | "module.register-failed"
-  | "module.registry-already-started";
+  | "module.registry-already-started"
+  | "view.duplicate";
 
 /** Erro conhecido da aplicação: carrega um código estável e, opcionalmente, a causa original. */
 export class AppError<C extends string = CoreErrorCode> extends Error {

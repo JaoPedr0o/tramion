@@ -1,0 +1,16 @@
+[package]
+name = "aun-notes"
+version = "0.1.0"
+description = "Módulo de notas: migrações, lógica e comandos (plugin do Tauri)"
+edition = "2024"
+publish = false
+# O Tauri usa `links` para o app descobrir as permissões deste plugin.
+links = "tauri-plugin-notes"
+
+[dependencies]
+aun-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
+serde = { version = "1.0.229", features = ["derive"] }
+tauri = "2"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

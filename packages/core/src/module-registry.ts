@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus, ModuleManifest } from "@aun/contracts";
+import type { AppEvents, EventBus, ModuleManifest, ViewRegistry } from "@aun/contracts";
 import { AppError } from "./errors.ts";
 
 export interface ModuleRegistry {
@@ -8,7 +8,10 @@ export interface ModuleRegistry {
   start(): readonly string[];
 }
 
-export function createModuleRegistry(deps: { events: EventBus<AppEvents> }): ModuleRegistry {
+export function createModuleRegistry(deps: {
+  events: EventBus<AppEvents>;
+  views: ViewRegistry;
+}): ModuleRegistry {
   const manifests = new Map<string, ModuleManifest>();
   let started = false;
 
@@ -75,7 +78,7 @@ export function createModuleRegistry(deps: { events: EventBus<AppEvents> }): Mod
       for (const id of order) {
         const manifest = manifests.get(id)!;
         try {
-          manifest.register({ events: deps.events });
+          manifest.register({ events: deps.events, views: deps.views });
         } catch (error) {
           throw new AppError("module.register-failed", `Falha ao registrar o módulo "${id}".`, {
             cause: error,

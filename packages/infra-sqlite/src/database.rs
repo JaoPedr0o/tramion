@@ -24,6 +24,10 @@ impl Default for OpenOptions {
     }
 }
 
+/// O banco como o app o compartilha entre comandos: o `Mutex` garante um acesso por vez.
+/// (Uma única conexão basta para um app local e evita problemas de escrita concorrente.)
+pub type SharedDatabase = std::sync::Mutex<Database>;
+
 /// Um banco aberto, íntegro e com todas as migrações aplicadas.
 /// Só existe se tudo isso deu certo: não há como obter um `Database` "pela metade".
 pub struct Database {

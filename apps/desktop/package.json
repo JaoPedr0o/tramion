@@ -13,7 +13,11 @@
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "@tauri-apps/api": "^2"
+    "@tauri-apps/api": "^2",
+    "@aun/ui": "workspace:*",
+    "@aun/core": "workspace:*",
+    "@aun/contracts": "workspace:*",
+    "@aun/notes": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

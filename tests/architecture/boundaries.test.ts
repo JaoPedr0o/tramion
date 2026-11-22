@@ -42,4 +42,45 @@ describe("fronteiras de arquitetura", () => {
     const errors = await boundaryErrors("packages/contracts/src/virtual.ts", 'import "@aun/core";');
     expect(errors).toHaveLength(1);
   });
+
+  it("proíbe também imports de SUBCAMINHO de pacote (@aun/ui/tokens.css)", async () => {
+    const errors = await boundaryErrors(
+      "packages/core/src/virtual.ts",
+      'import "@aun/ui/tokens.css";',
+    );
+    expect(errors).toHaveLength(1);
+  });
+
+  it("permite subcaminho de um pacote que a regra libera", async () => {
+    expect(
+      await boundaryErrors("packages/core/src/virtual.ts", 'import "@aun/contracts/algo";'),
+    ).toEqual([]);
+  });
+
+  describe("módulos", () => {
+    const file = "modules/notes/src/virtual.ts";
+
+    it("proíbe um módulo de importar outro módulo", async () => {
+      expect(await boundaryErrors(file, 'import "@aun/tasks";')).toHaveLength(1);
+    });
+
+    it("proíbe um módulo de importar o app", async () => {
+      expect(await boundaryErrors(file, 'import "@aun/desktop";')).toHaveLength(1);
+    });
+
+    it("proíbe import relativo que sai do módulo para outro pacote", async () => {
+      // O alvo precisa EXISTIR: caminho que não resolve não é classificado pelo plugin.
+      const code = 'import "../../../packages/core/src/index.ts";';
+      expect(await boundaryErrors(file, code)).toHaveLength(1);
+    });
+
+    it("permite ao módulo usar contracts, core e ui", async () => {
+      const code = 'import "@aun/contracts"; import "@aun/core"; import "@aun/ui";';
+      expect(await boundaryErrors(file, code)).toEqual([]);
+    });
+
+    it("permite ao módulo importar os próprios arquivos", async () => {
+      expect(await boundaryErrors(file, 'import "./module.ts";')).toEqual([]);
+    });
+  });
 });

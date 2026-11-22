@@ -1,5 +1,6 @@
 // Contratos compartilhados: SOMENTE tipos e interfaces, nenhuma lógica.
 // É a "língua comum" entre core, módulos e infraestrutura.
+import type { ComponentType } from "react";
 
 /** Função que cancela uma assinatura. */
 export type Unsubscribe = () => void;
@@ -21,9 +22,25 @@ export interface EventBus<E extends object> {
   emit<K extends keyof E & string>(name: K, payload: E[K]): void;
 }
 
+/** Uma tela que um módulo oferece. O app a lista na barra lateral, sem conhecer o módulo. */
+export interface ViewContribution {
+  /** Identificador único da tela, por exemplo "notes". */
+  readonly id: string;
+  /** Texto exibido na barra lateral. */
+  readonly title: string;
+  readonly component: ComponentType;
+}
+
+/** Onde os módulos registram suas telas. A implementação vive em @aun/core. */
+export interface ViewRegistry {
+  register(view: ViewContribution): void;
+  list(): readonly ViewContribution[];
+}
+
 /** O que o app entrega a cada módulo no momento do registro. */
 export interface ModuleContext {
   readonly events: EventBus<AppEvents>;
+  readonly views: ViewRegistry;
 }
 
 /** Descrição de um módulo: é o que o app lê para ligá-lo ao sistema. */

@@ -208,6 +208,18 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@aun/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@aun/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@aun/notes':
+        specifier: workspace:*
+        version: link:../../modules/notes
+      '@aun/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tauri-apps/api':
         specifier: ^2
         version: 2.12.5
@@ -237,9 +249,38 @@ importers:
         specifier: ^8.0.16
         version: 8.3.8
 
-  packages/contracts: {}
+  modules/notes:
+    dependencies:
+      '@aun/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@tauri-apps/api':
+        specifier: ^2
+        version: 2.12.5
+      react:
+        specifier: ^19.1.0
+        version: 19.3.1
+    devDependencies:
+      '@aun/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.3.0
+
+  packages/contracts:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.3.0
 
   packages/core:
+    dependencies:
+      '@aun/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/ui:
     dependencies:
       '@aun/contracts':
         specifier: workspace:*

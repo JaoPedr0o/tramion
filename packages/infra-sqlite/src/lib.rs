@@ -9,6 +9,10 @@ mod database;
 mod error;
 mod migration;
 
-pub use database::{Database, OpenOptions};
+/// Reexportado para que os módulos usem EXATAMENTE a mesma versão do `rusqlite` que este crate usa
+/// (duas versões gerariam dois tipos `Connection` incompatíveis).
+pub use rusqlite;
+
+pub use database::{Database, OpenOptions, SharedDatabase};
 pub use error::DbError;
 pub use migration::{Migration, ModuleMigrations};
