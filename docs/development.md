@@ -32,7 +32,7 @@ pnpm check        # tudo: lint + formatação + tipos + testes + verificações 
 pnpm lint         # ESLint, inclui as fronteiras de arquitetura
 pnpm format       # aplica o Prettier
 pnpm typecheck    # TypeScript em todos os pacotes
-pnpm test         # Vitest
+pnpm test         # Vitest (inclui testes de interface com jsdom)
 pnpm check:rust   # rustfmt + clippy + cargo test (precisa do cargo no PATH: `. ~/.cargo/env`)
 ```
 

@@ -20,3 +20,8 @@
   (`beforeEach(() => { mock.mockReset(); })`); um arrow function que devolve o mock o chamaria depois de cada teste.
 - **Eventos entre módulos:** levam só o `id`, são publicados depois da confirmação da operação e ficam em
   `packages/contracts/src/events/`.
+- **Testes de interface:** arquivos `*.test.tsx` com `// @vitest-environment jsdom` no topo; consultar a tela
+  como o usuário (`getByRole`, `getByLabelText`), não por classes CSS. Relógio falso com
+  `vi.useFakeTimers({ shouldAdvanceTime: true })` quando houver pausas (debounce).
+- **Mutação como método:** depois de escrever testes, quebre o código de propósito e confirme que algum teste
+  falha. Se uma mutação passa em silêncio, ou o teste é fraco ou o código tem uma defesa redundante: descubra qual.

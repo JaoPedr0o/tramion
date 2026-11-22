@@ -13,7 +13,11 @@ export function createNotesModule(
     version: "0.1.0",
     register({ events, views }) {
       const service = createNotesService({ gateway, events });
-      views.register({ id: "notes", title: "Notas", component: createNotesView(service) });
+      views.register({
+        id: "notes",
+        title: "Notas",
+        component: createNotesView({ service, events }),
+      });
     },
   };
 }

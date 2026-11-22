@@ -61,3 +61,27 @@ O módulo de notas é o primeiro e deve provar que a arquitetura modular funcion
 21. **O que vem do Rust é dado não confiável.** O adaptador converte qualquer rejeição em `NotesError`; um código
     desconhecido (ou algo que não seja o formato esperado) vira `notes.internal` e nunca é repassado cru.
 22. **Sem validação duplicada em TypeScript:** o serviço só orquestra; as regras são do Rust.
+
+## Atualização (passo 5d): interface
+
+23. **Salvamento automático com pausa de 500 ms**, em uma lógica independente do React (`note-autosaver`),
+    testável com relógio falso. Regra central: **nunca dois salvamentos ao mesmo tempo**. Cada salvamento troca a
+    versão da nota; um segundo, enviado com a versão antiga, seria recusado como conflito falso contra a própria
+    pessoa. Enquanto um salvamento está em andamento, o seguinte espera e sai com a versão nova.
+24. **Conflito nunca perde nem sobrescreve texto em silêncio.** O editor mantém o texto digitado, pausa o
+    salvamento e mostra um aviso com duas escolhas explícitas: _manter o meu texto_ (salva por cima, por decisão
+    do usuário) ou _carregar a versão salva_ (descarta o texto digitado).
+25. **Trocar de nota ou fechar a tela salva antes** o que estiver pendente (`close()` do salvador).
+26. **A lista se atualiza sozinha** escutando os eventos `note.*` do próprio módulo: a tela não precisa lembrar de
+    "atualizar a lista" depois de cada ação, e ações vindas de outro lugar também aparecem.
+27. **Apagar de vez pede confirmação** na própria tela (dois passos), em vez de `window.confirm`, que não é
+    confiável no WebView do Tauri. Excluir (lixeira) não pede, por ser reversível.
+28. **Textos ao usuário vêm do código do erro**, nunca do texto técnico do Rust (`ui/messages.ts`).
+29. **Atalho:** Ctrl+N cria uma nota. Acessibilidade básica: rótulos nos campos, `role="status"` no estado do
+    salvamento, `role="alert"` nos avisos, foco visível e `aria-current`/`aria-pressed` nos controles.
+
+## Testes de interface
+
+`jsdom` + Testing Library + user-event (devDependencies de teste, justificadas: pequenas e muito consolidadas).
+Os testes usam um **gateway falso em memória que imita as regras do Rust**. É uma imitação: se o Rust mudar,
+ela precisa acompanhar. A prova de verdade é rodar o app.
