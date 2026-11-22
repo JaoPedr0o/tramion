@@ -32,6 +32,7 @@ export function NoteEditor({ service, note, onDeleted }: Props) {
   const [pinned, setPinned] = useState(note.pinned);
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const autosaver = useRef<NoteAutosaver | null>(null);
   const titleId = useId();
   const bodyId = useId();
@@ -54,13 +55,16 @@ export function NoteEditor({ service, note, onDeleted }: Props) {
     };
   }, [service, initial]);
 
-  const fail = (error: unknown) => setMessage(messageFor(error));
+  // Falha de uma AÇÃO (fixar, excluir, carregar): aviso próprio, separado do estado do salvamento.
+  const fail = (error: unknown) => setActionError(messageFor(error));
 
   const togglePin = () => {
+    setActionError(null);
     service.setPinned(note.id, !pinned).then((updated) => setPinned(updated.pinned), fail);
   };
 
   const remove = async () => {
+    setActionError(null);
     try {
       await autosaver.current?.flush();
       await service.delete(note.id);
@@ -104,6 +108,12 @@ export function NoteEditor({ service, note, onDeleted }: Props) {
           Excluir
         </button>
       </div>
+
+      {actionError && (
+        <p role="alert" className="note-editor__error">
+          {actionError}
+        </p>
+      )}
 
       {status === "conflict" && (
         <div role="alert" className="note-editor__conflict">

@@ -64,6 +64,12 @@ describe("fronteiras de arquitetura", () => {
       expect(await boundaryErrors(file, 'import "@aun/tasks";')).toHaveLength(1);
     });
 
+    it("proíbe QUALQUER outro módulo de importar o módulo de notas (pacote real)", async () => {
+      // O alvo aqui é um pacote que existe de verdade (@aun/notes), não um nome inventado.
+      const other = "modules/outro/src/virtual.ts";
+      expect(await boundaryErrors(other, 'import "@aun/notes";')).toHaveLength(1);
+    });
+
     it("proíbe um módulo de importar o app", async () => {
       expect(await boundaryErrors(file, 'import "@aun/desktop";')).toHaveLength(1);
     });

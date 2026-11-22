@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 5c (módulo de notas, serviço e eventos)**: o módulo publica `note.*` depois de cada
-> operação confirmada. Próximo: a interface (lista, editor, lixeira) e testá-la no app real.
+> Status: **etapa 5e (extensibilidade provada)**: o módulo de notas está completo (interface, salvamento
+> automático, lixeira) e um segundo módulo foi provado entrar sem editar o primeiro. Próximo: retrospectiva.
 
 ## Documentação
 

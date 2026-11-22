@@ -5,6 +5,7 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createNotesService } from "../application/notes-service.ts";
+import { NotesError } from "../domain/errors.ts";
 import { createFakeGateway } from "../test-support.ts";
 import { createNotesView } from "./NotesView.tsx";
 
@@ -217,5 +218,18 @@ describe("tela de notas", () => {
 
     const titles = [...fake.notes.values()].map((n) => n.title);
     expect(titles).toContain("Editada às pressas");
+  });
+
+  it("falha ao excluir mostra um aviso próprio, sem misturar com 'Salvo'", async () => {
+    const { user, fake } = setup();
+    await createFirstNote(user);
+    vi.spyOn(fake.gateway, "delete").mockRejectedValue(new NotesError("notes.internal", "falhou"));
+
+    await user.click(screen.getByRole("button", { name: "Excluir" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Algo deu errado");
+    expect(statusText()).toBe("Salvo"); // o estado do salvamento continua correto
+    expect(fake.notes.get("n1")?.deletedAt).toBeNull(); // e a nota segue ativa
   });
 });
