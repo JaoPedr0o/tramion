@@ -28,7 +28,7 @@ pub const MAX_VIEW_CONFIG_BYTES: usize = 20_000;
 pub const MAX_VIEW_FILTERS: usize = 20;
 
 /// Formas de exibição aceitas numa visão.
-pub const VIEW_MODES: [&str; 5] = ["table", "board", "list", "gallery", "calendar"];
+pub const VIEW_MODES: [&str; 6] = ["table", "board", "list", "gallery", "calendar", "chart"];
 
 /// A configuração padrão de uma visão nova ou de uma base recém-criada.
 pub fn default_view_config() -> Value {
@@ -492,6 +492,7 @@ pub fn validate_view_config(config: &Value) -> Result<Value, NotesError> {
         "sort": sort,
         "groupBy": optional_id(config, "groupBy")?,
         "dateProperty": optional_id(config, "dateProperty")?,
+        "valueProperty": optional_id(config, "valueProperty")?,
         "scale": scale,
     }))
 }

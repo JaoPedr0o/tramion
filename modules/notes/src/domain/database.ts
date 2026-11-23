@@ -57,7 +57,7 @@ export interface DatabaseRow {
 }
 
 /** Formas de exibição de uma visão. */
-export type ViewMode = "table" | "board" | "list" | "gallery" | "calendar";
+export type ViewMode = "table" | "board" | "list" | "gallery" | "calendar" | "chart";
 
 export const VIEW_MODES: ReadonlyArray<readonly [ViewMode, string]> = [
   ["table", "Tabela"],
@@ -65,6 +65,7 @@ export const VIEW_MODES: ReadonlyArray<readonly [ViewMode, string]> = [
   ["list", "Lista"],
   ["gallery", "Galeria"],
   ["calendar", "Calendário"],
+  ["chart", "Gráfico"],
 ];
 
 /** Uma regra de filtro (os mesmos campos de `FilterRule`, da camada de aplicação). */
@@ -85,6 +86,8 @@ export interface ViewConfig {
   readonly dateProperty?: string | null;
   /** Escala do calendário; `null` = mês. */
   readonly scale?: "month" | "week" | null;
+  /** Coluna de número que o gráfico soma; `null` = contar as linhas. */
+  readonly valueProperty?: string | null;
 }
 
 /** Uma visão salva de uma base: toda base tem pelo menos uma. */

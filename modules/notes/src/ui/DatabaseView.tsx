@@ -1,6 +1,7 @@
 import { TrashIcon } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CHART_CATEGORY_TYPES,
   filterRows,
   sortRows,
   type FilterRule,
@@ -20,6 +21,7 @@ import { VIEW_MODES } from "../domain/database.ts";
 import { Choice } from "./Choice.tsx";
 import { DatabaseBoard } from "./DatabaseBoard.tsx";
 import { DatabaseCalendar } from "./DatabaseCalendar.tsx";
+import { DatabaseChart } from "./DatabaseChart.tsx";
 import { DatabaseCell } from "./DatabaseCell.tsx";
 import { DatabaseGallery } from "./DatabaseGallery.tsx";
 import { DatabaseList } from "./DatabaseList.tsx";
@@ -334,6 +336,12 @@ export function DatabaseView({ deps, id }: Props) {
   const groupProperty =
     selectProperties.find((p) => p.id === config?.groupBy) ?? selectProperties[0] ?? null;
   const dateProperties = properties.filter((p) => p.type === "date");
+  // Gráfico: a coluna das barras (seleção, caixa ou data) e, se houver, a coluna de número que elas somam.
+  const chartCategories = properties.filter((p) => CHART_CATEGORY_TYPES.includes(p.type));
+  const chartCategory =
+    chartCategories.find((p) => p.id === config?.groupBy) ?? chartCategories[0] ?? null;
+  const numberProperties = properties.filter((p) => p.type === "number");
+  const chartMeasure = numberProperties.find((p) => p.id === config?.valueProperty) ?? null;
   // A coluna do calendário: a escolhida, se ainda existir; senão a primeira de data.
   const dateProperty =
     dateProperties.find((p) => p.id === config?.dateProperty) ?? dateProperties[0] ?? null;
@@ -384,6 +392,25 @@ export function DatabaseView({ deps, id }: Props) {
             onChange={(groupBy) => updateConfig({ groupBy })}
           />
         )}
+        {view === "chart" && chartCategory && (
+          <>
+            <Choice
+              label="Barras por"
+              value={chartCategory.id}
+              options={chartCategories.map((p) => ({ id: p.id, label: p.name }))}
+              onChange={(groupBy) => updateConfig({ groupBy })}
+            />
+            <Choice
+              label="Medir"
+              value={chartMeasure?.id ?? "count"}
+              options={[
+                { id: "count", label: "Contar linhas" },
+                ...numberProperties.map((p) => ({ id: p.id, label: `Somar ${p.name}` })),
+              ]}
+              onChange={(id) => updateConfig({ valueProperty: id === "count" ? null : id })}
+            />
+          </>
+        )}
         {view === "calendar" && dateProperty && dateProperties.length > 1 && (
           <Choice
             label="Mostrar por"
@@ -431,6 +458,15 @@ export function DatabaseView({ deps, id }: Props) {
           <p className="db-empty">
             Para ver o quadro, adicione uma coluna do tipo Seleção (como &quot;Status&quot;): cada
             opção vira uma coluna do quadro.
+          </p>
+        )
+      ) : view === "chart" ? (
+        chartCategory ? (
+          <DatabaseChart rows={rows} category={chartCategory} measure={chartMeasure} />
+        ) : (
+          <p className="db-empty">
+            Para ver o gráfico, adicione uma coluna do tipo Seleção, Caixa de seleção ou Data: cada
+            categoria vira uma barra.
           </p>
         )
       ) : view === "list" ? (

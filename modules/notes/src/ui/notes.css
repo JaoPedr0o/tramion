@@ -2377,3 +2377,60 @@
 .templates__delete:hover {
   color: var(--color-danger);
 }
+
+/* ───────── Gráfico ───────── */
+.chart {
+  margin: 0;
+}
+
+.chart__caption {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.chart__bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chart__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr) 110px;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.chart__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart__track {
+  height: 20px;
+  border-radius: var(--radius);
+  background: var(--color-hover);
+}
+
+.chart__bar {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+}
+
+.chart__value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.chart__count {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}

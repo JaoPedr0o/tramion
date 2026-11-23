@@ -1,3 +1,4 @@
+import { MONTH_NAMES } from "./calendar.ts";
 import type {
   CellValue,
   DatabaseRow,
@@ -241,4 +242,91 @@ export function groupRows(
     ...property.options.map((option) => ({ option, rows: groups.get(option.id)! })),
     { option: null, rows: groups.get(null)! },
   ];
+}
+
+/** Uma barra do gráfico. */
+export interface ChartBar {
+  readonly key: string;
+  readonly label: string;
+  /** Cor da opção (para seleções); `null` nas demais. */
+  readonly color: string | null;
+  /** O que a barra mede: a contagem de linhas ou a soma da coluna de número. */
+  readonly value: number;
+  /** Quantas linhas caíram na barra. */
+  readonly count: number;
+}
+
+/** Tipos de coluna que dão categorias para o gráfico. */
+export const CHART_CATEGORY_TYPES: readonly PropertyType[] = [
+  "select",
+  "multi_select",
+  "checkbox",
+  "date",
+];
+
+/**
+ * Agrupa as linhas pelas categorias de uma coluna e mede cada grupo: contando as linhas ou somando uma coluna de número.
+ * Seleção: uma barra por opção (na ordem, mesmo vazia). Seleção múltipla: a linha conta em cada opção dela. Caixa:
+ * "Marcado" e "Desmarcado". Data: uma barra por mês, em ordem. Linhas sem valor vão numa barra "Sem valor" (só se houver).
+ */
+export function aggregate(
+  rows: readonly DatabaseRow[],
+  property: Property,
+  valueProperty: Property | null,
+): ChartBar[] {
+  if (!CHART_CATEGORY_TYPES.includes(property.type)) return [];
+  const measure = (row: DatabaseRow): number => {
+    if (!valueProperty) return 1;
+    const value = row.cells[valueProperty.id];
+    return typeof value === "number" ? value : 0;
+  };
+
+  const bars = new Map<
+    string,
+    { label: string; color: string | null; value: number; count: number }
+  >();
+  const add = (key: string, label: string, color: string | null, row: DatabaseRow) => {
+    const bar = bars.get(key) ?? { label, color, value: 0, count: 0 };
+    bar.value += measure(row);
+    bar.count += 1;
+    bars.set(key, bar);
+  };
+  const seed = (key: string, label: string, color: string | null) =>
+    bars.set(key, { label, color, value: 0, count: 0 });
+
+  if (property.type === "select" || property.type === "multi_select") {
+    for (const option of property.options) seed(option.id, option.name, option.color);
+  } else if (property.type === "checkbox") {
+    seed("on", "Marcado", null);
+    seed("off", "Desmarcado", null);
+  }
+
+  for (const row of rows) {
+    const value = row.cells[property.id];
+    if (property.type === "select") {
+      const option = property.options.find((o) => o.id === value);
+      if (option) add(option.id, option.name, option.color, row);
+      else add("none", "Sem valor", null, row);
+    } else if (property.type === "multi_select") {
+      const chosen = Array.isArray(value)
+        ? property.options.filter((o) => value.includes(o.id))
+        : [];
+      if (chosen.length === 0) add("none", "Sem valor", null, row);
+      for (const option of chosen) add(option.id, option.name, option.color, row);
+    } else if (property.type === "checkbox") {
+      add(value === true ? "on" : "off", value === true ? "Marcado" : "Desmarcado", null, row);
+    } else if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const month = value.slice(0, 7);
+      const name = MONTH_NAMES[Number(month.slice(5, 7)) - 1]!;
+      add(month, `${name} de ${month.slice(0, 4)}`, null, row);
+    } else {
+      add("none", "Sem valor", null, row);
+    }
+  }
+
+  const ordered = [...bars.entries()].filter(([key, bar]) => key !== "none" || bar.count > 0);
+  if (property.type === "date")
+    ordered.sort(([a], [b]) => (a === "none" ? 1 : b === "none" ? -1 : a.localeCompare(b)));
+  else ordered.sort(([a], [b]) => Number(a === "none") - Number(b === "none")); // "Sem valor" sempre por último
+  return ordered.map(([key, bar]) => ({ key, ...bar }));
 }

@@ -2872,4 +2872,134 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await main().findByRole("alert")).textContent).toContain("não pode virar modelo");
     });
   });
+
+  describe("visão de gráfico", () => {
+    type Fake = ReturnType<typeof setup>["fake"];
+
+    /** Base com Status (seleção: A fazer / Feito), Qtd (número) e Feita (caixa), e 4 linhas. */
+    async function chartBase(user: User, fake: Fake, events: ReturnType<typeof setup>["events"]) {
+      const base = await fake.gateway.createDatabase({ title: "Pedidos", parentId: null });
+      const status = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Status",
+        type: "select",
+      });
+      await fake.gateway.updateProperty({
+        id: status.id,
+        options: [
+          { id: "a", name: "A fazer", color: "gray" },
+          { id: "b", name: "Feito", color: "green" },
+        ],
+      });
+      const qtd = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Qtd",
+        type: "number",
+      });
+      const rows: Array<[string, string | null, number]> = [
+        ["P1", "a", 10],
+        ["P2", "a", 5],
+        ["P3", "b", 20],
+        ["P4", null, 1],
+      ];
+      for (const [title, option, amount] of rows) {
+        const row = await fake.gateway.createRow({ databaseId: base.id, title });
+        if (option)
+          await fake.gateway.setCell({ noteId: row.id, propertyId: status.id, value: option });
+        await fake.gateway.setCell({ noteId: row.id, propertyId: qtd.id, value: amount });
+      }
+      act(() => events.emit("note.created", { id: base.id }));
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Pedidos" }));
+      await main().findByRole("region", { name: "Base de dados" });
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: "Gráfico",
+        }),
+      );
+      await main().findByRole("tab", { name: "Gráfico", selected: true });
+    }
+    const chart = () => within(main().getByRole("list", { name: "Gráfico de Status" }));
+
+    it("mostra uma barra por categoria com a contagem de linhas, 'Sem valor' por último", async () => {
+      const { user, fake, events } = setup();
+      await chartBase(user, fake, events);
+
+      const rows = chart()
+        .getAllByRole("listitem")
+        .map((li) => li.textContent);
+
+      expect(rows).toEqual(["A fazer2", "Feito1", "Sem valor1"]);
+      expect(main().getByText("Status: linhas")).toBeTruthy();
+    });
+
+    it("trocar para somar uma coluna de número muda os valores e mostra as contagens", async () => {
+      const { user, fake, events } = setup();
+      await chartBase(user, fake, events);
+
+      await user.click(main().getByRole("button", { name: "Medir" }));
+      await user.click(screen.getByRole("option", { name: "Somar Qtd" }));
+
+      expect(
+        chart()
+          .getAllByRole("listitem")
+          .map((li) => li.textContent),
+      ).toEqual(["A fazer15 (2)", "Feito20 (1)", "Sem valor1 (1)"]);
+      expect(main().getByText("Status: soma de Qtd")).toBeTruthy();
+    });
+
+    it("a barra maior ocupa 100% e as outras são proporcionais; a cor da opção é usada", async () => {
+      const { user, fake, events } = setup();
+      await chartBase(user, fake, events);
+      await user.click(main().getByRole("button", { name: "Medir" }));
+      await user.click(screen.getByRole("option", { name: "Somar Qtd" }));
+
+      const bars = [
+        ...main()
+          .getByRole("list", { name: "Gráfico de Status" })
+          .querySelectorAll<HTMLElement>(".chart__bar"),
+      ];
+
+      expect(bars.map((b) => b.style.width)).toEqual(["75%", "100%", "5%"]);
+      expect(bars[0]!.classList.contains("db-chip--gray")).toBe(true);
+      expect(bars[1]!.classList.contains("db-chip--green")).toBe(true);
+    });
+
+    it("o gráfico respeita o filtro da visão", async () => {
+      const { user, fake, events } = setup();
+      await chartBase(user, fake, events);
+
+      await user.click(main().getByRole("button", { name: "Filtrar" }));
+      const panel = within(screen.getByRole("dialog", { name: "Filtrar" }));
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.type(panel.getByRole("textbox", { name: "Valor do filtro 1" }), "P3");
+
+      expect(
+        chart()
+          .getAllByRole("listitem")
+          .map((li) => li.textContent),
+      ).toEqual(["A fazer0", "Feito1"]);
+    });
+
+    it("base sem coluna de categoria explica o que falta", async () => {
+      const { user, fake, events } = setup();
+      const base = await fake.gateway.createDatabase({ title: "Vazia", parentId: null });
+      act(() => events.emit("note.created", { id: base.id }));
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Vazia" }));
+      await main().findByRole("region", { name: "Base de dados" });
+
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: "Gráfico",
+        }),
+      );
+
+      expect(
+        await main().findByText(/adicione uma coluna do tipo Seleção, Caixa de seleção ou Data/),
+      ).toBeTruthy();
+    });
+  });
 });

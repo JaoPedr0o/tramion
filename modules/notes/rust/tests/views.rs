@@ -311,3 +311,27 @@ fn apagar_a_base_de_vez_leva_as_visoes() {
         .unwrap();
     assert_eq!(count, 0);
 }
+
+#[test]
+fn visao_de_grafico_aceita_coluna_de_valor_e_guarda_so_o_conhecido() {
+    let db = db();
+    let base = base(&db);
+
+    let view = database::add_view(
+        db.connection(),
+        &base.id,
+        "Gráfico",
+        &json!({ "mode": "chart", "groupBy": "p1", "valueProperty": "p2", "filters": [], "sort": null, "lixo": 1 }),
+    )
+    .unwrap();
+
+    assert_eq!(view.config["mode"], "chart");
+    assert_eq!(view.config["groupBy"], "p1");
+    assert_eq!(view.config["valueProperty"], "p2");
+    assert!(view.config.get("lixo").is_none());
+    assert!(validate_view_config(&json!({ "mode": "chart", "valueProperty": 3 })).is_err());
+    assert_eq!(
+        validate_view_config(&json!({ "mode": "chart" })).unwrap()["valueProperty"],
+        Value::Null
+    );
+}

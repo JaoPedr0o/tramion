@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { DatabaseRow, Property } from "../domain/database.ts";
+import type { CellValue, DatabaseRow, Property } from "../domain/database.ts";
 import {
   TITLE_KEY,
+  aggregate,
   displayValue,
   filterRows,
   groupRows,
@@ -268,5 +269,93 @@ describe("groupRows", () => {
 
     expect(columns).toHaveLength(1);
     expect(ids(columns[0]!.rows)).toEqual(["1", "2", "3"]);
+  });
+});
+
+describe("aggregate (gráfico)", () => {
+  const rowsOf = (cells: Array<Record<string, CellValue>>) =>
+    cells.map((c, i) => row(`r${i}`, `R${i}`, c));
+  const bars = (list: ReturnType<typeof aggregate>) => list.map((b) => [b.label, b.value, b.count]);
+
+  it("seleção: uma barra por opção, na ordem, mesmo vazia, e 'Sem valor' por último só se houver", () => {
+    const rows = rowsOf([{ status: "b" }, { status: "b" }, { status: "a" }, {}]);
+
+    expect(bars(aggregate(rows, STATUS, null))).toEqual([
+      ["A fazer", 1, 1],
+      ["Feito", 2, 2],
+      ["Sem valor", 1, 1],
+    ]);
+    expect(bars(aggregate(rowsOf([{ status: "a" }]), STATUS, null))).toEqual([
+      ["A fazer", 1, 1],
+      ["Feito", 0, 0],
+    ]);
+  });
+
+  it("valor de opção removida cai em 'Sem valor'; cores das opções acompanham as barras", () => {
+    const list = aggregate(rowsOf([{ status: "removida" }, { status: "a" }]), STATUS, null);
+
+    expect(list.map((b) => b.label)).toEqual(["A fazer", "Feito", "Sem valor"]);
+    expect(list[0]!.color).toBe("gray");
+    expect(list[2]!.color).toBeNull();
+  });
+
+  it("seleção múltipla: a linha conta em cada opção dela", () => {
+    const rows = rowsOf([{ tags: ["x", "y"] }, { tags: ["y"] }, {}]);
+
+    expect(bars(aggregate(rows, TAGS, null))).toEqual([
+      ["Urgente", 1, 1],
+      ["Casa", 2, 2],
+      ["Sem valor", 1, 1],
+    ]);
+  });
+
+  it("caixa: Marcado e Desmarcado (sem célula = desmarcado)", () => {
+    const rows = rowsOf([{ ok: true }, { ok: false }, {}]);
+
+    expect(bars(aggregate(rows, prop("ok", "checkbox"), null))).toEqual([
+      ["Marcado", 1, 1],
+      ["Desmarcado", 2, 2],
+    ]);
+  });
+
+  it("data: uma barra por mês em ordem cronológica (atravessando o ano), 'Sem data' no fim", () => {
+    const rows = rowsOf([
+      { d: "2026-12-05" },
+      { d: "2026-01-10" },
+      { d: "2025-12-31" },
+      { d: "2026-01-02" },
+      {},
+      { d: "texto" },
+    ]);
+
+    expect(bars(aggregate(rows, prop("d", "date"), null))).toEqual([
+      ["dezembro de 2025", 1, 1],
+      ["janeiro de 2026", 2, 2],
+      ["dezembro de 2026", 1, 1],
+      ["Sem valor", 2, 2],
+    ]);
+  });
+
+  it("soma uma coluna de número em vez de contar (células vazias valem 0), e a contagem segue disponível", () => {
+    const rows = rowsOf([
+      { status: "a", qtd: 10 },
+      { status: "a", qtd: 5.5 },
+      { status: "b" },
+      { status: "b", qtd: "x" as never },
+    ]);
+
+    const list = aggregate(rows, STATUS, prop("qtd", "number"));
+
+    expect(bars(list)).toEqual([
+      ["A fazer", 15.5, 2],
+      ["Feito", 0, 2],
+    ]);
+  });
+
+  it("colunas que não dão categoria (texto, número, link) devolvem lista vazia; sem linhas, barras zeradas", () => {
+    expect(aggregate(ROWS, prop("obs", "text"), null)).toEqual([]);
+    expect(aggregate(ROWS, prop("qtd", "number"), null)).toEqual([]);
+    expect(aggregate([], STATUS, null).map((b) => b.value)).toEqual([0, 0]);
+    expect(aggregate([], prop("d", "date"), null)).toEqual([]);
   });
 });
