@@ -6,6 +6,7 @@ use crate::database;
 use crate::diagnostics;
 use crate::duplicate;
 use crate::error::NotesError;
+use crate::exports;
 use crate::external;
 use crate::model::{
     DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote, View,
@@ -381,4 +382,19 @@ pub async fn create_from_template(
     with_db(&db, |conn| {
         templates::create_from_template(conn, &template_id, parent_id.as_deref())
     })
+}
+
+/// Grava o Markdown de uma página na pasta Downloads do usuário e devolve o caminho do arquivo criado.
+#[tauri::command]
+pub async fn save_markdown<R: Runtime>(
+    app: AppHandle<R>,
+    title: String,
+    content: String,
+) -> Result<String, CommandError> {
+    let dir = app
+        .path()
+        .download_dir()
+        .map_err(|e| NotesError::Internal(e.to_string()))?;
+    let path = exports::save_markdown(&dir, &title, &content)?;
+    Ok(path.display().to_string())
 }

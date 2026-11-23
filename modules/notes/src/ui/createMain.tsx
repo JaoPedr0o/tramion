@@ -26,9 +26,24 @@ export function createMain(deps: NotesUiDeps): ComponentType {
       return () => window.removeEventListener("keydown", onKeyDown);
     }, []);
 
+    // O aviso de sucesso some sozinho depois de um tempo (e pode ser fechado antes).
+    useEffect(() => {
+      if (nav.notice === null) return;
+      const timer = setTimeout(() => store.clearNotice(), 8000);
+      return () => clearTimeout(timer);
+    }, [nav.notice]);
+
     return (
       <div className="notes-main">
         <SearchDialog deps={deps} />
+        {nav.notice && (
+          <p role="status" className="notes-main__notice">
+            <span>{nav.notice}</span>
+            <button type="button" aria-label="Fechar aviso" onClick={() => store.clearNotice()}>
+              ×
+            </button>
+          </p>
+        )}
         {nav.actionError && (
           <p role="alert" className="notes-main__error">
             {nav.actionError}

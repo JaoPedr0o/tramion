@@ -40,6 +40,9 @@ function setup() {
     uploadAsset: vi.fn<(file: File) => Promise<string>>(async () => "asset://localhost/abc.png"),
     openExternal: vi.fn<(url: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
+    saveMarkdown: vi.fn<(title: string, content: string) => Promise<string>>(
+      async (title) => `/home/u/Downloads/${title}.md`,
+    ),
   };
   const emojis = {
     emojis: [
@@ -1992,6 +1995,143 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
 
       expect(await screen.findByText("Nenhum modelo disponível.")).toBeTruthy();
+    });
+  });
+
+  describe("exportar e importar Markdown", () => {
+    it("exporta a página: grava o Markdown com o título, avisa onde foi salvo e o aviso fecha", async () => {
+      const { user, platform } = setup();
+      await newPageTitled(user, "Receita");
+
+      await openPageMenu(user, "Exportar como Markdown");
+
+      await vi.waitFor(() => expect(platform.saveMarkdown).toHaveBeenCalledTimes(1));
+      const [title, text] = platform.saveMarkdown.mock.calls[0]!;
+      expect(title).toBe("Receita");
+      expect(text.startsWith("# Receita\n")).toBe(true);
+      expect(text.endsWith("\n")).toBe(true);
+      expect(await main().findByText("Exportado para /home/u/Downloads/Receita.md")).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Fechar aviso" }));
+      expect(main().queryByText(/Exportado para/)).toBeNull();
+    });
+
+    it("o aviso de sucesso some sozinho depois de um tempo", async () => {
+      const { user } = setup();
+      await newPageTitled(user, "Receita");
+      await openPageMenu(user, "Exportar como Markdown");
+      await main().findByText(/Exportado para/);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8100);
+      });
+
+      expect(main().queryByText(/Exportado para/)).toBeNull();
+    });
+
+    it("exporta uma base de dados como tabela com título e colunas", async () => {
+      const { user, platform } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Nova base de dados" }));
+      await main().findByRole("region", { name: "Base de dados" });
+      await user.click(main().getByRole("button", { name: "Adicionar coluna" }));
+      const form = within(screen.getByRole("dialog", { name: "Adicionar coluna" }));
+      await user.type(form.getByRole("textbox", { name: "Nome da coluna" }), "Obs");
+      await user.click(form.getByRole("button", { name: "Adicionar coluna" }));
+      await main().findByRole("button", { name: "Coluna Obs" });
+      await user.click(main().getByRole("button", { name: "+ Nova linha" }));
+      await main().findByRole("textbox", { name: "Título de Sem título" });
+      await user.type(main().getByRole("textbox", { name: "Obs — Sem título" }), "olá{Enter}");
+      await vi.waitFor(() =>
+        expect(
+          (main().getByRole("textbox", { name: "Obs — Sem título" }) as HTMLInputElement).value,
+        ).toBe("olá"),
+      );
+      await settle();
+
+      await user.click(topbar().getByRole("button", { name: "Mais ações da página" }));
+      await user.click(screen.getByRole("menuitem", { name: "Exportar como Markdown" }));
+
+      await vi.waitFor(() => expect(platform.saveMarkdown).toHaveBeenCalled());
+      const [, text] = platform.saveMarkdown.mock.calls[0]!;
+      expect(text).toContain("| Título | Obs |");
+      expect(text).toContain("| Sem título | olá |");
+    });
+
+    it("falha ao salvar o arquivo mostra o motivo", async () => {
+      const { user, platform } = setup();
+      platform.saveMarkdown.mockRejectedValue(new NotesError("notes.internal", "x"));
+      await newPageTitled(user, "Receita");
+
+      await openPageMenu(user, "Exportar como Markdown");
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+    });
+
+    it("importa um arquivo: o primeiro título vira o título, o texto vira blocos e a página abre", async () => {
+      const { user, fake } = setup();
+      const file = new File(
+        ["# Minha receita\n\nMisture **bem**.\n\n- farinha\n- [x] ovos\n"],
+        "x.md",
+        {
+          type: "text/markdown",
+        },
+      );
+
+      await user.upload(screen.getByLabelText("Escolher arquivo Markdown"), file);
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Minha receita",
+      );
+      expect(await main().findByText("Importado: Minha receita")).toBeTruthy();
+      const note = [...fake.notes.values()][0]!;
+      const blocks = JSON.parse(note.content) as Array<{ type: string }>;
+      expect(blocks.map((b) => b.type)).toEqual(["paragraph", "bulletListItem", "checkListItem"]);
+      expect(note.body).toContain("Misture bem.");
+      expect(note.parentId).toBeNull();
+    });
+
+    it("sem título no arquivo, usa o nome dele; arquivo vazio cria página vazia", async () => {
+      const { user, fake } = setup();
+
+      await user.upload(
+        screen.getByLabelText("Escolher arquivo Markdown"),
+        new File(["só um texto"], "Notas da aula.md"),
+      );
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Notas da aula",
+      );
+
+      await user.upload(
+        screen.getByLabelText("Escolher arquivo Markdown"),
+        new File([""], "Vazio.md"),
+      );
+      await vi.waitFor(() =>
+        expect([...fake.notes.values()].map((n) => n.title)).toContain("Vazio"),
+      );
+    });
+
+    it("o botão Importar Markdown abre o seletor de arquivos", async () => {
+      const { user } = setup();
+      const input = screen.getByLabelText("Escolher arquivo Markdown") as HTMLInputElement;
+      const click = vi.spyOn(input, "click");
+
+      await user.click(sidebar().getByRole("button", { name: "Importar Markdown" }));
+
+      expect(click).toHaveBeenCalled();
+    });
+
+    it("falha ao criar a página importada mostra o motivo", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "create").mockRejectedValue(new NotesError("notes.internal", "x"));
+
+      await user.upload(
+        screen.getByLabelText("Escolher arquivo Markdown"),
+        new File(["# A"], "a.md"),
+      );
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
     });
   });
 });

@@ -19,6 +19,7 @@ const COMMANDS: &[&str] = &[
     "duplicate_note",
     "list_templates",
     "create_from_template",
+    "save_markdown",
     "save_asset",
     "set_appearance",
     "report_error",

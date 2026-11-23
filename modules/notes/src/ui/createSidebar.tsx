@@ -1,5 +1,5 @@
 import { IconButton, PlusIcon, SearchIcon, TrashIcon } from "@tramion/ui";
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { MoveDialog } from "./MoveDialog.tsx";
@@ -20,6 +20,7 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
     const pages = usePages(service, events);
     const list = pages.status === "ready" ? pages.items : [];
     const [moving, setMoving] = useState<NoteSummary | null>(null);
+    const importInput = useRef<HTMLInputElement>(null);
 
     // Ctrl+N cria uma página na raiz; Ctrl+Shift+N, uma subpágina da aberta. O efeito é refeito a cada
     // render para usar sempre a versão atual do estado.
@@ -49,6 +50,25 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
           <kbd className="sidebar-search__keys">Ctrl K</kbd>
         </button>
         <TemplatesButton deps={deps} pages={list} />
+        <button type="button" className="sidebar-row" onClick={() => importInput.current?.click()}>
+          <span className="sidebar-row__icon" aria-hidden="true">
+            <PlusIcon />
+          </span>
+          <span className="sidebar-row__title">Importar Markdown</span>
+        </button>
+        <input
+          ref={importInput}
+          type="file"
+          accept=".md,.markdown,.txt,text/markdown,text/plain"
+          aria-label="Escolher arquivo Markdown"
+          className="visually-hidden"
+          tabIndex={-1}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = ""; // permite escolher o mesmo arquivo de novo
+            if (file) void actions.importMarkdown(file);
+          }}
+        />
         {favorites.length > 0 && (
           <section aria-labelledby="notes-favorites-title">
             <h2 id="notes-favorites-title" className="sidebar-label">
@@ -113,6 +133,7 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
               onSelect={(id) => actions.openPage(id, list)}
               onNewSubpage={(page) => void actions.createPage(page.id, list)}
               onDuplicate={(page) => void actions.duplicatePage(page.id, list)}
+              onExport={(page) => void actions.exportMarkdown(page, list)}
               onMove={setMoving}
               onToggleFavorite={(page) => void actions.toggleFavorite(page)}
               onDelete={(page) => void actions.deletePage(page.id)}

@@ -19,6 +19,7 @@ permissions = [
   "allow-duplicate-note",
   "allow-list-templates",
   "allow-create-from-template",
+  "allow-save-markdown",
   "allow-save-asset",
   "allow-set-appearance",
   "allow-report-error",

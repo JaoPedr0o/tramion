@@ -1,14 +1,30 @@
 import type { NavigationStore } from "../application/navigation-store.ts";
 import type { NotesService } from "../application/notes-service.ts";
 import { ancestorsOf } from "../application/page-tree.ts";
+import { displayValue } from "../application/database-query.ts";
+import {
+  blocksToMarkdown,
+  markdownToBlocks,
+  splitImportedTitle,
+  tableToMarkdownText,
+  MAX_IMPORT_CHARS,
+  type MdBlock,
+} from "../application/markdown.ts";
+import type { NotesPlatform } from "../application/notes-platform.ts";
+import { blocksToPlainText, parseContent } from "../application/page-content.ts";
 import type { NoteSummary } from "../domain/note.ts";
+import { NotesError } from "../domain/errors.ts";
 import { messageFor } from "./messages.ts";
 
 /**
  * Ações sobre páginas, compartilhadas pela barra lateral, pela barra superior e pela área principal.
  * Falhas viram uma mensagem no estado de navegação (mostrada na área principal), nunca uma exceção solta.
  */
-export function createPageActions(service: NotesService, store: NavigationStore) {
+export function createPageActions(
+  service: NotesService,
+  store: NavigationStore,
+  platform: NotesPlatform,
+) {
   const guard = async (action: () => Promise<void>) => {
     try {
       await action();
@@ -37,6 +53,58 @@ export function createPageActions(service: NotesService, store: NavigationStore)
         await store.flush();
         const [copyId] = await service.duplicate(id);
         if (copyId) store.open(copyId, ancestorIds(pages, id));
+      }),
+
+    /**
+     * Exporta a página como arquivo Markdown na pasta Downloads (o texto, ou a tabela de linhas se for uma base) e avisa
+     * onde foi salvo. Antes, salva o que estiver pendente no editor.
+     */
+    exportMarkdown: (page: NoteSummary, pages: readonly NoteSummary[]) =>
+      guard(async () => {
+        await store.flush();
+        const titleOf = (id: string) => pages.find((p) => p.id === id)?.title ?? null;
+        let body: string;
+        if (page.isDatabase) {
+          const data = await service.getDatabase(page.id);
+          body = tableToMarkdownText(
+            ["Título", ...data.properties.map((p) => p.name)],
+            data.rows.map((row) => [
+              row.title,
+              ...data.properties.map((p) => displayValue(p, row.cells[p.id])),
+            ]),
+          );
+        } else {
+          const note = await service.get(page.id);
+          body = blocksToMarkdown(
+            parseContent(note.content, note.body) as unknown as MdBlock[],
+            titleOf,
+          );
+        }
+        const text = `# ${page.title}\n\n${body}`.trimEnd() + "\n";
+        const path = await platform.saveMarkdown(page.title, text);
+        store.notify(`Exportado para ${path}`);
+      }),
+
+    /** Cria uma página nova a partir de um arquivo Markdown (o primeiro título vira o título da página) e a abre. */
+    importMarkdown: (file: File) =>
+      guard(async () => {
+        if (file.size > MAX_IMPORT_CHARS * 4)
+          throw new NotesError("notes.content-too-large", "arquivo grande");
+        const { title, blocks } = splitImportedTitle(
+          markdownToBlocks(await file.text()),
+          file.name,
+        );
+        const created = await service.create({ title, body: "", parentId: null });
+        const content = JSON.stringify(blocks);
+        await service.update({
+          id: created.id,
+          title,
+          body: blocksToPlainText(blocks as never),
+          content,
+          expectedUpdatedAt: created.updatedAt,
+        });
+        store.open(created.id, []);
+        store.notify(`Importado: ${title}`);
       }),
 
     /** Cria uma página a partir de um modelo (na raiz ou dentro de `parentId`) e a abre. */

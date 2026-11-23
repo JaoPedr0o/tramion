@@ -8,6 +8,8 @@ export interface NotesPlatform {
   uploadAsset(file: File): Promise<string>;
   /** Abre um link http(s) no navegador do sistema. */
   openExternal(url: string): Promise<void>;
+  /** Grava o Markdown de uma página na pasta Downloads (nome seguro, sem sobrescrever) e devolve o caminho. */
+  saveMarkdown(title: string, content: string): Promise<string>;
   /** Registra no terminal do app um erro da interface (para não sumir quando a tela quebra). */
   reportError(message: string): Promise<void>;
 }

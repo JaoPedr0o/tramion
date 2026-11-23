@@ -9,6 +9,7 @@ pub mod database_repository;
 pub mod diagnostics;
 pub mod duplicate;
 pub mod error;
+pub mod exports;
 pub mod external;
 pub mod model;
 pub mod repository;
@@ -87,6 +88,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::duplicate_note,
             commands::list_templates,
             commands::create_from_template,
+            commands::save_markdown,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

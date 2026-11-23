@@ -15,6 +15,8 @@ export interface NavigationState {
   readonly expanded: ReadonlySet<string>;
   /** Mensagem de falha de uma ação (excluir, mover...), mostrada na área principal. */
   readonly actionError: string | null;
+  /** Aviso de sucesso de uma ação (por exemplo, "Salvo em ..."), mostrado na área principal até ser fechado. */
+  readonly notice: string | null;
 }
 
 export interface NavigationStore {
@@ -31,6 +33,8 @@ export interface NavigationStore {
   reveal(ids: readonly string[]): void;
   fail(message: string): void;
   clearError(): void;
+  notify(message: string): void;
+  clearNotice(): void;
   /** O editor aberto registra como salvar o que estiver pendente; devolve como desregistrar. */
   registerFlush(flush: () => Promise<void>): () => void;
   /** Salva o que estiver pendente no editor aberto (use antes de excluir a página, por exemplo). */
@@ -46,6 +50,7 @@ export function createNavigationStore(): NavigationStore {
     selectedId: null,
     expanded: new Set(),
     actionError: null,
+    notice: null,
   };
   const listeners = new Set<() => void>();
   let pendingFlush: (() => Promise<void>) | null = null;
@@ -94,6 +99,14 @@ export function createNavigationStore(): NavigationStore {
 
     fail(message) {
       update({ actionError: message });
+    },
+
+    notify(message) {
+      update({ notice: message, actionError: null });
+    },
+
+    clearNotice() {
+      if (state.notice !== null) update({ notice: null });
     },
 
     clearError() {

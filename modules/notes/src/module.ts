@@ -35,14 +35,15 @@ export function createNotesModule(
       // O estado de navegação é compartilhado pelos quatro espaços da tela, que o app monta em lugares diferentes.
       const store = createNavigationStore();
       const search = createSearchStore();
+      const platform = options.platform ?? createTauriNotesPlatform();
       const deps = {
         service,
         events,
         store,
         search,
-        actions: createPageActions(service, store),
+        actions: createPageActions(service, store, platform),
         BlockEditor: options.BlockEditor ?? LazyBlockEditor,
-        platform: options.platform ?? createTauriNotesPlatform(),
+        platform,
         loadEmojiData: options.loadEmojiData ?? loadEmojiData,
       };
 

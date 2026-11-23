@@ -19,6 +19,14 @@ export function createTauriNotesPlatform(): NotesPlatform {
       }
     },
 
+    async saveMarkdown(title, content) {
+      try {
+        return await invoke<string>("plugin:notes|save_markdown", { title, content });
+      } catch (error) {
+        throw toNotesError(error);
+      }
+    },
+
     async reportError(message) {
       try {
         await invoke("plugin:notes|report_error", { message });
