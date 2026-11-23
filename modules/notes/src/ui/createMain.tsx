@@ -2,6 +2,7 @@ import { Logo } from "@tramion/ui";
 import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { GraphView } from "./GraphView.tsx";
+import { QuickCaptureDialog } from "./QuickCaptureDialog.tsx";
 import { VersionsDialog } from "./VersionsDialog.tsx";
 import { NotePanel } from "./NotePanel.tsx";
 import { SearchDialog } from "./SearchDialog.tsx";
@@ -29,6 +30,22 @@ export function createMain(deps: NotesUiDeps): ComponentType {
       return () => window.removeEventListener("keydown", onKeyDown);
     }, []);
 
+    // Captura rápida: Ctrl + Alt + N e o item da bandeja do sistema abrem a janelinha.
+    useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.ctrlKey && event.altKey && !event.shiftKey && event.key.toLowerCase() === "n") {
+          event.preventDefault();
+          store.showCapture();
+        }
+      };
+      window.addEventListener("keydown", onKeyDown);
+      const stopListening = deps.platform.onQuickCapture(() => store.showCapture());
+      return () => {
+        window.removeEventListener("keydown", onKeyDown);
+        stopListening();
+      };
+    }, []);
+
     // O aviso de sucesso some sozinho depois de um tempo (e pode ser fechado antes).
     useEffect(() => {
       if (nav.notice === null) return;
@@ -40,6 +57,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
       <div className="notes-main">
         <SearchDialog deps={deps} />
         <VersionsDialog deps={deps} />
+        <QuickCaptureDialog deps={deps} />
         {nav.notice && (
           <p role="status" className="notes-main__notice">
             <span>{nav.notice}</span>

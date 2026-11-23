@@ -14,6 +14,8 @@ export interface NotesPlatform {
   exportAll(
     files: readonly { path: readonly string[]; content: string }[],
   ): Promise<{ folder: string; written: number }>;
+  /** Avisa quando o item "Captura rápida" da bandeja do sistema é escolhido; devolve como cancelar o aviso. */
+  onQuickCapture(handler: () => void): () => void;
   /** Mostra uma notificação do sistema (pede a permissão na primeira vez; sem permissão, não faz nada). */
   notify(title: string, body: string): Promise<void>;
   /** Registra no terminal do app um erro da interface (para não sumir quando a tela quebra). */

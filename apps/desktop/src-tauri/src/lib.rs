@@ -1,14 +1,19 @@
 // Ponto de entrada do backend nativo (Rust) e "composition root" do lado Rust:
 // é aqui, e só aqui, que os módulos são ligados ao app.
 pub mod legacy;
+pub mod tray;
 
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use tramion_infra_sqlite::{Database, OpenOptions, SharedDatabase};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Uma segunda abertura não cria outro aplicativo (dois processos no mesmo banco): traz a janela de volta.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::show_main_window(app);
+        }))
         // Cada módulo entra como plugin: traz seus próprios comandos e permissões.
         .plugin(tauri_plugin_notification::init())
         .plugin(tramion_notes::init())
@@ -45,7 +50,29 @@ pub fn run() {
             }
 
             app.manage::<SharedDatabase>(Mutex::new(db));
+
+            // Bandeja do sistema (melhor esforço): com ela, fechar a janela só a esconde.
+            let tray_ok = match tray::build(app) {
+                Ok(()) => true,
+                Err(error) => {
+                    eprintln!("[bandeja] indisponível, fechar a janela fecha o app: {error}");
+                    false
+                }
+            };
+            app.manage(tray::TrayActive(tray_ok));
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let active = window
+                    .app_handle()
+                    .try_state::<tray::TrayActive>()
+                    .is_some_and(|state| tray::hide_instead_of_close(state.0));
+                if active {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
         })
         .run(tauri::generate_context!())
         .expect("erro ao executar o aplicativo Tauri");

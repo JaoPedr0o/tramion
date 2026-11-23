@@ -44,6 +44,7 @@ function setup() {
       folder: "/home/u/Downloads/Tramion",
       written: files.length,
     })),
+    onQuickCapture: vi.fn<NotesPlatform["onQuickCapture"]>(() => () => {}),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
     saveMarkdown: vi.fn<(title: string, content: string) => Promise<string>>(
@@ -3066,6 +3067,101 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.click(button());
 
       expect((await main().findByRole("alert")).textContent).toContain("grande demais");
+    });
+  });
+
+  describe("captura rápida", () => {
+    const dialog = () => within(screen.getByRole("dialog", { name: "Captura rápida" }));
+    const field = () => screen.getByRole("textbox", { name: "Texto da captura" });
+
+    it("abre pelo botão da barra lateral e pelo atalho Ctrl + Alt + N, com o foco no campo", async () => {
+      const { user } = setup();
+
+      await user.click(sidebar().getByRole("button", { name: "Captura rápida" }));
+      expect(document.activeElement).toBe(field());
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull();
+
+      await user.keyboard("{Control>}{Alt>}n{/Alt}{/Control}");
+      expect(screen.getByRole("dialog", { name: "Captura rápida" })).toBeTruthy();
+    });
+
+    it("abre quando o item da bandeja do sistema avisa", async () => {
+      const { platform } = setup();
+      const handler = platform.onQuickCapture.mock.calls[0]![0];
+
+      act(() => handler());
+
+      expect(await screen.findByRole("dialog", { name: "Captura rápida" })).toBeTruthy();
+    });
+
+    it("Ctrl + Enter guarda na Caixa de entrada (criada na primeira vez), com título e texto, e avisa", async () => {
+      const { user, fake } = setup();
+      await user.keyboard("{Control>}{Alt>}n{/Alt}{/Control}");
+
+      await user.type(field(), "Ideia de projeto{Enter}primeira nota{Enter}segunda nota");
+      await user.keyboard("{Control>}{Enter}{/Control}");
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull(),
+      );
+      const notes = [...fake.notes.values()];
+      const inbox = notes.find((n) => n.title === "Caixa de entrada")!;
+      expect(inbox.icon).toBe("📥");
+      const captured = notes.find((n) => n.title === "Ideia de projeto")!;
+      expect(captured.parentId).toBe(inbox.id);
+      expect(captured.body).toBe("primeira nota\nsegunda nota");
+      expect(JSON.parse(captured.content)).toHaveLength(2);
+      expect(
+        await main().findByText("Guardado na Caixa de entrada: Ideia de projeto"),
+      ).toBeTruthy();
+    });
+
+    it("a segunda captura reaproveita a Caixa de entrada que já existe", async () => {
+      const { user, fake } = setup();
+      for (const text of ["Primeira", "Segunda"]) {
+        await user.keyboard("{Control>}{Alt>}n{/Alt}{/Control}");
+        await user.type(field(), text);
+        await user.click(dialog().getByRole("button", { name: "Guardar" }));
+        await vi.waitFor(() =>
+          expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull(),
+        );
+        await vi.waitFor(async () =>
+          expect((await fake.gateway.list()).some((n) => n.title === text)).toBe(true),
+        );
+      }
+
+      const notes = [...fake.notes.values()];
+      expect(notes.filter((n) => n.title === "Caixa de entrada")).toHaveLength(1);
+      expect(
+        notes.filter((n) => n.parentId === notes.find((x) => x.title === "Caixa de entrada")!.id),
+      ).toHaveLength(2);
+    });
+
+    it("texto vazio não guarda (botão desativado); Esc fecha sem guardar", async () => {
+      const { user, fake } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Captura rápida" }));
+      expect(dialog().getByRole("button", { name: "Guardar" }).hasAttribute("disabled")).toBe(true);
+
+      await user.type(field(), "   ");
+      expect(dialog().getByRole("button", { name: "Guardar" }).hasAttribute("disabled")).toBe(true);
+      await user.type(field(), "algo{Escape}");
+
+      expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull();
+      expect(fake.notes.size).toBe(0);
+    });
+
+    it("falha ao guardar mostra o motivo e mantém a janela aberta com o texto", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "create").mockRejectedValue(new NotesError("notes.internal", "x"));
+      await user.keyboard("{Control>}{Alt>}n{/Alt}{/Control}");
+      await user.type(field(), "Não pode perder");
+
+      await user.click(dialog().getByRole("button", { name: "Guardar" }));
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+      expect(screen.getByRole("dialog", { name: "Captura rápida" })).toBeTruthy();
+      expect(field()).toHaveProperty("value", "Não pode perder");
     });
   });
 });

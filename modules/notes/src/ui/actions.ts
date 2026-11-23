@@ -1,6 +1,7 @@
 import type { NavigationStore } from "../application/navigation-store.ts";
 import type { NotesService } from "../application/notes-service.ts";
 import { planExport } from "../application/export-plan.ts";
+import { INBOX_ICON, INBOX_TITLE, captureToPage, findInbox } from "../application/quick-capture.ts";
 import { ancestorsOf } from "../application/page-tree.ts";
 import { displayValue } from "../application/database-query.ts";
 import {
@@ -137,6 +138,38 @@ export function createPageActions(
         const template = await service.saveAsTemplate(page.id);
         store.notify(`Modelo criado: ${template.name}. Ele aparece em Modelos.`);
       }),
+
+    /**
+     * Captura rápida: guarda o texto como uma página dentro da "Caixa de entrada" (criada na primeira vez) e avisa. A
+     * primeira linha é o título. Devolve `true` se guardou (texto vazio não guarda nada).
+     */
+    quickCapture: async (text: string, pages: readonly NoteSummary[]): Promise<boolean> => {
+      const captured = captureToPage(text);
+      if (!captured) return false;
+      try {
+        let inbox = findInbox(pages);
+        if (!inbox) {
+          const created = await service.create({ title: INBOX_TITLE, body: "", parentId: null });
+          await service.setAppearance({ id: created.id, icon: INBOX_ICON, cover: null });
+          inbox = { ...created, isDatabase: false };
+        }
+        const note = await service.create({ title: captured.title, body: "", parentId: inbox.id });
+        if (captured.blocks.length > 0) {
+          await service.update({
+            id: note.id,
+            title: captured.title,
+            body: captured.body,
+            content: JSON.stringify(captured.blocks),
+            expectedUpdatedAt: note.updatedAt,
+          });
+        }
+        store.notify(`Guardado na ${INBOX_TITLE}: ${captured.title}`);
+        return true;
+      } catch (error) {
+        store.fail(messageFor(error));
+        return false;
+      }
+    },
 
     /** Cria uma página a partir de um modelo (na raiz ou dentro de `parentId`) e a abre. */
     createFromTemplate: (

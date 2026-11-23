@@ -21,6 +21,8 @@ export interface NavigationState {
   readonly historyFor: string | null;
   /** Muda quando o conteúdo da página aberta foi trocado por fora (restaurar uma versão): remonta o editor. */
   readonly reloadToken: number;
+  /** A janelinha de captura rápida está aberta. */
+  readonly captureOpen: boolean;
 }
 
 export interface NavigationStore {
@@ -46,6 +48,8 @@ export interface NavigationStore {
   closeHistory(): void;
   /** Remonta a página aberta (depois de restaurar uma versão). */
   reload(): void;
+  showCapture(): void;
+  closeCapture(): void;
   clearNotice(): void;
   /** O editor aberto registra como salvar o que estiver pendente; devolve como desregistrar. */
   registerFlush(flush: () => Promise<void>): () => void;
@@ -65,6 +69,7 @@ export function createNavigationStore(): NavigationStore {
     notice: null,
     historyFor: null,
     reloadToken: 0,
+    captureOpen: false,
   };
   const listeners = new Set<() => void>();
   let pendingFlush: (() => Promise<void>) | null = null;
@@ -129,6 +134,14 @@ export function createNavigationStore(): NavigationStore {
 
     closeHistory() {
       if (state.historyFor !== null) update({ historyFor: null });
+    },
+
+    showCapture() {
+      update({ captureOpen: true });
+    },
+
+    closeCapture() {
+      if (state.captureOpen) update({ captureOpen: false });
     },
 
     reload() {

@@ -65,6 +65,12 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
           </span>
           <span className="sidebar-row__title">Grafo</span>
         </button>
+        <button type="button" className="sidebar-row" onClick={store.showCapture}>
+          <span className="sidebar-row__icon" aria-hidden="true">
+            ✎
+          </span>
+          <span className="sidebar-row__title">Captura rápida</span>
+        </button>
         <button type="button" className="sidebar-row sidebar-search" onClick={() => search.open()}>
           <span className="sidebar-row__icon" aria-hidden="true">
             <SearchIcon />

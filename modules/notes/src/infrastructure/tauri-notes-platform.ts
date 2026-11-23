@@ -1,4 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   isPermissionGranted,
   requestPermission,
@@ -32,6 +33,14 @@ export function createTauriNotesPlatform(): NotesPlatform {
       } catch (error) {
         throw toNotesError(error);
       }
+    },
+
+    onQuickCapture(handler) {
+      // `listen` é assíncrono: guardamos a promessa para cancelar mesmo se o cancelamento vier antes do registro.
+      const registered = listen("tramion://quick-capture", () => handler()).catch(() => () => {});
+      return () => {
+        void registered.then((unlisten) => unlisten());
+      };
     },
 
     async notify(title, body) {
