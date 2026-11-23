@@ -2,6 +2,7 @@
 //! devolve o resultado. Nenhuma regra de negócio mora aqui.
 
 use crate::assets;
+use crate::diagnostics;
 use crate::error::NotesError;
 use crate::external;
 use crate::model::{MoveNote, NewNote, Note, NoteSummary, TrashSummary, UpdateNote};
@@ -216,4 +217,11 @@ pub async fn set_appearance(
     with_db(&db, |conn| {
         service::set_appearance(conn, &id, icon.as_deref(), cover.as_deref())
     })
+}
+
+/// Registra no terminal do app um erro que aconteceu na interface (assim ele não some quando a tela quebra).
+#[tauri::command]
+pub async fn report_error(message: String) -> Result<(), CommandError> {
+    eprintln!("{}", diagnostics::format_report(&message));
+    Ok(())
 }

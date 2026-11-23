@@ -4,6 +4,7 @@
 
 pub mod assets;
 mod commands;
+pub mod diagnostics;
 pub mod error;
 pub mod external;
 pub mod model;
@@ -54,6 +55,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::purge,
             commands::save_asset,
             commands::set_appearance,
+            commands::report_error,
             commands::open_external,
         ])
         .build()

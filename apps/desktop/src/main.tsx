@@ -5,9 +5,11 @@ import { bootstrap } from "./bootstrap";
 import "@aun/ui/tokens.css";
 import "./App.css";
 import { applyTheme, readTheme } from "./theme";
+import { installErrorReporting } from "./error-reporting";
 
 // O tema é aplicado ANTES de desenhar a tela, para não piscar no tema errado.
 applyTheme(readTheme());
+installErrorReporting();
 
 const { views } = bootstrap();
 

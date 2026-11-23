@@ -19,6 +19,14 @@ export function createTauriNotesPlatform(): NotesPlatform {
       }
     },
 
+    async reportError(message) {
+      try {
+        await invoke("plugin:notes|report_error", { message });
+      } catch {
+        // Registrar o erro nunca pode causar outro erro.
+      }
+    },
+
     async openExternal(url) {
       try {
         await invoke("plugin:notes|open_external", { url });

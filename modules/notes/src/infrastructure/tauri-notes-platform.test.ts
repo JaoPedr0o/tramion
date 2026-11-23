@@ -38,6 +38,20 @@ describe("plataforma do Tauri", () => {
     });
   });
 
+  it("registra erros da interface pelo comando do módulo", async () => {
+    invokeMock.mockResolvedValue(undefined);
+
+    await createTauriNotesPlatform().reportError("quebrou");
+
+    expect(invokeMock).toHaveBeenCalledWith("plugin:notes|report_error", { message: "quebrou" });
+  });
+
+  it("registrar um erro nunca falha, mesmo que o comando falhe", async () => {
+    invokeMock.mockRejectedValue(new Error("sem ponte"));
+
+    await expect(createTauriNotesPlatform().reportError("x")).resolves.toBeUndefined();
+  });
+
   it("converte as falhas do Rust em NotesError", async () => {
     invokeMock.mockImplementation(async () => {
       throw { code: "notes.asset-type-not-allowed", message: "tipo não aceito" };

@@ -15,6 +15,7 @@ export {
   TrashIcon,
   type IconProps,
 } from "./icons.tsx";
+export { ErrorBoundary } from "./ErrorBoundary.tsx";
 export { IconButton } from "./IconButton.tsx";
 export { Menu, type MenuItem } from "./Menu.tsx";
 export { ShellProvider, SidebarToggleButton, useShell, type ShellControls } from "./shell.tsx";

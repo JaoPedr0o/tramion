@@ -39,6 +39,7 @@ function setup() {
   const platform = {
     uploadAsset: vi.fn<(file: File) => Promise<string>>(async () => "asset://localhost/abc.png"),
     openExternal: vi.fn<(url: string) => Promise<void>>(async () => {}),
+    reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
   };
   const emojis = {
     emojis: [

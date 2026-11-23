@@ -13,5 +13,6 @@ permissions = [
   "allow-purge",
   "allow-save-asset",
   "allow-set-appearance",
+  "allow-report-error",
   "allow-open-external",
 ]

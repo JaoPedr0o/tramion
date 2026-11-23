@@ -8,4 +8,6 @@ export interface NotesPlatform {
   uploadAsset(file: File): Promise<string>;
   /** Abre um link http(s) no navegador do sistema. */
   openExternal(url: string): Promise<void>;
+  /** Registra no terminal do app um erro da interface (para não sumir quando a tela quebra). */
+  reportError(message: string): Promise<void>;
 }

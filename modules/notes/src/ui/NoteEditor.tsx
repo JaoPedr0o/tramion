@@ -1,4 +1,5 @@
 import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { ErrorBoundary } from "@aun/ui";
 import {
   createNoteAutosaver,
   type Draft,
@@ -191,47 +192,63 @@ export function NoteEditor({ deps, note }: Props) {
         />
 
         <div className="note-page__editor">
-          <Suspense fallback={<p className="note-page__loading">Carregando o editor…</p>}>
-            <BlockEditor
-              key={editor.key}
-              initialBlocks={editor.blocks}
-              childPages={childPages}
-              titleOf={titleOf}
-              iconOf={iconOf}
-              pages={allPages ?? []}
-              handleRef={handle}
-              onUploadFile={async (file) => {
-                try {
-                  return await platform.uploadAsset(file);
-                } catch (error) {
-                  fail(error);
-                  throw error;
+          <ErrorBoundary
+            onError={(error, stack) =>
+              void platform.reportError(`${error.stack ?? error.message}\n${stack}`)
+            }
+            fallback={(_error, reset) => (
+              <div role="alert" className="note-page__failure">
+                <p>
+                  Não foi possível exibir o conteúdo desta página. O texto salvo continua intacto.
+                </p>
+                <button type="button" onClick={reset}>
+                  Tentar de novo
+                </button>
+              </div>
+            )}
+          >
+            <Suspense fallback={<p className="note-page__loading">Carregando o editor…</p>}>
+              <BlockEditor
+                key={editor.key}
+                initialBlocks={editor.blocks}
+                childPages={childPages}
+                titleOf={titleOf}
+                iconOf={iconOf}
+                pages={allPages ?? []}
+                handleRef={handle}
+                onUploadFile={async (file) => {
+                  try {
+                    return await platform.uploadAsset(file);
+                  } catch (error) {
+                    fail(error);
+                    throw error;
+                  }
+                }}
+                onOpenExternal={(url) => void platform.openExternal(url).catch(fail)}
+                onChange={({ blocks, plainText }) => {
+                  draft.current = {
+                    ...draft.current,
+                    body: plainText,
+                    content: JSON.stringify(blocks),
+                  };
+                  autosaver.current?.change(draft.current);
+                }}
+                // Apagar o bloco de uma subpágina a manda para a lixeira (reversível), como no Notion.
+                onChildPageRemoved={(pageId) => {
+                  if (childPages?.has(pageId)) void actions.deletePage(pageId);
+                }}
+                onCreateSubpage={() => actions.createSubpage(note.id)}
+                // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
+                // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
+                onOpenPage={(pageId) =>
+                  store.open(pageId, [
+                    note.id,
+                    ...ancestorsOf(allPages ?? [], note.id).map((ancestor) => ancestor.id),
+                  ])
                 }
-              }}
-              onOpenExternal={(url) => void platform.openExternal(url).catch(fail)}
-              onChange={({ blocks, plainText }) => {
-                draft.current = {
-                  ...draft.current,
-                  body: plainText,
-                  content: JSON.stringify(blocks),
-                };
-                autosaver.current?.change(draft.current);
-              }}
-              // Apagar o bloco de uma subpágina a manda para a lixeira (reversível), como no Notion.
-              onChildPageRemoved={(pageId) => {
-                if (childPages?.has(pageId)) void actions.deletePage(pageId);
-              }}
-              onCreateSubpage={() => actions.createSubpage(note.id)}
-              // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
-              // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
-              onOpenPage={(pageId) =>
-                store.open(pageId, [
-                  note.id,
-                  ...ancestorsOf(allPages ?? [], note.id).map((ancestor) => ancestor.id),
-                ])
-              }
-            />
-          </Suspense>
+              />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </article>
     </div>
