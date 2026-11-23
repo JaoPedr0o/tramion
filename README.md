@@ -62,6 +62,7 @@ O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotaç
 - **Colunas tipadas:** texto, número, seleção, seleção múltipla, data, caixa de seleção e link.
 - **Cinco formas de exibição:** tabela, quadro (Kanban), lista, galeria e calendário (mês e semana), com **várias visões salvas** por base.
 - **Filtros** (combinados) e **ordenação** em todas as formas de exibição; arrastar cartões no quadro e itens no calendário.
+- **Hoje, backlinks e grafo:** uma tela do dia, quem menciona cada página e o mapa das conexões; **histórico de versões** com restauração; **gráficos** nas bases; **modelos** seus; **captura rápida** e ícone na bandeja; **exportar tudo** para uma pasta em Markdown.
 - **Lembretes de tarefas:** o que está atrasado ou vence hoje aparece na barra lateral, com um aviso diário do sistema.
 - Páginas de **exemplo** na primeira abertura (guia, lista de tarefas, leituras e diário).
 
@@ -166,8 +167,9 @@ As decisões estão registradas em [docs/adr](docs/adr/) (16 registros até agor
 - [x] Filtros e várias visões salvos por base; calendário semanal
 - [x] Exportar e importar Markdown
 - [x] Modelos de página e duplicar página
-- [ ] Lembretes com o app fechado (ícone na bandeja)
-- [ ] Modelos criados pela pessoa e busca no conteúdo das bases
+- [x] Lembretes com o app fechado (ícone na bandeja), captura rápida, página Hoje, backlinks e grafo, histórico de versões, gráficos
+- [ ] **Sincronização entre aparelhos e app de celular** (sem servidor, pela rede local): veja o [ADR 0020](docs/adr/0020-proposta-sincronizacao-entre-aparelhos.md)
+- [ ] Páginas criptografadas com senha
 - [ ] Validação e instaladores assinados para Windows e macOS
 
 ## Contribuindo

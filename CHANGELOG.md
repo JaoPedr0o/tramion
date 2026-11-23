@@ -4,6 +4,19 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.3.0] - 2026-11-24
+
+### Adicionado
+
+- Página **Hoje**: tarefas atrasadas e de hoje, agenda dos próximos 7 dias, páginas recentes e favoritos.
+- **Backlinks** ("Mencionada em") em cada página e o **Grafo** de conexões entre as páginas.
+- **Histórico de versões** das páginas, com visualização e restauração (o estado atual também fica guardado).
+- Visão de **gráfico** nas bases de dados (barras por seleção, caixa ou mês, contando ou somando).
+- **Modelos criados por você** (Salvar como modelo) e busca global também nas células das bases.
+- **Exportar tudo** como Markdown para uma pasta, espelhando a hierarquia.
+- **Captura rápida** (`Ctrl + Alt + N`) para a Caixa de entrada e **ícone na bandeja** do sistema (o app segue rodando
+  quando a janela é fechada, e os lembretes continuam). Veja o [ADR 0019](docs/adr/0019-hoje-conexoes-historico-grafico-e-bandeja.md).
+
 ## [0.2.0] - 2026-11-23
 
 ### Alterado
@@ -40,5 +53,6 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
+[0.3.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.3.0
 [0.2.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.2.0
 [0.1.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.1.0
