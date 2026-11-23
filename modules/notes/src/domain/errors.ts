@@ -5,6 +5,9 @@ export type NotesErrorCode =
   | "notes.not-found"
   | "notes.in-trash"
   | "notes.not-in-trash"
+  | "notes.parent-not-found"
+  | "notes.parent-in-trash"
+  | "notes.cycle"
   | "notes.conflict"
   | "notes.internal";
 

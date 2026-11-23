@@ -1,24 +1,39 @@
 import { useEffect, useState } from "react";
 import type { NotesService } from "../application/notes-service.ts";
-import type { Note } from "../domain/note.ts";
+import type { Note, NoteSummary } from "../domain/note.ts";
 import { messageFor } from "./messages.ts";
 import { NoteEditor } from "./NoteEditor.tsx";
 import { TrashedNote } from "./TrashedNote.tsx";
-import type { ListMode } from "./useNoteList.ts";
 
 interface Props {
   service: NotesService;
   id: string;
-  mode: ListMode;
-  /** A nota deixou de estar na lista (excluída, restaurada ou apagada de vez). */
+  mode: "notes" | "trash";
+  pages: readonly NoteSummary[];
+  /** Só na lixeira: quantas subpáginas foram excluídas junto. */
+  descendantCount: number;
+  /** A página deixou de estar na lista (excluída, restaurada ou apagada de vez). */
   onGone(): void;
+  onNavigate(id: string): void;
+  onNewSubpage(parentId: string): void;
+  onMoved(newParentId: string | null): void;
 }
 
 type State =
   { status: "loading" } | { status: "ready"; note: Note } | { status: "error"; message: string };
 
-/** Carrega a nota completa e mostra o editor (ativa) ou a visão da lixeira. Use `key` para recarregar. */
-export function NotePanel({ service, id, mode, onGone }: Props) {
+/** Carrega a página completa e mostra o editor (ativa) ou a visão da lixeira. Use `key` para recarregar. */
+export function NotePanel({
+  service,
+  id,
+  mode,
+  pages,
+  descendantCount,
+  onGone,
+  onNavigate,
+  onNewSubpage,
+  onMoved,
+}: Props) {
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -36,8 +51,21 @@ export function NotePanel({ service, id, mode, onGone }: Props) {
   if (state.status === "error") return <p role="alert">{state.message}</p>;
 
   return mode === "trash" ? (
-    <TrashedNote service={service} note={state.note} onDone={onGone} />
+    <TrashedNote
+      service={service}
+      note={state.note}
+      descendantCount={descendantCount}
+      onDone={onGone}
+    />
   ) : (
-    <NoteEditor service={service} note={state.note} onDeleted={onGone} />
+    <NoteEditor
+      service={service}
+      note={state.note}
+      pages={pages}
+      onDeleted={onGone}
+      onNavigate={onNavigate}
+      onNewSubpage={onNewSubpage}
+      onMoved={onMoved}
+    />
   );
 }

@@ -15,7 +15,7 @@ export function createNotesModule(
       const service = createNotesService({ gateway, events });
       views.register({
         id: "notes",
-        title: "Notas",
+        title: "Páginas",
         component: createNotesView({ service, events }),
       });
     },

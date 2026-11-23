@@ -2,7 +2,7 @@ import { createEventBus } from "@aun/core";
 import type { AppEvents } from "@aun/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { NotesError } from "../domain/errors.ts";
-import { aNote, gatewayStub } from "../test-support.ts";
+import { aNote, aSummary, gatewayStub } from "../test-support.ts";
 import { createNotesService } from "./notes-service.ts";
 
 /** Monta o serviço e devolve também o registro de tudo que foi publicado no barramento. */
@@ -12,6 +12,7 @@ function setup(gatewayOverrides = {}, onHandlerError = vi.fn()) {
   for (const name of [
     "note.created",
     "note.updated",
+    "note.moved",
     "note.deleted",
     "note.restored",
     "note.purged",
@@ -28,11 +29,16 @@ describe("serviço de notas: eventos", () => {
       create: vi.fn(async () => aNote({ id: "novo" })),
       update: vi.fn(async () => aNote({ id: "edit" })),
       setPinned: vi.fn(async () => aNote({ id: "fixa" })),
+      move: vi.fn(async () => aNote({ id: "mov" })),
+      delete: vi.fn(async () => ["d"]),
+      restore: vi.fn(async () => ["r"]),
+      purge: vi.fn(async () => ["p"]),
     });
 
     await service.create({ title: "a", body: "" });
     await service.update({ id: "edit", title: "a", body: "", expectedUpdatedAt: 1 });
     await service.setPinned("fixa", true);
+    await service.move({ id: "mov", newParentId: null, index: 0 });
     await service.delete("d");
     await service.restore("r");
     await service.purge("p");
@@ -41,6 +47,7 @@ describe("serviço de notas: eventos", () => {
       ["note.created", { id: "novo" }],
       ["note.updated", { id: "edit" }],
       ["note.updated", { id: "fixa" }],
+      ["note.moved", { id: "mov" }],
       ["note.deleted", { id: "d" }],
       ["note.restored", { id: "r" }],
       ["note.purged", { id: "p" }],
@@ -53,6 +60,7 @@ describe("serviço de notas: eventos", () => {
       create: vi.fn(async () => Promise.reject(conflict)),
       update: vi.fn(async () => Promise.reject(conflict)),
       setPinned: vi.fn(async () => Promise.reject(conflict)),
+      move: vi.fn(async () => Promise.reject(conflict)),
       delete: vi.fn(async () => Promise.reject(conflict)),
       restore: vi.fn(async () => Promise.reject(conflict)),
       purge: vi.fn(async () => Promise.reject(conflict)),
@@ -62,6 +70,7 @@ describe("serviço de notas: eventos", () => {
       service.create({ title: "a", body: "" }),
       service.update({ id: "x", title: "a", body: "", expectedUpdatedAt: 1 }),
       service.setPinned("x", true),
+      service.move({ id: "x", newParentId: null, index: 0 }),
       service.delete("x"),
       service.restore("x"),
       service.purge("x"),
@@ -77,10 +86,10 @@ describe("serviço de notas: eventos", () => {
     const { service, events } = setup({
       delete: vi.fn(
         () =>
-          new Promise<void>((resolve) => {
+          new Promise<readonly string[]>((resolve) => {
             confirm = () => {
               log.push("gateway confirmou");
-              resolve();
+              resolve(["n1"]);
             };
           }),
       ),
@@ -114,9 +123,57 @@ describe("serviço de notas: eventos", () => {
   });
 });
 
+describe("serviço de notas: páginas com subpáginas", () => {
+  it("publica um evento POR PÁGINA AFETADA ao excluir, restaurar e apagar de vez uma árvore", async () => {
+    const { service, published } = setup({
+      delete: vi.fn(async () => ["a", "b", "c"]),
+      restore: vi.fn(async () => ["a", "b"]),
+      purge: vi.fn(async () => ["x", "y"]),
+    });
+
+    await service.delete("a");
+    await service.restore("a");
+    await service.purge("x");
+
+    expect(published).toEqual([
+      ["note.deleted", { id: "a" }],
+      ["note.deleted", { id: "b" }],
+      ["note.deleted", { id: "c" }],
+      ["note.restored", { id: "a" }],
+      ["note.restored", { id: "b" }],
+      ["note.purged", { id: "x" }],
+      ["note.purged", { id: "y" }],
+    ]);
+  });
+
+  it("operação repetida que não afeta ninguém não publica evento nenhum", async () => {
+    const { service, published } = setup(); // o gateway padrão devolve []
+
+    await service.delete("ja-na-lixeira");
+    await service.restore("ja-ativa");
+
+    expect(published).toEqual([]);
+  });
+
+  it("devolve ao chamador os ids afetados", async () => {
+    const { service } = setup({ delete: vi.fn(async () => ["a", "b"]) });
+
+    expect(await service.delete("a")).toEqual(["a", "b"]);
+  });
+
+  it("repassa o pedido de mover exatamente como veio", async () => {
+    const { service, gateway } = setup();
+    const input = { id: "p", newParentId: "pai", index: 3 };
+
+    await service.move(input);
+
+    expect(gateway.move).toHaveBeenCalledWith(input);
+  });
+});
+
 describe("serviço de notas: leituras e repasse", () => {
   it("leituras não publicam eventos e repassam o resultado do gateway", async () => {
-    const summary = { id: "s", title: "t", pinned: false, updatedAt: 1, deletedAt: null };
+    const summary = aSummary({ id: "s", title: "t" });
     const { service, published, gateway } = setup({
       list: vi.fn(async () => [summary]),
       get: vi.fn(async () => aNote({ id: "g" })),

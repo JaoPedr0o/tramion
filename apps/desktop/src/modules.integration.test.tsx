@@ -20,7 +20,10 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
   };
   return {
     list: async () => [...notes.values()].filter((n) => n.deletedAt === null),
-    listTrash: async () => [...notes.values()].filter((n) => n.deletedAt !== null),
+    listTrash: async () =>
+      [...notes.values()]
+        .filter((n) => n.deletedAt !== null)
+        .map((n) => ({ id: n.id, title: n.title, deletedAt: n.deletedAt!, descendantCount: 0 })),
     get: async (id) => notes.get(id)!,
     create: async ({ title, body }) => {
       const note: Note = {
@@ -31,14 +34,18 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
         createdAt: 1,
         updatedAt: 1,
         deletedAt: null,
+        parentId: null,
+        position: 0,
       };
       notes.set(note.id, note);
       return note;
     },
     update: unused,
     setPinned: unused,
+    move: unused,
     delete: async (id) => {
       notes.set(id, { ...notes.get(id)!, deletedAt: 2 });
+      return [id];
     },
     restore: unused,
     purge: unused,
@@ -69,7 +76,7 @@ function compose(options: {
 
 async function createAndDeleteANote() {
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Nova nota" }));
+  await user.click(await screen.findByRole("button", { name: "Nova página" }));
   await user.click(await screen.findByRole("button", { name: "Excluir" }));
 }
 
@@ -123,7 +130,7 @@ describe("dois módulos no mesmo app", () => {
 
     await createAndDeleteANote();
 
-    expect(await screen.findByText(/Nenhuma nota ainda/)).toBeTruthy(); // saiu da lista: foi excluída
+    expect(await screen.findByText(/Nenhuma página ainda/)).toBeTruthy(); // saiu da lista: foi excluída
     expect(screen.queryByRole("alert")).toBeNull(); // e o usuário não vê erro nenhum
     expect(onHandlerError).toHaveBeenCalledWith("note.deleted", expect.any(Error));
   });
@@ -135,6 +142,6 @@ describe("dois módulos no mesmo app", () => {
     await createAndDeleteANote();
 
     expect(order).toEqual(["notes"]);
-    expect(await screen.findByText(/Nenhuma nota ainda/)).toBeTruthy();
+    expect(await screen.findByText(/Nenhuma página ainda/)).toBeTruthy();
   });
 });

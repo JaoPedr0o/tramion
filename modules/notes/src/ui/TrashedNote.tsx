@@ -2,20 +2,23 @@ import { useState } from "react";
 import type { NotesService } from "../application/notes-service.ts";
 import type { Note } from "../domain/note.ts";
 import { messageFor } from "./messages.ts";
+import { subpagesText } from "./TrashList.tsx";
 
 interface Props {
   service: NotesService;
   note: Note;
+  /** Quantas subpáginas foram excluídas junto (e serão apagadas junto, se apagar de vez). */
+  descendantCount: number;
   /** Chamado depois de restaurar ou apagar de vez. */
   onDone(): void;
 }
 
-/** Nota na lixeira: somente leitura, com restaurar e apagar de vez (esta pede confirmação). */
-export function TrashedNote({ service, note, onDone }: Props) {
+/** Página na lixeira: somente leitura, com restaurar e apagar de vez (esta pede confirmação). */
+export function TrashedNote({ service, note, descendantCount, onDone }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<unknown>) => {
     try {
       await action();
       onDone();
@@ -25,9 +28,11 @@ export function TrashedNote({ service, note, onDone }: Props) {
   };
 
   return (
-    <article className="note-editor" aria-label="Nota na lixeira">
+    <article className="note-editor" aria-label="Página na lixeira">
       <div className="note-editor__toolbar">
-        <p className="note-editor__status">Na lixeira</p>
+        <p className="note-editor__status">
+          Na lixeira{descendantCount > 0 ? ` (com ${subpagesText(descendantCount)})` : ""}
+        </p>
         <button type="button" onClick={() => run(() => service.restore(note.id))}>
           Restaurar
         </button>
@@ -37,7 +42,10 @@ export function TrashedNote({ service, note, onDone }: Props) {
           </button>
         ) : (
           <>
-            <span className="note-editor__confirm">Isto não pode ser desfeito.</span>
+            <span className="note-editor__confirm">
+              Isto não pode ser desfeito.
+              {descendantCount > 0 ? ` Também apagará ${subpagesText(descendantCount)}.` : ""}
+            </span>
             <button
               type="button"
               className="note-editor__danger"

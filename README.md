@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 5e (extensibilidade provada)**: o módulo de notas está completo (interface, salvamento
-> automático, lixeira) e um segundo módulo foi provado entrar sem editar o primeiro. Próximo: retrospectiva.
+> Status: **etapa 6a (páginas aninhadas)**: páginas dentro de páginas, árvore na barra lateral,
+> caminho de navegação, mover, lixeira com subpáginas. Próximos: editor de blocos, busca, bancos de dados.
 
 ## Documentação
 

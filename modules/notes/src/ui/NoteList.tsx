@@ -5,12 +5,10 @@ interface Props {
   selectedId: string | null;
   onSelect(id: string): void;
   label: string;
-  emptyText: string;
 }
 
-export function NoteList({ notes, selectedId, onSelect, label, emptyText }: Props) {
-  if (notes.length === 0) return <p className="notes-view__empty">{emptyText}</p>;
-
+/** Lista simples de páginas (usada na seção "Fixadas"). */
+export function NoteList({ notes, selectedId, onSelect, label }: Props) {
   return (
     <ul className="note-list" aria-label={label}>
       {notes.map((note) => (
@@ -21,7 +19,6 @@ export function NoteList({ notes, selectedId, onSelect, label, emptyText }: Prop
             aria-current={note.id === selectedId ? "true" : undefined}
             onClick={() => onSelect(note.id)}
           >
-            {note.pinned && <span className="note-list__pin">Fixada</span>}
             <span className="note-list__title">{note.title}</span>
           </button>
         </li>

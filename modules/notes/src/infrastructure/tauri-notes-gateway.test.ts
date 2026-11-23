@@ -28,7 +28,19 @@ describe("gateway do Tauri", () => {
       "create",
       () => createTauriNotesGateway().create({ title: "T", body: "B" }),
       "plugin:notes|create",
-      { title: "T", body: "B" },
+      { title: "T", body: "B", parentId: null },
+    ],
+    [
+      "create com pai",
+      () => createTauriNotesGateway().create({ title: "T", body: "B", parentId: "p" }),
+      "plugin:notes|create",
+      { title: "T", body: "B", parentId: "p" },
+    ],
+    [
+      "move",
+      () => createTauriNotesGateway().move({ id: "a", newParentId: null, index: 2 }),
+      "plugin:notes|move_note",
+      { id: "a", newParentId: null, index: 2 },
     ],
     [
       "update",

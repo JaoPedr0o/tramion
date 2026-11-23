@@ -1,18 +1,27 @@
 import type { AppEvents, EventBus } from "@aun/contracts";
-import type { NewNote, Note, NoteSummary, UpdateNote } from "../domain/note.ts";
+import type {
+  MoveNote,
+  NewNote,
+  Note,
+  NoteSummary,
+  TrashSummary,
+  UpdateNote,
+} from "../domain/note.ts";
 import type { NotesGateway } from "./notes-gateway.ts";
 
 /** Casos de uso do módulo de notas. É o que a interface usa. */
 export interface NotesService {
   list(): Promise<readonly NoteSummary[]>;
-  listTrash(): Promise<readonly NoteSummary[]>;
+  listTrash(): Promise<readonly TrashSummary[]>;
   get(id: string): Promise<Note>;
   create(input: NewNote): Promise<Note>;
   update(input: UpdateNote): Promise<Note>;
   setPinned(id: string, pinned: boolean): Promise<Note>;
-  delete(id: string): Promise<void>;
-  restore(id: string): Promise<void>;
-  purge(id: string): Promise<void>;
+  move(input: MoveNote): Promise<Note>;
+  /** Devolvem os ids de todas as páginas afetadas (a página e as subpáginas). */
+  delete(id: string): Promise<readonly string[]>;
+  restore(id: string): Promise<readonly string[]>;
+  purge(id: string): Promise<readonly string[]>;
 }
 
 /**
@@ -49,19 +58,31 @@ export function createNotesService(deps: {
       return note;
     },
 
+    async move(input) {
+      const note = await gateway.move(input);
+      events.emit("note.moved", { id: note.id });
+      return note;
+    },
+
+    // Um evento POR PÁGINA AFETADA: excluir uma página com subpáginas afeta várias, e quem escuta
+    // (por exemplo, outro módulo que limpa vínculos por id) precisa saber de cada uma.
+    // Se nada foi afetado (operação repetida), nenhum evento é publicado.
     async delete(id) {
-      await gateway.delete(id);
-      events.emit("note.deleted", { id });
+      const affected = await gateway.delete(id);
+      for (const affectedId of affected) events.emit("note.deleted", { id: affectedId });
+      return affected;
     },
 
     async restore(id) {
-      await gateway.restore(id);
-      events.emit("note.restored", { id });
+      const affected = await gateway.restore(id);
+      for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
+      return affected;
     },
 
     async purge(id) {
-      await gateway.purge(id);
-      events.emit("note.purged", { id });
+      const affected = await gateway.purge(id);
+      for (const affectedId of affected) events.emit("note.purged", { id: affectedId });
+      return affected;
     },
   };
 }
