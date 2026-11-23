@@ -26,6 +26,7 @@ pub fn run() {
         // Cada módulo entra como plugin: traz seus próprios comandos e permissões.
         .plugin(tauri_plugin_notification::init())
         .plugin(tramion_notes::init())
+        .plugin(tramion_focus::init())
         .setup(|app| {
             // Os dados ficam na pasta de dados do app (no Linux, ~/.local/share/<identifier>),
             // nunca na pasta do projeto.
@@ -42,7 +43,7 @@ pub fn run() {
             std::fs::create_dir_all(&data_dir)?;
 
             // O banco é aberto UMA vez, com as migrações de todos os módulos.
-            let migrations = [tramion_notes::MIGRATIONS];
+            let migrations = [tramion_notes::MIGRATIONS, tramion_focus::MIGRATIONS];
             let options = OpenOptions {
                 backup_dir: Some(data_dir.join("backups")),
                 backups_to_keep: 5,

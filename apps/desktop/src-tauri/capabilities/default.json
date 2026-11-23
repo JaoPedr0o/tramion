@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Permissões mínimas da janela principal",
   "windows": ["main"],
-  "permissions": ["core:default", "notes:default", "notification:default"]
+  "permissions": ["core:default", "notes:default", "focus:default", "notification:default"]
 }

@@ -1,0 +1,14 @@
+[default]
+description = "Permissões padrão do módulo Foco"
+permissions = [
+  "allow-habit-list",
+  "allow-habit-create",
+  "allow-habit-update",
+  "allow-habit-archive",
+  "allow-habit-checks",
+  "allow-habit-set-check",
+  "allow-session-record",
+  "allow-session-list",
+  "allow-settings-get",
+  "allow-settings-set",
+]

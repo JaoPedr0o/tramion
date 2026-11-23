@@ -27,6 +27,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tramion-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
 tramion-notes = { version = "0.1.0", path = "../../../modules/notes/rust" }
+tramion-focus = { version = "0.1.0", path = "../../../modules/focus/rust" }
 tauri-plugin-notification = "2"
 
 # Só no computador: bandeja do sistema e instância única não existem no celular.
