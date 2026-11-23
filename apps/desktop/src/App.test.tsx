@@ -2,7 +2,7 @@
 import type { ViewContribution, ViewRegistry } from "@tramion/contracts";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -74,6 +74,38 @@ describe("moldura do app", () => {
     render(<App views={registry(full)} />);
 
     expect(screen.queryByRole("navigation", { name: "Telas" })).toBeNull();
+  });
+
+  describe("tela de celular", () => {
+    const narrow = (matches: boolean) =>
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches, media: query }));
+    afterEach(() => vi.unstubAllGlobals());
+    const shell = () => document.querySelector(".shell")!;
+
+    it("sem preferência guardada, a barra lateral começa fechada", () => {
+      narrow(true);
+
+      render(<App views={registry(full)} />);
+
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+    });
+
+    it("em tela larga, começa aberta", () => {
+      narrow(false);
+
+      render(<App views={registry(full)} />);
+
+      expect(shell().getAttribute("data-sidebar")).toBe("open");
+    });
+
+    it("a preferência guardada vale mesmo em tela de celular", () => {
+      narrow(true);
+      localStorage.setItem("tramion.sidebarCollapsed", "0");
+
+      render(<App views={registry(full)} />);
+
+      expect(shell().getAttribute("data-sidebar")).toBe("open");
+    });
   });
 
   describe("recolher a barra lateral", () => {

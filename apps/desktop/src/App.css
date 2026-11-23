@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   height: 100vh;
+  height: 100dvh;
 }
 
 .shell[data-sidebar="collapsed"] {
@@ -121,4 +122,20 @@
   display: flex;
   flex: none;
   padding: var(--space-1) var(--space-2) var(--space-2);
+}
+
+/* Telas de celular: uma coluna só; a barra lateral vira uma gaveta por cima do conteúdo. */
+@media (max-width: 720px) {
+  .shell,
+  .shell[data-sidebar="collapsed"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell__sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: min(86vw, 320px);
+    box-shadow: 4px 0 24px rgb(0 0 0 / 25%);
+  }
 }

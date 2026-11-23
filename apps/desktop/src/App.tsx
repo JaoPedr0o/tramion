@@ -16,16 +16,25 @@ const STORAGE_KEY = "tramion.sidebarCollapsed";
 /** Chaves dos nomes antigos do app: a preferência de quem já usava continua valendo. */
 const LEGACY_STORAGE_KEYS = ["aesthetic.sidebarCollapsed", "aun.sidebarCollapsed"];
 
+/** Largura (px) até a qual a tela é tratada como de celular: a barra lateral começa fechada e vira uma gaveta. */
+const NARROW_SCREEN = "(max-width: 720px)";
+
+function isNarrowScreen(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia(NARROW_SCREEN).matches;
+}
+
 // O armazenamento do navegador pode faltar (janela privada, dados bloqueados): nesse caso o app só
 // deixa de lembrar o estado da barra lateral, sem quebrar.
 function readCollapsed(): boolean {
   try {
-    const stored = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]
-      .map((key) => localStorage.getItem(key))
-      .find((value) => value !== null);
-    return stored === "1";
+    const stored =
+      [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]
+        .map((key) => localStorage.getItem(key))
+        .find((value) => value !== null) ?? undefined;
+    // Sem preferência guardada: em tela de celular a barra lateral começa fechada.
+    return stored === undefined ? isNarrowScreen() : stored === "1";
   } catch {
-    return false;
+    return isNarrowScreen();
   }
 }
 

@@ -1,3 +1,4 @@
+#![cfg(desktop)]
 use desktop_lib::tray::{QUICK_CAPTURE_EVENT, hide_instead_of_close};
 
 #[test]
