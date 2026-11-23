@@ -18,3 +18,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0011](0011-hierarquia-de-paginas.md)                      | Hierarquia de páginas (páginas dentro de páginas)                 | Aceita |
 | [0012](0012-editor-de-blocos-e-subpaginas-como-link.md)    | Editor de blocos (BlockNote) e subpáginas como link               | Aceita |
 | [0013](0013-incorporacoes-icone-capa-e-codigo.md)          | Incorporações, ícone e capa de página, e linguagem do código      | Aceita |
+| [0014](0014-bases-de-dados.md)                             | Bases de dados (tabela)                                           | Aceita |

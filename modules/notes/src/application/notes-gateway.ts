@@ -1,4 +1,11 @@
 import type {
+  DatabaseData,
+  NewProperty,
+  Property,
+  PropertyChange,
+  SetCell,
+} from "../domain/database.ts";
+import type {
   MoveNote,
   NewNote,
   Note,
@@ -30,4 +37,19 @@ export interface NotesGateway {
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
   purge(id: string): Promise<readonly string[]>;
+
+  // ─── Bases de dados ───
+  /** Cria uma base (página marcada) no fim das irmãs de `parentId` (`null` = raiz). */
+  createDatabase(input: { title: string; parentId: string | null }): Promise<Note>;
+  /** As colunas e as linhas ativas da base, com as células preenchidas. */
+  getDatabase(id: string): Promise<DatabaseData>;
+  addProperty(input: NewProperty): Promise<Property>;
+  updateProperty(input: PropertyChange): Promise<Property>;
+  deleteProperty(id: string): Promise<void>;
+  /** Cria uma linha: uma subpágina nova no fim da base. */
+  createRow(input: { databaseId: string; title: string }): Promise<Note>;
+  /** Define o valor de uma célula; `null` (ou valor vazio) a esvazia. */
+  setCell(input: SetCell): Promise<void>;
+  /** Troca só o título, respeitando a versão (como `update`). */
+  renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }

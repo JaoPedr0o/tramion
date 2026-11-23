@@ -202,4 +202,66 @@ describe("serviço de notas: leituras e repasse", () => {
     expect(gateway.update).toHaveBeenCalledWith(input);
     expect(gateway.setPinned).toHaveBeenCalledWith("x", true);
   });
+
+  describe("bases de dados", () => {
+    it("criar base e criar linha publicam note.created; renomear publica note.updated", async () => {
+      const { service, published } = setup({
+        createDatabase: vi.fn(async () => aNote({ id: "db" })),
+        createRow: vi.fn(async () => aNote({ id: "row" })),
+        renameNote: vi.fn(async () => aNote({ id: "row" })),
+      });
+
+      await service.createDatabase({ title: "T", parentId: null });
+      await service.createRow({ databaseId: "db", title: "L" });
+      await service.renameNote({ id: "row", title: "X", expectedUpdatedAt: 1 });
+
+      expect(published).toEqual([
+        ["note.created", { id: "db" }],
+        ["note.created", { id: "row" }],
+        ["note.updated", { id: "row" }],
+      ]);
+    });
+
+    it("colunas e células vão direto ao gateway, sem eventos", async () => {
+      const property = {
+        id: "p",
+        databaseId: "db",
+        name: "N",
+        type: "text" as const,
+        options: [],
+        position: 0,
+      };
+      const { service, gateway, published } = setup({
+        addProperty: vi.fn(async () => property),
+        updateProperty: vi.fn(async () => property),
+      });
+
+      expect(await service.addProperty({ databaseId: "db", name: "N", type: "text" })).toBe(
+        property,
+      );
+      expect(await service.updateProperty({ id: "p", name: "M" })).toBe(property);
+      await service.deleteProperty("p");
+      await service.setCell({ noteId: "n", propertyId: "p", value: "x" });
+      await service.getDatabase("db");
+
+      expect(gateway.deleteProperty).toHaveBeenCalledWith("p");
+      expect(gateway.setCell).toHaveBeenCalledWith({ noteId: "n", propertyId: "p", value: "x" });
+      expect(gateway.getDatabase).toHaveBeenCalledWith("db");
+      expect(published).toEqual([]);
+    });
+
+    it("se o gateway recusar, o erro sobe e nenhum evento é publicado", async () => {
+      const failure = new NotesError("notes.not-database", "x");
+      const { service, published } = setup({
+        createRow: vi.fn(async () => Promise.reject(failure)),
+        renameNote: vi.fn(async () => Promise.reject(failure)),
+      });
+
+      await expect(service.createRow({ databaseId: "x", title: "L" })).rejects.toBe(failure);
+      await expect(service.renameNote({ id: "x", title: "L", expectedUpdatedAt: 1 })).rejects.toBe(
+        failure,
+      );
+      expect(published).toEqual([]);
+    });
+  });
 });

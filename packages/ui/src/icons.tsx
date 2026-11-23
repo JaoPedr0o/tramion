@@ -36,6 +36,14 @@ export const PageIcon = (props: IconProps) => (
   </Svg>
 );
 
+/** Grade 2x2: o ícone padrão de uma base de dados. */
+export const TableIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
+    <path d="M2 6.5h12M2 10h12M6.5 6.5v7" />
+  </Svg>
+);
+
 /** Aponta para a direita; o CSS gira para baixo quando a página está expandida. */
 export const ChevronIcon = (props: IconProps) => (
   <Svg {...props}>

@@ -22,6 +22,18 @@ pub enum NotesError {
     IconInvalid,
     /// A capa da página não está num formato aceito.
     CoverInvalid,
+    /// A página não é uma base de dados.
+    NotDatabase,
+    /// A coluna não existe.
+    PropertyNotFound,
+    /// O nome, o tipo ou as opções da coluna não são válidos.
+    PropertyInvalid,
+    /// O valor não serve para o tipo da coluna (ou a linha não pertence à base).
+    CellInvalid,
+    /// Limite de colunas da base atingido.
+    LimitReached {
+        max: usize,
+    },
     /// O arquivo enviado é grande demais.
     AssetTooLarge {
         max: usize,
@@ -57,6 +69,11 @@ impl NotesError {
             NotesError::UrlInvalid => "notes.url-invalid",
             NotesError::IconInvalid => "notes.icon-invalid",
             NotesError::CoverInvalid => "notes.cover-invalid",
+            NotesError::NotDatabase => "notes.not-database",
+            NotesError::PropertyNotFound => "notes.property-not-found",
+            NotesError::PropertyInvalid => "notes.property-invalid",
+            NotesError::CellInvalid => "notes.cell-invalid",
+            NotesError::LimitReached { .. } => "notes.limit-reached",
             NotesError::AssetTooLarge { .. } => "notes.asset-too-large",
             NotesError::AssetTypeNotAllowed => "notes.asset-type-not-allowed",
             NotesError::AssetInvalid => "notes.asset-invalid",
@@ -84,6 +101,11 @@ impl fmt::Display for NotesError {
             NotesError::UrlInvalid => write!(f, "o endereço não é um link http ou https válido"),
             NotesError::IconInvalid => write!(f, "o símbolo da página não é válido"),
             NotesError::CoverInvalid => write!(f, "a capa da página não está num formato aceito"),
+            NotesError::NotDatabase => write!(f, "a página não é uma base de dados"),
+            NotesError::PropertyNotFound => write!(f, "coluna não encontrada"),
+            NotesError::PropertyInvalid => write!(f, "a coluna não é válida"),
+            NotesError::CellInvalid => write!(f, "o valor não serve para esta coluna"),
+            NotesError::LimitReached { max } => write!(f, "limite de {max} colunas atingido"),
             NotesError::AssetTooLarge { max } => {
                 write!(f, "o arquivo excede o máximo de {max} bytes")
             }

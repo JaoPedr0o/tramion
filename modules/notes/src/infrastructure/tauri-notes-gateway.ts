@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { NotesGateway } from "../application/notes-gateway.ts";
+import type { DatabaseData, Property } from "../domain/database.ts";
 import type { Note, NoteSummary, TrashSummary } from "../domain/note.ts";
 import { toNotesError } from "./notes-error.ts";
 
@@ -31,5 +32,17 @@ export function createTauriNotesGateway(): NotesGateway {
     delete: (id) => call<string[]>("delete", { id }),
     restore: (id) => call<string[]>("restore", { id }),
     purge: (id) => call<string[]>("purge", { id }),
+    createDatabase: ({ title, parentId }) => call<Note>("create_database", { title, parentId }),
+    getDatabase: (id) => call<DatabaseData>("get_database", { id }),
+    addProperty: ({ databaseId, name, type }) =>
+      call<Property>("add_property", { databaseId, name, kind: type }),
+    updateProperty: ({ id, name, options }) =>
+      call<Property>("update_property", { id, name: name ?? null, options: options ?? null }),
+    deleteProperty: (id) => call<void>("delete_property", { id }),
+    createRow: ({ databaseId, title }) => call<Note>("create_row", { databaseId, title }),
+    setCell: ({ noteId, propertyId, value }) =>
+      call<void>("set_cell", { noteId, propertyId, value }),
+    renameNote: ({ id, title, expectedUpdatedAt }) =>
+      call<Note>("rename_note", { id, title, expectedUpdatedAt }),
   };
 }

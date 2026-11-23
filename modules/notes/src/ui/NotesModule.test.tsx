@@ -777,4 +777,374 @@ describe("módulo de notas (a tela inteira)", () => {
       );
     });
   });
+
+  describe("bases de dados", () => {
+    const dialog = (name: string) => within(screen.getByRole("dialog", { name }));
+    const rowTitles = () =>
+      main()
+        .queryAllByRole("textbox", { name: /^Título de / })
+        .map((input) => (input as HTMLInputElement).value);
+
+    async function newDatabase(user: User) {
+      await user.click(sidebar().getByRole("button", { name: "Nova base de dados" }));
+      return await main().findByRole("region", { name: "Base de dados" });
+    }
+
+    async function addColumn(user: User, name: string, type: string) {
+      await user.click(main().getByRole("button", { name: "Adicionar coluna" }));
+      const form = dialog("Adicionar coluna");
+      await user.type(form.getByRole("textbox", { name: "Nome da coluna" }), name);
+      await user.click(form.getByRole("button", { name: "Tipo da coluna" }));
+      await user.click(screen.getByRole("option", { name: type }));
+      await user.click(form.getByRole("button", { name: "Adicionar coluna" }));
+      await main().findByRole("button", { name: `Coluna ${name}` });
+    }
+
+    async function addRow(user: User) {
+      const before = main().queryAllByRole("textbox", { name: /^Título de / }).length;
+      await user.click(main().getByRole("button", { name: "+ Nova linha" }));
+      await vi.waitFor(() =>
+        expect(main().getAllByRole("textbox", { name: /^Título de / })).toHaveLength(before + 1),
+      );
+    }
+
+    const stored = async (fake: ReturnType<typeof setup>["fake"]) =>
+      await fake.gateway.getDatabase("n1");
+
+    it("cria uma base pela barra lateral: aparece na árvore e abre vazia", async () => {
+      const { user, fake } = setup();
+
+      await newDatabase(user);
+
+      expect(main().getByRole("textbox", { name: "Título da base de dados" })).toHaveProperty(
+        "value",
+        "Nova base de dados",
+      );
+      expect(main().getByText("Esta base ainda não tem linhas.")).toBeTruthy();
+      expect(treeitem("Nova base de dados")).toBeTruthy();
+      expect((await fake.gateway.list())[0]!.isDatabase).toBe(true);
+    });
+
+    it("renomeia a base pelo título", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      const title = main().getByRole("textbox", { name: "Título da base de dados" });
+      await user.clear(title);
+      await user.type(title, "Tarefas{Enter}");
+
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.title).toBe("Tarefas"));
+      expect(treeitem("Tarefas")).toBeTruthy();
+    });
+
+    it("adiciona coluna e linha, e a linha é uma subpágina da base", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      await addColumn(user, "Prazo", "Data");
+      await addRow(user);
+
+      expect((await stored(fake)).properties.map((p) => [p.name, p.type])).toEqual([
+        ["Prazo", "date"],
+      ]);
+      const rowId = (await stored(fake)).rows[0]!.id;
+      expect(fake.notes.get(rowId)?.parentId).toBe("n1");
+      expect(rowTitles()).toEqual(["Sem título"]);
+    });
+
+    it("recusa coluna sem nome (nada é criado)", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      await user.click(main().getByRole("button", { name: "Adicionar coluna" }));
+      await user.click(
+        dialog("Adicionar coluna").getByRole("button", { name: "Adicionar coluna" }),
+      );
+
+      expect((await stored(fake)).properties).toHaveLength(0);
+    });
+
+    it("edita células de texto e número; texto que não é número volta ao valor anterior", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Obs", "Texto");
+      await addColumn(user, "Qtd", "Número");
+      await addRow(user);
+
+      await user.type(main().getByRole("textbox", { name: "Obs — Sem título" }), "olá{Enter}");
+      const qty = main().getByRole("textbox", { name: "Qtd — Sem título" }) as HTMLInputElement;
+      await user.type(qty, "3,5{Enter}");
+
+      await vi.waitFor(async () => {
+        const row = (await stored(fake)).rows[0]!;
+        expect(Object.values(row.cells)).toEqual(["olá", 3.5]);
+      });
+
+      await user.clear(qty);
+      await user.type(qty, "abc{Enter}");
+      expect(qty.value).toBe("3.5");
+    });
+
+    it("Esc desfaz a edição de uma célula; esvaziar apaga o valor", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Obs", "Texto");
+      await addRow(user);
+      const cell = main().getByRole("textbox", { name: "Obs — Sem título" }) as HTMLInputElement;
+      await user.type(cell, "a{Enter}");
+      await vi.waitFor(async () =>
+        expect(Object.keys((await stored(fake)).rows[0]!.cells)).toHaveLength(1),
+      );
+
+      await user.type(cell, "bcd{Escape}");
+      expect(cell.value).toBe("a");
+
+      await user.clear(cell);
+      await user.keyboard("{Enter}");
+      await vi.waitFor(async () => expect((await stored(fake)).rows[0]!.cells).toEqual({}));
+    });
+
+    it("marca e desmarca a caixa", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Feito", "Caixa de seleção");
+      await addRow(user);
+
+      await user.click(main().getByRole("checkbox", { name: "Feito — Sem título" }));
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual([true]),
+      );
+
+      await user.click(main().getByRole("checkbox", { name: "Feito — Sem título" }));
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual([false]),
+      );
+    });
+
+    it("escolhe a data", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Prazo", "Data");
+      await addRow(user);
+
+      await user.type(main().getByLabelText("Prazo — Sem título"), "2024-05-17");
+
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual(["2024-05-17"]),
+      );
+    });
+
+    it("seleção: cria opções na hora, escolhe uma e mostra a etiqueta", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Status", "Seleção");
+      await addRow(user);
+
+      await user.click(main().getByRole("button", { name: "Status — Sem título" }));
+      const list = dialog("Opções de Status");
+      await user.type(list.getByRole("textbox", { name: "Nome da nova opção" }), "A fazer{Enter}");
+
+      await vi.waitFor(async () => {
+        const data = await stored(fake);
+        expect(data.properties[0]!.options.map((o) => o.name)).toEqual(["A fazer"]);
+        expect(Object.values(data.rows[0]!.cells)).toEqual([data.properties[0]!.options[0]!.id]);
+      });
+      expect(
+        within(main().getByRole("button", { name: "Status — Sem título" })).getByText("A fazer"),
+      ).toBeTruthy();
+    });
+
+    it("seleção múltipla: marca várias, desmarca e remover a opção limpa as linhas", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Tags", "Seleção múltipla");
+      await addRow(user);
+      await user.click(main().getByRole("button", { name: "Tags — Sem título" }));
+      const list = dialog("Opções de Tags");
+      await user.type(list.getByRole("textbox", { name: "Nome da nova opção" }), "Casa{Enter}");
+      await vi.waitFor(async () =>
+        expect((await stored(fake)).properties[0]!.options).toHaveLength(1),
+      );
+      await user.type(list.getByRole("textbox", { name: "Nome da nova opção" }), "Urgente{Enter}");
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)[0]).toHaveLength(2),
+      );
+
+      await user.click(list.getByRole("checkbox", { name: "Casa" }));
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)[0]).toHaveLength(1),
+      );
+
+      await user.keyboard("{Escape}");
+      await user.click(main().getByRole("button", { name: "Coluna Tags" }));
+      await user.click(
+        dialog("Coluna Tags").getByRole("button", { name: "Remover a opção Urgente" }),
+      );
+      await vi.waitFor(async () => expect((await stored(fake)).rows[0]!.cells).toEqual({}));
+    });
+
+    it("renomeia a linha pelo título e mostra o novo nome na árvore da lateral", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addRow(user);
+
+      const title = main().getByRole("textbox", { name: "Título de Sem título" });
+      await user.clear(title);
+      await user.type(title, "Comprar pão{Enter}");
+
+      await vi.waitFor(() => expect(fake.notes.get("n2")?.title).toBe("Comprar pão"));
+      expect(rowTitles()).toEqual(["Comprar pão"]);
+    });
+
+    it("título vazio volta ao anterior e nada é gravado", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addRow(user);
+      const before = fake.notes.get("n2")!.updatedAt;
+
+      const title = main().getByRole("textbox", {
+        name: "Título de Sem título",
+      }) as HTMLInputElement;
+      await user.clear(title);
+      await user.keyboard("{Enter}");
+
+      expect(title.value).toBe("Sem título");
+      expect(fake.notes.get("n2")!.updatedAt).toBe(before);
+    });
+
+    it("filtra por título e por coluna, combina regras e avisa quando nada passa", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Feito", "Caixa de seleção");
+      for (const name of ["Pão", "Leite"]) {
+        await addRow(user);
+        const inputs = main().getAllByRole("textbox", {
+          name: /^Título de /,
+        }) as HTMLInputElement[];
+        const last = inputs[inputs.length - 1]!;
+        await user.clear(last);
+        await user.type(last, `${name}{Enter}`);
+        await vi.waitFor(() => expect(rowTitles()).toContain(name));
+      }
+      await user.click(main().getByRole("checkbox", { name: "Feito — Pão" }));
+
+      await user.click(main().getByRole("button", { name: "Filtrar" }));
+      const panel = dialog("Filtrar");
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.type(panel.getByRole("textbox", { name: "Valor do filtro 1" }), "le");
+      expect(rowTitles()).toEqual(["Leite"]);
+
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.click(panel.getByRole("button", { name: "Coluna do filtro 2" }));
+      await user.click(screen.getByRole("option", { name: "Feito" }));
+      expect(rowTitles()).toEqual([]); // "le" E marcado: ninguém
+      expect(main().getByText("Nenhuma linha passa nos filtros.")).toBeTruthy();
+
+      await user.click(panel.getByRole("button", { name: "Remover o filtro 1" }));
+      expect(rowTitles()).toEqual(["Pão"]); // só "marcado"
+      expect(main().getByRole("button", { name: "Filtrar" }).textContent).toBe("Filtrar (1)");
+    });
+
+    it("ordena por título, crescente e decrescente, e limpa", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+      for (const name of ["Banana", "Abacate", "Caju"]) {
+        await addRow(user);
+        const inputs = main().getAllByRole("textbox", {
+          name: /^Título de /,
+        }) as HTMLInputElement[];
+        const last = inputs[inputs.length - 1]!;
+        await user.clear(last);
+        await user.type(last, `${name}{Enter}`);
+        await vi.waitFor(() => expect(rowTitles()).toContain(name));
+      }
+
+      await user.click(main().getByRole("button", { name: "Ordenar" }));
+      const panel = dialog("Ordenar");
+      await user.click(panel.getByRole("button", { name: "Ordenar por" }));
+      await user.click(screen.getByRole("option", { name: "Título" }));
+      expect(rowTitles()).toEqual(["Abacate", "Banana", "Caju"]);
+
+      await user.click(panel.getByRole("button", { name: "Direção da ordenação" }));
+      await user.click(screen.getByRole("option", { name: "Decrescente" }));
+      expect(rowTitles()).toEqual(["Caju", "Banana", "Abacate"]);
+
+      await user.click(panel.getByRole("button", { name: "Limpar ordenação" }));
+      expect(rowTitles()).toEqual(["Banana", "Abacate", "Caju"]);
+    });
+
+    it("renomeia e exclui coluna; as linhas continuam", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Obs", "Texto");
+      await addRow(user);
+
+      await user.click(main().getByRole("button", { name: "Coluna Obs" }));
+      const settings = dialog("Coluna Obs");
+      const name = settings.getByRole("textbox", { name: "Renomear coluna" });
+      await user.clear(name);
+      await user.type(name, "Notas{Enter}");
+      await vi.waitFor(async () => expect((await stored(fake)).properties[0]!.name).toBe("Notas"));
+
+      // A janela da coluna continua aberta depois de renomear (agora com o novo nome).
+      await user.click(
+        await dialog("Coluna Notas").findByRole("button", { name: "Excluir coluna" }),
+      );
+      await vi.waitFor(async () => expect((await stored(fake)).properties).toEqual([]));
+      expect(main().queryByRole("button", { name: /^Coluna / })).toBeNull();
+      expect(rowTitles()).toEqual(["Sem título"]);
+    });
+
+    it("exclui uma linha (vai para a lixeira) e a tabela se atualiza", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addRow(user);
+
+      await user.click(main().getByRole("button", { name: "Excluir Sem título" }));
+
+      await vi.waitFor(() => expect(fake.notes.get("n2")?.deletedAt).not.toBeNull());
+      await vi.waitFor(() =>
+        expect(main().getByText("Esta base ainda não tem linhas.")).toBeTruthy(),
+      );
+    });
+
+    it("abre a linha como página (com editor) ao clicar no ícone", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+      await addRow(user);
+
+      await user.click(main().getByRole("button", { name: "Abrir Sem título" }));
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Sem título",
+      );
+      expect(main().queryByRole("region", { name: "Base de dados" })).toBeNull();
+    });
+
+    it("falha ao gravar uma célula mostra o motivo na tela", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Obs", "Texto");
+      await addRow(user);
+      vi.spyOn(fake.gateway, "setCell").mockRejectedValue(
+        new NotesError("notes.cell-invalid", "x"),
+      );
+
+      await user.type(main().getByRole("textbox", { name: "Obs — Sem título" }), "a{Enter}");
+
+      expect((await main().findByRole("alert")).textContent).toContain(
+        "Este valor não serve para esta coluna",
+      );
+    });
+
+    it("pelo menu da página, o ícone de base aparece na árvore e abrir outra página sai da tabela", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+      await user.click(sidebar().getByRole("button", { name: "Nova página" }));
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toBeTruthy();
+      expect(main().queryByRole("region", { name: "Base de dados" })).toBeNull();
+    });
+  });
 });

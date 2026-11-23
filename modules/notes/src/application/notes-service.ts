@@ -1,5 +1,12 @@
 import type { AppEvents, EventBus } from "@aun/contracts";
 import type {
+  DatabaseData,
+  NewProperty,
+  Property,
+  PropertyChange,
+  SetCell,
+} from "../domain/database.ts";
+import type {
   MoveNote,
   NewNote,
   Note,
@@ -24,6 +31,15 @@ export interface NotesService {
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
   purge(id: string): Promise<readonly string[]>;
+
+  createDatabase(input: { title: string; parentId: string | null }): Promise<Note>;
+  getDatabase(id: string): Promise<DatabaseData>;
+  addProperty(input: NewProperty): Promise<Property>;
+  updateProperty(input: PropertyChange): Promise<Property>;
+  deleteProperty(id: string): Promise<void>;
+  createRow(input: { databaseId: string; title: string }): Promise<Note>;
+  setCell(input: SetCell): Promise<void>;
+  renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }
 
 /**
@@ -85,6 +101,34 @@ export function createNotesService(deps: {
       const affected = await gateway.restore(id);
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
       return affected;
+    },
+
+    // Bases de dados: criar uma base ou uma linha cria uma página (`note.created`); trocar o título atualiza a
+    // página (`note.updated`). Colunas e células são da própria tela da base: ela se atualiza com o que o
+    // gateway devolve, então não há evento para elas.
+    async createDatabase(input) {
+      const note = await gateway.createDatabase(input);
+      events.emit("note.created", { id: note.id });
+      return note;
+    },
+
+    getDatabase: (id) => gateway.getDatabase(id),
+    addProperty: (input) => gateway.addProperty(input),
+    updateProperty: (input) => gateway.updateProperty(input),
+    deleteProperty: (id) => gateway.deleteProperty(id),
+
+    async createRow(input) {
+      const note = await gateway.createRow(input);
+      events.emit("note.created", { id: note.id });
+      return note;
+    },
+
+    setCell: (input) => gateway.setCell(input),
+
+    async renameNote(input) {
+      const note = await gateway.renameNote(input);
+      events.emit("note.updated", { id: note.id });
+      return note;
     },
 
     async purge(id) {

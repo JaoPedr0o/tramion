@@ -2,6 +2,7 @@
 import { vi } from "vitest";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { NotesError } from "./domain/errors.ts";
+import type { CellValue, DatabaseData, Property, PropertyType } from "./domain/database.ts";
 import type { Note, NoteSummary, TrashSummary } from "./domain/note.ts";
 
 export function aNote(overrides: Partial<Note> = {}): Note {
@@ -32,6 +33,7 @@ export function aSummary(overrides: Partial<NoteSummary> = {}): NoteSummary {
     parentId: null,
     position: 0,
     icon: null,
+    isDatabase: false,
     ...overrides,
   };
 }
@@ -50,6 +52,18 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     delete: vi.fn(async () => []),
     restore: vi.fn(async () => []),
     purge: vi.fn(async () => []),
+    createDatabase: vi.fn(async () => aNote()),
+    getDatabase: vi.fn(async () => ({ id: "n1", title: "Base", properties: [], rows: [] })),
+    addProperty: vi.fn(async () => {
+      throw new Error("addProperty não configurado no stub");
+    }),
+    updateProperty: vi.fn(async () => {
+      throw new Error("updateProperty não configurado no stub");
+    }),
+    deleteProperty: vi.fn(async () => {}),
+    createRow: vi.fn(async () => aNote()),
+    setCell: vi.fn(async () => {}),
+    renameNote: vi.fn(async () => aNote()),
     ...overrides,
   };
 }
@@ -64,6 +78,9 @@ export function createFakeGateway() {
   let seq = 0;
   let clock = 1_000;
   const notes = new Map<string, Note>();
+  const databases = new Set<string>();
+  const properties = new Map<string, Property>();
+  const cells = new Map<string, CellValue>(); // chave: `${linha}|${coluna}`
   const tick = () => ++clock;
 
   const summary = (n: Note): NoteSummary => ({
@@ -75,6 +92,7 @@ export function createFakeGateway() {
     parentId: n.parentId,
     position: n.position,
     icon: n.icon,
+    isDatabase: databases.has(n.id),
   });
   const must = (id: string): Note => {
     const note = notes.get(id);
@@ -116,7 +134,16 @@ export function createFakeGateway() {
       throw new NotesError("notes.parent-in-trash", "destino na lixeira");
   };
 
-  const gateway: NotesGateway = {
+  type DatabaseMethod =
+    | "createDatabase"
+    | "getDatabase"
+    | "addProperty"
+    | "updateProperty"
+    | "deleteProperty"
+    | "createRow"
+    | "setCell"
+    | "renameNote";
+  const gateway: Omit<NotesGateway, DatabaseMethod> = {
     async list() {
       return [...notes.values()]
         .filter((n) => n.deletedAt === null)
@@ -288,8 +315,153 @@ export function createFakeGateway() {
     },
   };
 
+  // ─── Bases de dados (imitação simplificada: as regras de verdade e seus testes estão no Rust) ───
+  const mustDatabase = (id: string): Note => {
+    const note = must(id);
+    if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+    if (!databases.has(id)) throw new NotesError("notes.not-database", "não é base");
+    return note;
+  };
+  const mustProperty = (id: string): Property => {
+    const property = properties.get(id);
+    if (!property) throw new NotesError("notes.property-not-found", "coluna");
+    return property;
+  };
+  const cellKey = (noteId: string, propertyId: string) => `${noteId}|${propertyId}`;
+  const isEmpty = (value: CellValue | null) =>
+    value === null || value === "" || (Array.isArray(value) && value.length === 0);
+  const fits = (type: PropertyType, value: CellValue, optionIds: Set<string>): boolean => {
+    switch (type) {
+      case "text":
+      case "url":
+        return typeof value === "string";
+      case "date":
+        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+      case "number":
+        return typeof value === "number";
+      case "checkbox":
+        return typeof value === "boolean";
+      case "select":
+        return typeof value === "string" && optionIds.has(value);
+      case "multi_select":
+        return (
+          Array.isArray(value) && value.every((id) => typeof id === "string" && optionIds.has(id))
+        );
+    }
+  };
+
+  const databaseGateway: Pick<NotesGateway, DatabaseMethod> = {
+    async createDatabase({ title, parentId }) {
+      const note = await gateway.create({ title, body: "", parentId });
+      databases.add(note.id);
+      return note;
+    },
+
+    async getDatabase(id): Promise<DatabaseData> {
+      const base = mustDatabase(id);
+      return {
+        id,
+        title: base.title,
+        properties: [...properties.values()]
+          .filter((p) => p.databaseId === id)
+          .sort((a, b) => a.position - b.position),
+        rows: activeChildren(id).map((row) => ({
+          id: row.id,
+          title: row.title,
+          icon: row.icon,
+          updatedAt: row.updatedAt,
+          cells: Object.fromEntries(
+            [...properties.values()]
+              .filter((p) => p.databaseId === id && cells.has(cellKey(row.id, p.id)))
+              .map((p) => [p.id, cells.get(cellKey(row.id, p.id))!]),
+          ),
+        })),
+      };
+    },
+
+    async addProperty({ databaseId, name, type }) {
+      mustDatabase(databaseId);
+      const clean = name.trim();
+      if (!clean) throw new NotesError("notes.property-invalid", "nome");
+      const own = [...properties.values()].filter((p) => p.databaseId === databaseId);
+      const property: Property = {
+        id: `p${++seq}`,
+        databaseId,
+        name: clean,
+        type,
+        options: [],
+        position: own.length === 0 ? 0 : Math.max(...own.map((p) => p.position)) + 1,
+      };
+      properties.set(property.id, property);
+      return property;
+    },
+
+    async updateProperty({ id, name, options }) {
+      const current = mustProperty(id);
+      if (options !== undefined && current.type !== "select" && current.type !== "multi_select") {
+        throw new NotesError("notes.property-invalid", "sem opções");
+      }
+      const cleanName = name === undefined ? current.name : name.trim();
+      if (!cleanName) throw new NotesError("notes.property-invalid", "nome");
+      const next: Property = { ...current, name: cleanName, options: options ?? current.options };
+      properties.set(id, next);
+      if (options !== undefined) {
+        const kept = new Set(options.map((o) => o.id));
+        for (const [key, value] of [...cells]) {
+          if (!key.endsWith(`|${id}`)) continue;
+          if (Array.isArray(value)) {
+            const remaining = value.filter((optionId) => kept.has(optionId));
+            if (remaining.length === 0) cells.delete(key);
+            else cells.set(key, remaining);
+          } else if (typeof value === "string" && !kept.has(value)) {
+            cells.delete(key);
+          }
+        }
+      }
+      return next;
+    },
+
+    async deleteProperty(id) {
+      mustProperty(id);
+      properties.delete(id);
+      for (const key of [...cells.keys()]) if (key.endsWith(`|${id}`)) cells.delete(key);
+    },
+
+    async createRow({ databaseId, title }) {
+      mustDatabase(databaseId);
+      return gateway.create({ title, body: "", parentId: databaseId });
+    },
+
+    async setCell({ noteId, propertyId, value }) {
+      const property = mustProperty(propertyId);
+      mustDatabase(property.databaseId);
+      const row = must(noteId);
+      if (row.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+      if (row.parentId !== property.databaseId) throw new NotesError("notes.cell-invalid", "linha");
+      if (isEmpty(value)) {
+        cells.delete(cellKey(noteId, propertyId));
+        return;
+      }
+      if (!fits(property.type, value!, new Set(property.options.map((o) => o.id)))) {
+        throw new NotesError("notes.cell-invalid", "valor");
+      }
+      cells.set(cellKey(noteId, propertyId), value!);
+    },
+
+    async renameNote({ id, title, expectedUpdatedAt }) {
+      const note = must(id);
+      const clean = cleanTitle(title);
+      if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+      if (note.updatedAt !== expectedUpdatedAt) throw new NotesError("notes.conflict", "mudou");
+      const next = { ...note, title: clean, updatedAt: tick() };
+      notes.set(id, next);
+      return next;
+    },
+  };
+  const fullGateway: NotesGateway = { ...gateway, ...databaseGateway };
+
   return {
-    gateway,
+    gateway: fullGateway,
     notes,
     /** Simula uma edição vinda de outro lugar (outra janela, por exemplo): muda a nota e a versão. */
     touch(id: string, patch: Partial<Pick<Note, "title" | "body">>) {

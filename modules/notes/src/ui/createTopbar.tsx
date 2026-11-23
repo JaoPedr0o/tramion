@@ -55,7 +55,7 @@ export function createTopbar({ service, events, store, actions }: NotesUiDeps): 
               </Fragment>
             ))}
             <li aria-current="page" className="notes-breadcrumb__current">
-              <PageGlyph icon={page.icon} />
+              <PageGlyph icon={page.icon} isDatabase={page.isDatabase} />
               <span>{page.title}</span>
             </li>
           </ol>

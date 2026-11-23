@@ -237,7 +237,7 @@ export function NoteEditor({ deps, note }: Props) {
                 onChildPageRemoved={(pageId) => {
                   if (childPages?.has(pageId)) void actions.deletePage(pageId);
                 }}
-                onCreateSubpage={() => actions.createSubpage(note.id)}
+                onCreateSubpage={(kind) => actions.createSubpage(note.id, kind)}
                 // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
                 // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
                 onOpenPage={(pageId) =>

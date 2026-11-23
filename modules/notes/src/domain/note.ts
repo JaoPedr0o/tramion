@@ -13,10 +13,12 @@ export interface NoteSummary {
   readonly position: number;
   /** Símbolo da página (um emoji); `null` = sem símbolo. */
   readonly icon: string | null;
+  /** A página é uma base de dados (as subpáginas são as linhas). */
+  readonly isDatabase: boolean;
 }
 
-/** Nota completa. */
-export interface Note extends NoteSummary {
+/** Nota completa. (O Rust só informa `isDatabase` nas listagens; abrir uma base usa `getDatabase`.) */
+export interface Note extends Omit<NoteSummary, "isDatabase"> {
   /** Texto simples da página (espelho do conteúdo, para a busca). */
   readonly body: string;
   /** Os blocos da página, em JSON (uma lista). `[]` = vazia ou ainda não convertida. */

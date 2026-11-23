@@ -45,6 +45,7 @@ fn summary_from_row(row: &Row<'_>) -> Result<NoteSummary> {
         parent_id: row.get(5)?,
         position: row.get(6)?,
         icon: row.get(7)?,
+        is_database: row.get(8)?,
     })
 }
 
@@ -76,7 +77,8 @@ pub fn find(conn: &Connection, id: &str) -> Result<Option<Note>> {
 /// Notas ativas, PLANAS, agrupadas por pai e ordenadas por posição. A árvore é montada pelo cliente.
 pub fn list_active(conn: &Connection) -> Result<Vec<NoteSummary>> {
     let mut stmt = conn.prepare(
-        "SELECT id, title, pinned, updated_at, deleted_at, parent_id, position, icon
+        "SELECT id, title, pinned, updated_at, deleted_at, parent_id, position, icon,
+                EXISTS (SELECT 1 FROM notes_database d WHERE d.note_id = notes_note.id)
            FROM notes_note
           WHERE deleted_at IS NULL
           ORDER BY parent_id IS NOT NULL, parent_id, position, created_at, id",
@@ -276,6 +278,26 @@ pub fn set_appearance(
           RETURNING {NOTE_COLUMNS}"
         ),
         params![id, icon, cover],
+        note_from_row,
+    )
+    .optional()
+}
+
+/// Troca só o título de uma nota ativa, se a versão ainda for a esperada (mesma regra de `update_if_current`).
+pub fn rename_if_current(
+    conn: &Connection,
+    id: &str,
+    title: &str,
+    expected_updated_at: i64,
+) -> Result<Option<Note>> {
+    conn.query_row(
+        &format!(
+            "UPDATE notes_note
+                SET title = ?2, updated_at = max({NOW_MS}, updated_at + 1)
+              WHERE id = ?1 AND updated_at = ?3 AND deleted_at IS NULL
+          RETURNING {NOTE_COLUMNS}"
+        ),
+        params![id, title, expected_updated_at],
         note_from_row,
     )
     .optional()

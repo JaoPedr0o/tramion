@@ -104,7 +104,7 @@ fn validate_content(content: &str) -> Result<(), NotesError> {
 }
 
 /// Remove espaços das pontas e confere o tamanho. Conta CARACTERES, não bytes: "é" é 1 caractere.
-fn validate_title(raw: &str) -> Result<&str, NotesError> {
+pub(crate) fn validate_title(raw: &str) -> Result<&str, NotesError> {
     let title = raw.trim();
     if title.is_empty() {
         return Err(NotesError::TitleEmpty);
@@ -118,7 +118,10 @@ fn validate_title(raw: &str) -> Result<&str, NotesError> {
 }
 
 /// Confere que `parent_id` (se houver) existe e está ativa.
-fn ensure_active_parent(conn: &Connection, parent_id: Option<&str>) -> Result<(), NotesError> {
+pub(crate) fn ensure_active_parent(
+    conn: &Connection,
+    parent_id: Option<&str>,
+) -> Result<(), NotesError> {
     let Some(parent) = parent_id else {
         return Ok(());
     };

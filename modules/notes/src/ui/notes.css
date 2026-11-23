@@ -924,3 +924,338 @@
   max-height: 320px;
   overflow-y: auto;
 }
+
+/* ───────── Janelas ancoradas (fora da área rolável) ───────── */
+.popover--floating {
+  z-index: 200;
+  width: auto;
+  min-width: 220px;
+  max-width: min(440px, calc(100vw - 16px));
+}
+
+.popover--list {
+  min-width: 180px;
+}
+
+.popover--panel {
+  min-width: 260px;
+}
+
+.choice,
+.db-popover-anchor {
+  display: inline-block;
+}
+
+.choice__button,
+.db-toolbar__button,
+.db-column-button,
+.db-add-column {
+  padding: var(--space-0) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.choice__button {
+  border: 1px solid var(--color-border);
+}
+
+.choice__button:hover,
+.db-toolbar__button:hover,
+.db-column-button:hover,
+.db-add-column:hover {
+  background: var(--color-hover);
+}
+
+.choice__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.choice__list button {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.choice__list button:hover,
+.choice__list button[aria-selected="true"],
+.choice__list button[aria-checked="true"] {
+  background: var(--color-selected);
+}
+
+/* ───────── Base de dados ───────── */
+.database {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-6) var(--space-8);
+}
+
+.database__title {
+  margin: 0 0 var(--space-3);
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.database__title input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.db-toolbar {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.db-scroll {
+  overflow-x: auto;
+  border-top: 1px solid var(--color-border);
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.db-table th,
+.db-table td {
+  min-width: 140px;
+  padding: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.db-table th {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.db-table .db-table__title-col {
+  min-width: 240px;
+}
+
+.db-table .db-table__add,
+.db-table .db-table__actions {
+  min-width: 36px;
+  width: 36px;
+  border-right: 0;
+  text-align: center;
+}
+
+.db-column-button {
+  width: 100%;
+  padding: var(--space-2);
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.db-title-cell {
+  display: flex;
+  align-items: center;
+}
+
+.db-title-cell__open,
+.db-row-delete {
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.db-title-cell__open:hover,
+.db-row-delete:hover {
+  background: var(--color-hover);
+}
+
+.db-row-delete {
+  opacity: 0;
+}
+
+.db-table tr:hover .db-row-delete,
+.db-row-delete:focus-visible {
+  opacity: 1;
+}
+
+.db-title-cell__input,
+.db-cell__input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.db-title-cell__input {
+  font-weight: 500;
+}
+
+.db-title-cell__input:focus,
+.db-cell__input:focus {
+  background: var(--color-hover);
+}
+
+.db-cell__checkbox {
+  margin: var(--space-2);
+}
+
+.db-cell__options-button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.db-cell__options-button:hover {
+  background: var(--color-hover);
+}
+
+.db-cell__new-option {
+  margin-top: var(--space-1);
+}
+
+.db-cell__new-option input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.db-chip {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius);
+  background: rgb(127 127 127 / 20%);
+  font-size: 13px;
+}
+
+.db-chip--gray {
+  background: rgb(120 119 116 / 25%);
+}
+.db-chip--brown {
+  background: rgb(159 107 83 / 28%);
+}
+.db-chip--orange {
+  background: rgb(217 115 13 / 25%);
+}
+.db-chip--yellow {
+  background: rgb(203 145 47 / 28%);
+}
+.db-chip--green {
+  background: rgb(68 131 97 / 28%);
+}
+.db-chip--blue {
+  background: rgb(51 126 169 / 28%);
+}
+.db-chip--purple {
+  background: rgb(144 101 176 / 28%);
+}
+.db-chip--pink {
+  background: rgb(193 76 138 / 28%);
+}
+.db-chip--red {
+  background: rgb(212 76 71 / 28%);
+}
+
+.db-new-row {
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.db-new-row:hover {
+  background: var(--color-hover);
+}
+
+.db-empty {
+  margin: var(--space-3) var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.db-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.db-form input {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.db-form button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.db-form__danger {
+  color: var(--color-danger, #d44c47);
+}
+
+.db-rule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.db-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.db-options-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

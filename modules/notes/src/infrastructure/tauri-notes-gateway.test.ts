@@ -104,4 +104,77 @@ describe("gateway do Tauri", () => {
     expect(error).toBeInstanceOf(NotesError);
     expect(error).toHaveProperty("code", "notes.title-empty");
   });
+
+  it.each([
+    [
+      "createDatabase",
+      () => createTauriNotesGateway().createDatabase({ title: "T", parentId: null }),
+      "plugin:notes|create_database",
+      { title: "T", parentId: null },
+    ],
+    [
+      "getDatabase",
+      () => createTauriNotesGateway().getDatabase("d"),
+      "plugin:notes|get_database",
+      { id: "d" },
+    ],
+    [
+      "addProperty envia o tipo como `kind`",
+      () => createTauriNotesGateway().addProperty({ databaseId: "d", name: "N", type: "select" }),
+      "plugin:notes|add_property",
+      { databaseId: "d", name: "N", kind: "select" },
+    ],
+    [
+      "updateProperty só com nome",
+      () => createTauriNotesGateway().updateProperty({ id: "p", name: "N" }),
+      "plugin:notes|update_property",
+      { id: "p", name: "N", options: null },
+    ],
+    [
+      "updateProperty só com opções",
+      () =>
+        createTauriNotesGateway().updateProperty({
+          id: "p",
+          options: [{ id: "a", name: "A", color: "gray" }],
+        }),
+      "plugin:notes|update_property",
+      { id: "p", name: null, options: [{ id: "a", name: "A", color: "gray" }] },
+    ],
+    [
+      "deleteProperty",
+      () => createTauriNotesGateway().deleteProperty("p"),
+      "plugin:notes|delete_property",
+      { id: "p" },
+    ],
+    [
+      "createRow",
+      () => createTauriNotesGateway().createRow({ databaseId: "d", title: "L" }),
+      "plugin:notes|create_row",
+      { databaseId: "d", title: "L" },
+    ],
+    [
+      "setCell",
+      () => createTauriNotesGateway().setCell({ noteId: "n", propertyId: "p", value: ["a"] }),
+      "plugin:notes|set_cell",
+      { noteId: "n", propertyId: "p", value: ["a"] },
+    ],
+    [
+      "setCell esvaziando",
+      () => createTauriNotesGateway().setCell({ noteId: "n", propertyId: "p", value: null }),
+      "plugin:notes|set_cell",
+      { noteId: "n", propertyId: "p", value: null },
+    ],
+    [
+      "renameNote",
+      () => createTauriNotesGateway().renameNote({ id: "n", title: "T", expectedUpdatedAt: 5 }),
+      "plugin:notes|rename_note",
+      { id: "n", title: "T", expectedUpdatedAt: 5 },
+    ],
+  ])("bases de dados: %s", async (_name, call, command, args) => {
+    invokeMock.mockResolvedValue(undefined);
+
+    await call();
+
+    expect(invokeMock).toHaveBeenCalledWith(command, args);
+  });
 });

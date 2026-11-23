@@ -38,6 +38,8 @@ pub struct NoteSummary {
     pub parent_id: Option<String>,
     pub position: i64,
     pub icon: Option<String>,
+    /// A página é uma base de dados (as subpáginas são as linhas).
+    pub is_database: bool,
 }
 
 /// Item da lixeira: só aparecem as RAÍZES de cada exclusão. As subpáginas excluídas junto não são
@@ -81,4 +83,40 @@ pub struct MoveNote {
     pub new_parent_id: Option<String>,
     /// Posição desejada entre as irmãs do destino. Valores além do fim viram "no fim".
     pub index: usize,
+}
+
+/// Uma coluna ("propriedade") de uma base de dados. O título da linha não é uma coluna: é o da própria página.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Property {
+    pub id: String,
+    pub database_id: String,
+    pub name: String,
+    /// `text`, `number`, `select`, `multi_select`, `date`, `checkbox` ou `url`.
+    #[serde(rename = "type")]
+    pub kind: String,
+    /// Só para `select` e `multi_select`: lista de `{ id, name, color }`. Nos outros tipos, `[]`.
+    pub options: serde_json::Value,
+    pub position: i64,
+}
+
+/// Uma linha (subpágina) da base com os valores das células preenchidas, por id de coluna.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseRow {
+    pub id: String,
+    pub title: String,
+    pub icon: Option<String>,
+    pub updated_at: i64,
+    pub cells: std::collections::BTreeMap<String, serde_json::Value>,
+}
+
+/// Tudo o que a tela da base precisa: as colunas e as linhas ativas.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseData {
+    pub id: String,
+    pub title: String,
+    pub properties: Vec<Property>,
+    pub rows: Vec<DatabaseRow>,
 }

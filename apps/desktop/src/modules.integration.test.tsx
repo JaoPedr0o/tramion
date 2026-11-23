@@ -19,7 +19,10 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     throw new Error("não usado neste teste");
   };
   return {
-    list: async () => [...notes.values()].filter((n) => n.deletedAt === null),
+    list: async () =>
+      [...notes.values()]
+        .filter((n) => n.deletedAt === null)
+        .map((n) => ({ ...n, isDatabase: false })),
     listTrash: async () =>
       [...notes.values()]
         .filter((n) => n.deletedAt !== null)
@@ -53,6 +56,14 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     },
     restore: unused,
     purge: unused,
+    createDatabase: unused,
+    getDatabase: unused,
+    addProperty: unused,
+    updateProperty: unused,
+    deleteProperty: unused,
+    createRow: unused,
+    setCell: unused,
+    renameNote: unused,
     ...overrides,
   };
 }

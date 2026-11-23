@@ -6,6 +6,11 @@ const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.title-too-long": "O título é longo demais (máximo de 200 caracteres).",
   "notes.icon-invalid": "Este símbolo não é válido.",
   "notes.cover-invalid": "Esta capa não está num formato aceito.",
+  "notes.not-database": "Esta página não é uma base de dados.",
+  "notes.property-not-found": "Esta coluna não existe mais.",
+  "notes.property-invalid": "O nome, o tipo ou as opções desta coluna não são válidos.",
+  "notes.cell-invalid": "Este valor não serve para esta coluna.",
+  "notes.limit-reached": "Limite de colunas atingido (máximo de 50).",
   "notes.url-invalid": "Este endereço não é um link http ou https válido.",
   "notes.asset-too-large": "O arquivo é grande demais (máximo de 50 MB).",
   "notes.asset-type-not-allowed":

@@ -28,7 +28,8 @@ export interface BlockEditorProps {
   /** O usuário apagou do texto o bloco de uma subpágina. */
   onChildPageRemoved(pageId: string): void;
   /** "/Página": cria a subpágina e devolve o id (ou `null` se falhou). */
-  onCreateSubpage(): Promise<string | null>;
+  /** Cria uma subpágina (ou uma base de dados) dentro desta página e devolve o id; `null` se falhou. */
+  onCreateSubpage(kind?: "page" | "database"): Promise<string | null>;
   onOpenPage(pageId: string): void;
   /** Todas as páginas ativas (para o menu "@" de menções). */
   pages: readonly NoteSummary[];

@@ -15,4 +15,12 @@ permissions = [
   "allow-set-appearance",
   "allow-report-error",
   "allow-open-external",
+  "allow-create-database",
+  "allow-get-database",
+  "allow-add-property",
+  "allow-update-property",
+  "allow-delete-property",
+  "allow-create-row",
+  "allow-set-cell",
+  "allow-rename-note",
 ]

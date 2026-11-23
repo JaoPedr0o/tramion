@@ -15,6 +15,14 @@ const COMMANDS: &[&str] = &[
     "set_appearance",
     "report_error",
     "open_external",
+    "create_database",
+    "get_database",
+    "add_property",
+    "update_property",
+    "delete_property",
+    "create_row",
+    "set_cell",
+    "rename_note",
 ];
 
 fn main() {

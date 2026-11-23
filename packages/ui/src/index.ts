@@ -12,6 +12,7 @@ export {
   StarFilledIcon,
   StarIcon,
   SunIcon,
+  TableIcon,
   TrashIcon,
   type IconProps,
 } from "./icons.tsx";

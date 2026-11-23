@@ -1,4 +1,4 @@
-import { LinkIcon, PageIcon } from "@aun/ui";
+import { LinkIcon, PageIcon, TableIcon } from "@aun/ui";
 import {
   BlockNoteSchema,
   defaultBlockSpecs,
@@ -517,6 +517,22 @@ export default function BlockEditor({
   const insertBlock = (type: string) =>
     insertOrUpdateBlockForSlashMenu(editor as never, { type } as never);
 
+  // Cria uma subpágina (ou base de dados), grava o bloco que aponta para ela e a abre.
+  const createChild = async (kind: "page" | "database") => {
+    const pageId = await onCreateSubpage(kind);
+    if (pageId === null) return;
+    justCreated.current.add(pageId);
+    insertOrUpdateBlockForSlashMenu(
+      editor as never,
+      {
+        type: "childPage",
+        props: { pageId },
+      } as never,
+    );
+    emitChange(); // grava o bloco ANTES de abrir a subpágina (abrir fecha este editor)
+    onOpenPage(pageId);
+  };
+
   const customItems = [
     {
       title: "Página",
@@ -524,20 +540,15 @@ export default function BlockEditor({
       aliases: ["page", "pagina", "subpagina", "subpágina"],
       group: "Páginas",
       icon: <PageIcon />,
-      onItemClick: async () => {
-        const pageId = await onCreateSubpage();
-        if (pageId === null) return;
-        justCreated.current.add(pageId);
-        insertOrUpdateBlockForSlashMenu(
-          editor as never,
-          {
-            type: "childPage",
-            props: { pageId },
-          } as never,
-        );
-        emitChange(); // grava o bloco ANTES de abrir a subpágina (abrir fecha este editor)
-        onOpenPage(pageId);
-      },
+      onItemClick: () => createChild("page"),
+    },
+    {
+      title: "Base de dados",
+      subtext: "Cria uma tabela com colunas e linhas, como uma planilha de páginas",
+      aliases: ["database", "base", "tabela", "dados", "planilha", "banco", "table"],
+      group: "Páginas",
+      icon: <TableIcon />,
+      onItemClick: () => createChild("database"),
     },
     {
       title: "Link com cartão",

@@ -125,7 +125,7 @@ export function PageTree({
               {row.hasChildren && <ChevronIcon size={12} />}
             </span>
             <span className="page-tree__icon" aria-hidden="true">
-              <PageGlyph icon={row.page.icon} />
+              <PageGlyph icon={row.page.icon} isDatabase={row.page.isDatabase} />
             </span>
             <span className="page-tree__title">{title}</span>
             {/* As teclas e cliques destes botões não podem chegar à linha (abririam a página). */}

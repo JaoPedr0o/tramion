@@ -54,7 +54,7 @@ export function createSidebar({ service, events, store, actions }: NotesUiDeps):
                     onClick={() => actions.openPage(page.id, list)}
                   >
                     <span className="sidebar-row__icon" aria-hidden="true">
-                      <PageGlyph icon={page.icon} />
+                      <PageGlyph icon={page.icon} isDatabase={page.isDatabase} />
                     </span>
                     <span className="sidebar-row__title">{page.title}</span>
                   </button>

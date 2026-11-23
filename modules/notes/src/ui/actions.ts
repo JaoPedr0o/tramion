@@ -28,10 +28,27 @@ export function createPageActions(service: NotesService, store: NavigationStore)
         store.open(note.id, parentId ? [parentId, ...ancestorIds(pages, parentId)] : []);
       }),
 
-    /** Cria uma subpágina SEM abrir (o editor insere o bloco antes de abri-la). Devolve o id, ou `null` se falhou. */
-    createSubpage: async (parentId: string): Promise<string | null> => {
+    /** Cria uma base de dados (na raiz ou dentro de `parentId`), a abre e deixa a árvore aberta até ela. */
+    createDatabase: (parentId: string | null, pages: readonly NoteSummary[]) =>
+      guard(async () => {
+        const note = await service.createDatabase({ title: "Nova base de dados", parentId });
+        store.open(note.id, parentId ? [parentId, ...ancestorIds(pages, parentId)] : []);
+      }),
+
+    /**
+     * Cria uma subpágina (ou uma base de dados) SEM abrir: o editor insere o bloco antes de abri-la.
+     * Devolve o id, ou `null` se falhou.
+     */
+    createSubpage: async (
+      parentId: string,
+      kind: "page" | "database" = "page",
+    ): Promise<string | null> => {
       try {
-        return (await service.create({ title: "Sem título", body: "", parentId })).id;
+        const note =
+          kind === "database"
+            ? await service.createDatabase({ title: "Nova base de dados", parentId })
+            : await service.create({ title: "Sem título", body: "", parentId });
+        return note.id;
       } catch (error) {
         store.fail(messageFor(error));
         return null;

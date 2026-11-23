@@ -2,10 +2,13 @@
 //! devolve o resultado. Nenhuma regra de negócio mora aqui.
 
 use crate::assets;
+use crate::database;
 use crate::diagnostics;
 use crate::error::NotesError;
 use crate::external;
-use crate::model::{MoveNote, NewNote, Note, NoteSummary, TrashSummary, UpdateNote};
+use crate::model::{
+    DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote,
+};
 use crate::service;
 use aun_infra_sqlite::SharedDatabase;
 use aun_infra_sqlite::rusqlite::Connection;
@@ -224,4 +227,88 @@ pub async fn set_appearance(
 pub async fn report_error(message: String) -> Result<(), CommandError> {
     eprintln!("{}", diagnostics::format_report(&message));
     Ok(())
+}
+
+#[tauri::command]
+pub async fn create_database(
+    db: State<'_, SharedDatabase>,
+    title: String,
+    parent_id: Option<String>,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        database::create_database(conn, &title, parent_id.as_deref())
+    })
+}
+
+#[tauri::command]
+pub async fn get_database(
+    db: State<'_, SharedDatabase>,
+    id: String,
+) -> Result<DatabaseData, CommandError> {
+    with_db(&db, |conn| database::get_database(conn, &id))
+}
+
+#[tauri::command]
+pub async fn add_property(
+    db: State<'_, SharedDatabase>,
+    database_id: String,
+    name: String,
+    kind: String,
+) -> Result<Property, CommandError> {
+    with_db(&db, |conn| {
+        database::add_property(conn, &database_id, &name, &kind)
+    })
+}
+
+#[tauri::command]
+pub async fn update_property(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    name: Option<String>,
+    options: Option<serde_json::Value>,
+) -> Result<Property, CommandError> {
+    with_db(&db, |conn| {
+        database::update_property(conn, &id, name.as_deref(), options.as_ref())
+    })
+}
+
+#[tauri::command]
+pub async fn delete_property(
+    db: State<'_, SharedDatabase>,
+    id: String,
+) -> Result<(), CommandError> {
+    with_db(&db, |conn| database::delete_property(conn, &id))
+}
+
+#[tauri::command]
+pub async fn create_row(
+    db: State<'_, SharedDatabase>,
+    database_id: String,
+    title: String,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| database::create_row(conn, &database_id, &title))
+}
+
+#[tauri::command]
+pub async fn set_cell(
+    db: State<'_, SharedDatabase>,
+    note_id: String,
+    property_id: String,
+    value: serde_json::Value,
+) -> Result<(), CommandError> {
+    with_db(&db, |conn| {
+        database::set_cell(conn, &note_id, &property_id, &value)
+    })
+}
+
+#[tauri::command]
+pub async fn rename_note(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    title: String,
+    expected_updated_at: i64,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        database::rename_note(conn, &id, &title, expected_updated_at)
+    })
 }

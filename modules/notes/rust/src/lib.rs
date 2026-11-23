@@ -4,6 +4,8 @@
 
 pub mod assets;
 mod commands;
+pub mod database;
+pub mod database_repository;
 pub mod diagnostics;
 pub mod error;
 pub mod external;
@@ -36,6 +38,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 4,
             sql: include_str!("../migrations/0004_page_appearance.sql"),
         },
+        Migration {
+            version: 5,
+            sql: include_str!("../migrations/0005_databases.sql"),
+        },
     ],
 };
 
@@ -57,6 +63,14 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::set_appearance,
             commands::report_error,
             commands::open_external,
+            commands::create_database,
+            commands::get_database,
+            commands::add_property,
+            commands::update_property,
+            commands::delete_property,
+            commands::create_row,
+            commands::set_cell,
+            commands::rename_note,
         ])
         .build()
 }
