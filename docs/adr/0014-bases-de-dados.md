@@ -1,6 +1,6 @@
 # 0014. Bases de dados (tabela)
 
-**Status:** Aceita (fase 1: modelo e visão em tabela)
+**Status:** Aceita (fases 1 e 2: modelo, tabela e quadro)
 
 ## Contexto
 

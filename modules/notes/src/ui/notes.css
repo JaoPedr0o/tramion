@@ -1259,3 +1259,129 @@
   align-items: center;
   justify-content: space-between;
 }
+
+/* ───────── Formas de exibição e quadro ───────── */
+.db-toolbar {
+  align-items: center;
+}
+
+.db-views {
+  display: flex;
+  gap: var(--space-0);
+  margin-right: var(--space-2);
+}
+
+.db-views button {
+  padding: var(--space-0) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.db-views button[aria-selected="true"] {
+  background: var(--color-selected);
+  color: var(--color-text);
+}
+
+.board {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: var(--space-3);
+}
+
+.board__column {
+  flex: 0 0 260px;
+  box-sizing: border-box;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-hover);
+}
+
+.board__column--over {
+  outline: 2px dashed var(--color-border);
+}
+
+.board__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.board__count {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board__card {
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+  cursor: grab;
+}
+
+.board__open {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.board__details {
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  list-style: none;
+}
+
+.board__move {
+  display: block;
+  margin-top: var(--space-1);
+  opacity: 0;
+}
+
+.board__card:hover .board__move,
+.board__move:focus-within {
+  opacity: 1;
+}
+
+.board__add {
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.board__add:hover {
+  background: var(--color-selected);
+}

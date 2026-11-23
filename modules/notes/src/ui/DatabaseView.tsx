@@ -13,6 +13,8 @@ import type {
   PropertyType,
   SelectOption,
 } from "../domain/database.ts";
+import { Choice } from "./Choice.tsx";
+import { DatabaseBoard } from "./DatabaseBoard.tsx";
 import { DatabaseCell } from "./DatabaseCell.tsx";
 import {
   AddPropertyButton,
@@ -61,6 +63,8 @@ export function DatabaseView({ deps, id }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState<readonly FilterRule[]>([]);
   const [sort, setSort] = useState<SortRule | null>(null);
+  const [view, setView] = useState<"table" | "board">("table");
+  const [groupById, setGroupById] = useState<string | null>(null);
 
   const load = useCallback(() => {
     service.getDatabase(id).then(
@@ -163,24 +167,28 @@ export function DatabaseView({ deps, id }: Props) {
       load(); // as células que usavam a opção foram limpas pelo Rust
     }).then(() => undefined);
 
-  const addRow = () =>
+  /** Cria uma linha; com `group`, já a coloca numa coluna do quadro (valor da coluna de seleção). */
+  const addRow = (group?: { property: Property; optionId: string | null }) =>
     attempt(async () => {
       const note = await service.createRow({ databaseId: id, title: "Sem título" });
+      const cells: Record<string, CellValue> = {};
+      if (group?.optionId) {
+        await service.setCell({
+          noteId: note.id,
+          propertyId: group.property.id,
+          value: group.optionId,
+        });
+        cells[group.property.id] = group.optionId;
+      }
       // O evento `note.created` também recarrega a base; quem chegar primeiro vale, sem duplicar a linha.
       patch((d) =>
         d.rows.some((row) => row.id === note.id)
-          ? d
+          ? { ...d, rows: d.rows.map((row) => (row.id === note.id ? { ...row, cells } : row)) }
           : {
               ...d,
               rows: [
                 ...d.rows,
-                {
-                  id: note.id,
-                  title: note.title,
-                  icon: null,
-                  updatedAt: note.updatedAt,
-                  cells: {},
-                },
+                { id: note.id, title: note.title, icon: null, updatedAt: note.updatedAt, cells },
               ],
             },
       );
@@ -219,11 +227,41 @@ export function DatabaseView({ deps, id }: Props) {
     );
 
   const { properties } = state.data;
+  const selectProperties = properties.filter((p) => p.type === "select");
+  // A coluna do quadro: a escolhida, se ainda existir; senão a primeira de seleção.
+  const groupProperty =
+    selectProperties.find((p) => p.id === groupById) ?? selectProperties[0] ?? null;
   return (
     <section className="database" aria-label="Base de dados">
       <TitleField key={state.data.title} title={state.data.title} onRename={renameDatabase} />
 
       <div className="db-toolbar">
+        <div role="tablist" aria-label="Forma de exibição" className="db-views">
+          {(
+            [
+              ["table", "Tabela"],
+              ["board", "Quadro"],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              role="tab"
+              aria-selected={view === mode}
+              onClick={() => setView(mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {view === "board" && groupProperty && (
+          <Choice
+            label="Agrupar por"
+            value={groupProperty.id}
+            options={selectProperties.map((p) => ({ id: p.id, label: p.name }))}
+            onChange={setGroupById}
+          />
+        )}
         <FilterButton properties={properties} rules={rules} onChange={setRules} />
         <SortButton properties={properties} sort={sort} onChange={setSort} />
       </div>
@@ -234,99 +272,123 @@ export function DatabaseView({ deps, id }: Props) {
         </p>
       )}
 
-      <div className="db-scroll">
-        <table className="db-table" aria-label="Linhas da base">
-          <thead>
-            <tr>
-              <th scope="col" className="db-table__title-col">
-                Título
-              </th>
-              {properties.map((property) => (
-                <th scope="col" key={property.id}>
-                  <PropertyHeaderButton
-                    property={property}
-                    onRename={async (name) => {
-                      await attempt(async () =>
-                        replaceProperty(await service.updateProperty({ id: property.id, name })),
-                      );
-                    }}
-                    onRemoveOption={(optionId) => removeOption(property, optionId)}
-                    onDelete={async () => {
-                      await attempt(async () => {
-                        await service.deleteProperty(property.id);
-                        patch((d) => ({
-                          ...d,
-                          properties: d.properties.filter((p) => p.id !== property.id),
-                        }));
-                      });
-                    }}
-                  />
-                </th>
-              ))}
-              <th scope="col" className="db-table__add">
-                <AddPropertyButton onAdd={addProperty} />
-              </th>
-              <th scope="col" className="db-table__actions" aria-label="Ações da linha" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td className="db-table__title-col">
-                  <div className="db-title-cell">
-                    <button
-                      type="button"
-                      className="db-title-cell__open"
-                      aria-label={`Abrir ${row.title}`}
-                      onClick={() => actions.openPage(row.id, allPages)}
-                    >
-                      <PageGlyph icon={row.icon} />
-                    </button>
-                    <TitleInput
-                      title={row.title}
-                      label={`Título de ${row.title}`}
-                      onRename={(title) => renameRow(row.id, title, row.updatedAt)}
-                    />
-                  </div>
-                </td>
-                {properties.map((property) => (
-                  <td key={property.id}>
-                    <DatabaseCell
-                      property={property}
-                      rowTitle={row.title}
-                      value={row.cells[property.id]}
-                      onChange={(value) => void setCell(row.id, property, value)}
-                      onCreateOption={(name) => createOption(property, name)}
-                    />
-                  </td>
+      {view === "board" ? (
+        groupProperty ? (
+          <DatabaseBoard
+            groupBy={groupProperty}
+            properties={properties}
+            rows={rows}
+            onOpen={(rowId) => actions.openPage(rowId, allPages)}
+            onMove={(rowId, optionId) => void setCell(rowId, groupProperty, optionId)}
+            onAdd={(optionId) => void addRow({ property: groupProperty, optionId })}
+          />
+        ) : (
+          <p className="db-empty">
+            Para ver o quadro, adicione uma coluna do tipo Seleção (como &quot;Status&quot;): cada
+            opção vira uma coluna do quadro.
+          </p>
+        )
+      ) : (
+        <>
+          <div className="db-scroll">
+            <table className="db-table" aria-label="Linhas da base">
+              <thead>
+                <tr>
+                  <th scope="col" className="db-table__title-col">
+                    Título
+                  </th>
+                  {properties.map((property) => (
+                    <th scope="col" key={property.id}>
+                      <PropertyHeaderButton
+                        property={property}
+                        onRename={async (name) => {
+                          await attempt(async () =>
+                            replaceProperty(
+                              await service.updateProperty({ id: property.id, name }),
+                            ),
+                          );
+                        }}
+                        onRemoveOption={(optionId) => removeOption(property, optionId)}
+                        onDelete={async () => {
+                          await attempt(async () => {
+                            await service.deleteProperty(property.id);
+                            patch((d) => ({
+                              ...d,
+                              properties: d.properties.filter((p) => p.id !== property.id),
+                            }));
+                          });
+                        }}
+                      />
+                    </th>
+                  ))}
+                  <th scope="col" className="db-table__add">
+                    <AddPropertyButton onAdd={addProperty} />
+                  </th>
+                  <th scope="col" className="db-table__actions" aria-label="Ações da linha" />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="db-table__title-col">
+                      <div className="db-title-cell">
+                        <button
+                          type="button"
+                          className="db-title-cell__open"
+                          aria-label={`Abrir ${row.title}`}
+                          onClick={() => actions.openPage(row.id, allPages)}
+                        >
+                          <PageGlyph icon={row.icon} />
+                        </button>
+                        <TitleInput
+                          title={row.title}
+                          label={`Título de ${row.title}`}
+                          onRename={(title) => renameRow(row.id, title, row.updatedAt)}
+                        />
+                      </div>
+                    </td>
+                    {properties.map((property) => (
+                      <td key={property.id}>
+                        <DatabaseCell
+                          property={property}
+                          rowTitle={row.title}
+                          value={row.cells[property.id]}
+                          onChange={(value) => void setCell(row.id, property, value)}
+                          onCreateOption={(name) => createOption(property, name)}
+                        />
+                      </td>
+                    ))}
+                    <td />
+                    <td className="db-table__actions">
+                      <button
+                        type="button"
+                        className="db-row-delete"
+                        aria-label={`Excluir ${row.title}`}
+                        onClick={() => void actions.deletePage(row.id)}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </td>
+                  </tr>
                 ))}
-                <td />
-                <td className="db-table__actions">
-                  <button
-                    type="button"
-                    className="db-row-delete"
-                    aria-label={`Excluir ${row.title}`}
-                    onClick={() => void actions.deletePage(row.id)}
-                  >
-                    <TrashIcon />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
-      {rows.length === 0 && (
+      {view === "table" && rows.length === 0 && (
         <p className="db-empty">
           {state.data.rows.length === 0
             ? "Esta base ainda não tem linhas."
             : "Nenhuma linha passa nos filtros."}
         </p>
       )}
-      <button type="button" className="db-new-row" onClick={() => void addRow()}>
-        + Nova linha
-      </button>
+      {view === "table" && (
+        <button type="button" className="db-new-row" onClick={() => void addRow()}>
+          + Nova linha
+        </button>
+      )}
     </section>
   );
 }

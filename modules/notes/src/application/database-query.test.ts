@@ -4,6 +4,7 @@ import {
   TITLE_KEY,
   displayValue,
   filterRows,
+  groupRows,
   operatorsFor,
   sortRows,
   type FilterRule,
@@ -235,5 +236,37 @@ describe("displayValue", () => {
     expect(displayValue(prop("qtd", "number"), 3)).toBe("3");
     expect(displayValue(prop("obs", "text"), undefined)).toBe("");
     expect(displayValue(STATUS, "removida")).toBe("removida");
+  });
+});
+
+describe("groupRows", () => {
+  it("uma coluna por opção, na ordem das opções, e 'sem valor' por último", () => {
+    const columns = groupRows(ROWS, STATUS);
+
+    expect(columns.map((c) => c.option?.id ?? null)).toEqual(["a", "b", null]);
+    expect(columns.map((c) => ids(c.rows))).toEqual([["1"], ["2"], ["3"]]);
+  });
+
+  it("mantém a ordem das linhas dentro do grupo e sempre devolve 'sem valor', mesmo vazio", () => {
+    const rows = [row("x", "X", { status: "a" }), row("y", "Y", { status: "a" })];
+
+    const columns = groupRows(rows, STATUS);
+
+    expect(ids(columns[0]!.rows)).toEqual(["x", "y"]);
+    expect(columns[2]!.option).toBeNull();
+    expect(columns[2]!.rows).toEqual([]);
+  });
+
+  it("valor de opção que não existe mais cai em 'sem valor'", () => {
+    const rows = [row("z", "Z", { status: "removida" })];
+
+    expect(ids(groupRows(rows, STATUS)[2]!.rows)).toEqual(["z"]);
+  });
+
+  it("base sem opções tem só a coluna 'sem valor'", () => {
+    const columns = groupRows(ROWS, prop("vazia", "select"));
+
+    expect(columns).toHaveLength(1);
+    expect(ids(columns[0]!.rows)).toEqual(["1", "2", "3"]);
   });
 });

@@ -1,4 +1,10 @@
-import type { CellValue, DatabaseRow, Property, PropertyType } from "../domain/database.ts";
+import type {
+  CellValue,
+  DatabaseRow,
+  Property,
+  PropertyType,
+  SelectOption,
+} from "../domain/database.ts";
 
 /** Id especial: o título da linha (que não é uma coluna). */
 export const TITLE_KEY = "title";
@@ -206,4 +212,33 @@ export function displayValue(property: Property, value: CellValue | undefined): 
   if (property.type === "select") return nameOf(value as string);
   if (property.type === "multi_select") return (value as readonly string[]).map(nameOf).join(", ");
   return String(value);
+}
+
+/** Uma coluna do quadro: as linhas de uma opção (ou as sem valor, quando `option` é `null`). */
+export interface BoardColumn {
+  readonly option: SelectOption | null;
+  readonly rows: readonly DatabaseRow[];
+}
+
+/**
+ * Agrupa as linhas pelas opções de uma coluna de SELEÇÃO. Há uma coluna do quadro por opção, na ordem
+ * das opções, e "sem valor" por último (sempre presente). Mantém a ordem das linhas dentro de cada grupo.
+ * Valor que aponta para uma opção que não existe mais cai em "sem valor".
+ */
+export function groupRows(
+  rows: readonly DatabaseRow[],
+  property: Property,
+): readonly BoardColumn[] {
+  const known = new Set(property.options.map((option) => option.id));
+  const groups = new Map<string | null, DatabaseRow[]>(property.options.map((o) => [o.id, []]));
+  groups.set(null, []);
+  for (const row of rows) {
+    const value = row.cells[property.id];
+    const key = typeof value === "string" && known.has(value) ? value : null;
+    groups.get(key)!.push(row);
+  }
+  return [
+    ...property.options.map((option) => ({ option, rows: groups.get(option.id)! })),
+    { option: null, rows: groups.get(null)! },
+  ];
 }

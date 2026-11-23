@@ -1138,6 +1138,141 @@ describe("módulo de notas (a tela inteira)", () => {
       );
     });
 
+    type Fake = ReturnType<typeof setup>["fake"];
+
+    /** Base com coluna de seleção "Status" (opções "A fazer" e "Feito") e uma linha, que termina em "Feito". */
+    async function boardBase(user: User, fake: Fake) {
+      await newDatabase(user);
+      await addColumn(user, "Status", "Seleção");
+      await addRow(user);
+      const optionsOf = async () => (await fake.gateway.getDatabase("n1")).properties[0]!.options;
+      for (const [index, name] of ["A fazer", "Feito"].entries()) {
+        await user.click(main().getByRole("button", { name: "Status — Sem título" }));
+        await user.type(
+          dialog("Opções de Status").getByRole("textbox", { name: "Nome da nova opção" }),
+          `${name}{Enter}`,
+        );
+        await vi.waitFor(async () => expect(await optionsOf()).toHaveLength(index + 1));
+      }
+    }
+    const optionId = async (fake: Fake, name: string) =>
+      (await fake.gateway.getDatabase("n1")).properties[0]!.options.find((o) => o.name === name)!
+        .id;
+    const cellsOfFirstRow = async (fake: Fake) =>
+      Object.values((await fake.gateway.getDatabase("n1")).rows[0]!.cells);
+    const column = (name: string) => within(main().getByRole("region", { name }));
+    const showBoard = async (user: User) =>
+      await user.click(main().getByRole("tab", { name: "Quadro" }));
+
+    it("sem coluna de seleção, o quadro explica o que falta", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+
+      await showBoard(user);
+
+      expect(main().getByText(/adicione uma coluna do tipo Seleção/)).toBeTruthy();
+    });
+
+    it("quadro: uma coluna por opção, 'Sem valor', e o cartão na coluna do valor dele", async () => {
+      const { user, fake } = setup();
+      await boardBase(user, fake);
+
+      await showBoard(user);
+
+      expect(main().getByRole("group", { name: "Quadro por Status" })).toBeTruthy();
+      expect(main().getByRole("region", { name: "A fazer" })).toBeTruthy();
+      expect(main().getByRole("region", { name: "Sem valor" })).toBeTruthy();
+      expect(column("Feito").getByText("Sem título")).toBeTruthy();
+      expect(column("A fazer").queryByText("Sem título")).toBeNull();
+    });
+
+    it("quadro: mover o cartão pelo seletor troca o valor da célula e esvaziar tira do valor", async () => {
+      const { user, fake } = setup();
+      await boardBase(user, fake);
+      await showBoard(user);
+
+      await user.click(main().getByRole("button", { name: "Mover Sem título para" }));
+      await user.click(screen.getByRole("option", { name: "A fazer" }));
+
+      await vi.waitFor(async () =>
+        expect(await cellsOfFirstRow(fake)).toEqual([await optionId(fake, "A fazer")]),
+      );
+      expect(column("A fazer").getByText("Sem título")).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Mover Sem título para" }));
+      await user.click(screen.getByRole("option", { name: "Sem valor" }));
+      await vi.waitFor(async () => expect(await cellsOfFirstRow(fake)).toEqual([]));
+      expect(column("Sem valor").getByText("Sem título")).toBeTruthy();
+    });
+
+    it("quadro: arrastar o cartão para outra coluna muda o valor", async () => {
+      const { user, fake } = setup();
+      await boardBase(user, fake);
+      await showBoard(user);
+      const card = main().getByText("Sem título").closest("li")!;
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+
+      act(() => {
+        card.dispatchEvent(
+          Object.assign(new Event("dragstart", { bubbles: true }), { dataTransfer }),
+        );
+      });
+      const target = main().getByRole("region", { name: "A fazer" });
+      act(() => {
+        target.dispatchEvent(new Event("dragover", { bubbles: true, cancelable: true }));
+        target.dispatchEvent(new Event("drop", { bubbles: true, cancelable: true }));
+      });
+
+      await vi.waitFor(async () =>
+        expect(await cellsOfFirstRow(fake)).toEqual([await optionId(fake, "A fazer")]),
+      );
+    });
+
+    it("quadro: '+ Novo' cria o cartão já na coluna", async () => {
+      const { user, fake } = setup();
+      await boardBase(user, fake);
+      await showBoard(user);
+
+      await user.click(main().getByRole("button", { name: "Novo cartão em A fazer" }));
+
+      await vi.waitFor(async () => {
+        const data = await fake.gateway.getDatabase("n1");
+        expect(data.rows).toHaveLength(2);
+        expect(Object.values(data.rows[1]!.cells)).toEqual([await optionId(fake, "A fazer")]);
+      });
+      expect(column("A fazer").getByText("Sem título")).toBeTruthy();
+    });
+
+    it("quadro: respeita o filtro e abre o cartão como página", async () => {
+      const { user, fake } = setup();
+      await boardBase(user, fake);
+      await showBoard(user);
+
+      await user.click(main().getByRole("button", { name: "Filtrar" }));
+      const panel = dialog("Filtrar");
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.type(panel.getByRole("textbox", { name: "Valor do filtro 1" }), "zzz");
+      expect(main().queryByText("Sem título")).toBeNull();
+
+      await user.clear(panel.getByRole("textbox", { name: "Valor do filtro 1" }));
+      await user.keyboard("{Escape}");
+      await user.click(main().getByRole("button", { name: "Sem título" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Sem título",
+      );
+    });
+
+    it("volta para a tabela", async () => {
+      const { user } = setup();
+      await newDatabase(user);
+      await showBoard(user);
+
+      await user.click(main().getByRole("tab", { name: "Tabela" }));
+
+      expect(main().getByRole("table", { name: "Linhas da base" })).toBeTruthy();
+    });
+
     it("pelo menu da página, o ícone de base aparece na árvore e abrir outra página sai da tabela", async () => {
       const { user } = setup();
       await newDatabase(user);
