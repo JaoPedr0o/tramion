@@ -49,6 +49,8 @@ export interface PomodoroSettings {
   readonly longBreakEvery: number;
   /** Avisa com notificação do sistema ao fim (desligado por padrão). */
   readonly notify: boolean;
+  /** Toca o sino ao fim (app aberto) e usa o som no alarme do celular. Ligado por padrão. */
+  readonly sound: boolean;
 }
 
 export const DEFAULT_SETTINGS: PomodoroSettings = {
@@ -57,4 +59,5 @@ export const DEFAULT_SETTINGS: PomodoroSettings = {
   longBreakMin: 15,
   longBreakEvery: 0,
   notify: false,
+  sound: true,
 };

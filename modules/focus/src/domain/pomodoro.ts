@@ -30,6 +30,12 @@ export type Timer =
 
 export const IDLE: Timer = { phase: "idle" };
 
+/** O cronômetro como é guardado no banco: o estado mais quantas sessões de foco já foram feitas no ciclo. */
+export interface TimerRecord {
+  readonly timer: Timer;
+  readonly cycle: number;
+}
+
 export function startTimer(
   kind: TimerKind,
   now: number,
@@ -120,4 +126,21 @@ export function formatMinutes(totalSeconds: number): string {
 
 export function kindLabel(kind: TimerKind): string {
   return kind === "focus" ? "Foco" : kind === "break" ? "Pausa" : "Pausa longa";
+}
+
+/** O texto do aviso de fim (o mesmo na tela, na notificação do computador e no alarme do celular). */
+export function endMessage(kind: TimerKind): string {
+  return kind === "focus"
+    ? "Sessão de foco concluída. Hora de uma pausa."
+    : `${kindLabel(kind)} terminou. Pronto para focar?`;
+}
+
+/** "19:15" (24 h) no fuso informado (sem ele, o do aparelho). */
+export function formatHourMinute(ms: number, timeZone?: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(ms));
 }

@@ -1,8 +1,14 @@
 // Auxiliares SÓ para testes (não fazem parte da API pública do módulo).
-import { vi } from "vitest";
-import type { Clock, FocusGateway, FocusPlatform } from "./application/focus-gateway.ts";
+import { vi, type Mock } from "vitest";
+import type {
+  Clock,
+  FocusAlarm,
+  FocusGateway,
+  FocusPlatform,
+} from "./application/focus-gateway.ts";
 import type { Day } from "./domain/day.ts";
 import { FocusError } from "./domain/errors.ts";
+import { IDLE, type TimerRecord } from "./domain/pomodoro.ts";
 import {
   DEFAULT_SETTINGS,
   type FocusSession,
@@ -28,8 +34,21 @@ export function fakeClock(start: number, timeZone = "UTC") {
   return clock;
 }
 
-export function platformStub(): FocusPlatform & { notify: ReturnType<typeof vi.fn> } {
-  return { notify: vi.fn(async () => {}) };
+export function platformStub(options: { systemAlarm?: boolean } = {}): FocusPlatform & {
+  notify: ReturnType<typeof vi.fn>;
+  syncTimerNotifications: ReturnType<typeof vi.fn>;
+  clearOngoing: ReturnType<typeof vi.fn>;
+} {
+  return {
+    systemAlarm: options.systemAlarm ?? false,
+    notify: vi.fn(async () => {}),
+    syncTimerNotifications: vi.fn(async () => {}),
+    clearOngoing: vi.fn(async () => {}),
+  };
+}
+
+export function alarmStub(): FocusAlarm & { unlock: Mock<() => void>; ring: Mock<() => void> } {
+  return { unlock: vi.fn<() => void>(), ring: vi.fn<() => void>() };
 }
 
 /** Gateway em memória que se comporta como o Rust (validações principais incluídas). */
@@ -40,6 +59,7 @@ export function memoryGateway(
   checks: HabitCheck[];
   sessions: FocusSession[];
   settings: PomodoroSettings;
+  timer: TimerRecord;
 } {
   const now = options.now ?? (() => Date.now());
   let seq = 0;
@@ -49,6 +69,7 @@ export function memoryGateway(
     checks: [] as HabitCheck[],
     sessions: [] as FocusSession[],
     settings: DEFAULT_SETTINGS,
+    timer: { timer: IDLE, cycle: 0 } as TimerRecord,
   };
   const guard = () => {
     const error = options.failWith?.();
@@ -88,6 +109,9 @@ export function memoryGateway(
     get settings() {
       return state.settings;
     },
+    get timer() {
+      return state.timer;
+    },
     async listHabits(includeArchived) {
       guard();
       return state.habits.filter((h) => includeArchived || h.archivedAt === null);
@@ -126,13 +150,26 @@ export function memoryGateway(
       state.checks = state.checks.filter((c) => !(c.habitId === habitId && c.day === day));
       if (done) state.checks.push({ habitId, day });
     },
-    async recordSession({ startedAt, durationSec, noteId }) {
+    async getTimer() {
       guard();
+      return state.timer;
+    },
+    async saveTimer(record) {
+      guard();
+      state.timer = record;
+    },
+    // Como o Rust: só conclui o que está RODANDO; foco vira sessão; fica parado com o ciclo informado.
+    async finishTimer(cycle) {
+      guard();
+      const { timer } = state.timer;
+      if (timer.phase !== "running") return null;
+      state.timer = { timer: IDLE, cycle };
+      if (timer.kind !== "focus") return null;
       const session: FocusSession = {
         id: id(),
-        startedAt,
-        durationSec,
-        noteId,
+        startedAt: timer.startedAt,
+        durationSec: Math.round(timer.durationMs / 1000),
+        noteId: timer.noteId,
         createdAt: now(),
         updatedAt: now(),
       };

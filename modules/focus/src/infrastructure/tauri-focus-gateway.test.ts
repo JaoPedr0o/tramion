@@ -50,11 +50,49 @@ describe("gateway do Tauri (Foco)", () => {
       { habitId: "h", day: "2026-11-18", done: true },
     ],
     [
-      "recordSession",
+      "saveTimer",
       () =>
-        createTauriFocusGateway().recordSession({ startedAt: 5, durationSec: 60, noteId: null }),
-      "session_record",
-      { startedAt: 5, durationSec: 60, noteId: null },
+        createTauriFocusGateway().saveTimer({
+          timer: {
+            phase: "running",
+            kind: "focus",
+            startedAt: 5,
+            durationMs: 60_000,
+            endsAt: 60_005,
+            noteId: null,
+          },
+          cycle: 2,
+        }),
+      "timer_set",
+      {
+        state: {
+          phase: "running",
+          kind: "focus",
+          startedAt: 5,
+          durationMs: 60_000,
+          endsAt: 60_005,
+          remainingMs: null,
+          noteId: null,
+          cycle: 2,
+        },
+      },
+    ],
+    [
+      "saveTimer (parado)",
+      () => createTauriFocusGateway().saveTimer({ timer: { phase: "idle" }, cycle: 3 }),
+      "timer_set",
+      {
+        state: {
+          phase: "idle",
+          kind: null,
+          startedAt: null,
+          durationMs: null,
+          endsAt: null,
+          remainingMs: null,
+          noteId: null,
+          cycle: 3,
+        },
+      },
     ],
     [
       "listSessions",
@@ -66,6 +104,46 @@ describe("gateway do Tauri (Foco)", () => {
   ])("%s chama plugin:focus|%s", async (_name, run, command, args) => {
     await run();
     expect(invokeMock).toHaveBeenCalledWith(`plugin:focus|${command}`, args);
+  });
+
+  it("finishTimer devolve a sessão registrada (ou null se já estava concluído)", async () => {
+    const session = { id: "s", startedAt: 5, durationSec: 60, noteId: null };
+    invokeMock.mockResolvedValueOnce({ session });
+    await expect(createTauriFocusGateway().finishTimer(1)).resolves.toEqual(session);
+    expect(invokeMock).toHaveBeenCalledWith("plugin:focus|timer_finish", { cycle: 1 });
+    invokeMock.mockResolvedValueOnce({ session: null });
+    await expect(createTauriFocusGateway().finishTimer(1)).resolves.toBeNull();
+  });
+
+  it("getTimer lê o cronômetro rodando, pausado ou parado; o incoerente vira parado", async () => {
+    const base = { kind: "break", startedAt: 9, durationMs: 300_000, noteId: null, cycle: 1 };
+    invokeMock.mockResolvedValueOnce({ ...base, phase: "running", endsAt: 400, remainingMs: null });
+    await expect(createTauriFocusGateway().getTimer()).resolves.toEqual({
+      timer: {
+        phase: "running",
+        kind: "break",
+        startedAt: 9,
+        durationMs: 300_000,
+        endsAt: 400,
+        noteId: null,
+      },
+      cycle: 1,
+    });
+    invokeMock.mockResolvedValueOnce({ ...base, phase: "paused", endsAt: null, remainingMs: 7 });
+    await expect(createTauriFocusGateway().getTimer()).resolves.toMatchObject({
+      timer: { phase: "paused", remainingMs: 7 },
+    });
+    invokeMock.mockResolvedValueOnce({
+      ...base,
+      phase: "running",
+      endsAt: null,
+      remainingMs: null,
+    });
+    await expect(createTauriFocusGateway().getTimer()).resolves.toEqual({
+      timer: { phase: "idle" },
+      cycle: 1,
+    });
+    expect(invokeMock).toHaveBeenLastCalledWith("plugin:focus|timer_get", undefined);
   });
 
   it("converte erros do Rust em FocusError, e códigos desconhecidos em focus.internal", async () => {

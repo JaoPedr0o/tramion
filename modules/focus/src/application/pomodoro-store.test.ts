@@ -1,22 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FocusError } from "../domain/errors.ts";
-import { fakeClock, memoryGateway, platformStub } from "../test-support.ts";
+import { alarmStub, fakeClock, memoryGateway, platformStub } from "../test-support.ts";
 import { createPomodoroStore } from "./pomodoro-store.ts";
 
 const MIN = 60_000;
 const T0 = Date.UTC(2026, 10, 18, 12, 0, 0);
 
 /** O relógio falso e os temporizadores falsos andam juntos. */
-function setup(gatewayOptions: Parameters<typeof memoryGateway>[0] = {}) {
+function setup(
+  gatewayOptions: Parameters<typeof memoryGateway>[0] = {},
+  platformOptions: Parameters<typeof platformStub>[0] = {},
+) {
   const clock = fakeClock(T0);
   const gateway = memoryGateway({ now: clock.now, ...gatewayOptions });
-  const platform = platformStub();
-  const store = createPomodoroStore({ gateway, platform, clock });
+  const platform = platformStub(platformOptions);
+  const alarm = alarmStub();
+  const store = createPomodoroStore({ gateway, platform, alarm, clock });
   const advance = async (ms: number) => {
     clock.advance(ms);
     await vi.advanceTimersByTimeAsync(ms);
   };
-  return { clock, gateway, platform, store, advance };
+  return { clock, gateway, platform, alarm, store, advance };
 }
 
 describe("store do pomodoro", () => {
@@ -239,6 +243,7 @@ describe("store do pomodoro", () => {
     const store = createPomodoroStore({
       gateway: memoryGateway(),
       platform: platformStub(),
+      alarm: alarmStub(),
       clock,
     });
     expect(store.today()).toBe("2026-11-17");

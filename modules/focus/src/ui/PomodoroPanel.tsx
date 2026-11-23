@@ -171,6 +171,7 @@ function SettingsForm({
       longBreakMin: Number(longMin),
       longBreakEvery: longOn ? Number(longEvery) : 0,
       notify,
+      sound: settings.sound,
     });
     setSaved(ok);
   };

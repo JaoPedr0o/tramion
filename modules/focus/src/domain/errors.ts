@@ -8,6 +8,7 @@ export type FocusErrorCode =
   | "focus.archived"
   | "focus.session-invalid"
   | "focus.settings-invalid"
+  | "focus.timer-invalid"
   | "focus.internal";
 
 /** Erro conhecido do módulo Foco. A interface decide a mensagem a partir do `code`. */

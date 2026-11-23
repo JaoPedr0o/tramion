@@ -1,7 +1,7 @@
 import { createEventBus, createModuleRegistry, createViewRegistry } from "@tramion/core";
 import { describe, expect, it } from "vitest";
 import { createFocusModule } from "./module.ts";
-import { memoryGateway, platformStub } from "./test-support.ts";
+import { alarmStub, memoryGateway, platformStub } from "./test-support.ts";
 
 describe("módulo Foco", () => {
   it("registra a tela 'Foco' quando iniciado", () => {
@@ -14,7 +14,7 @@ describe("módulo Foco", () => {
     expect(views.list().map((v) => [v.id, v.title])).toEqual([["focus", "Foco"]]);
   });
 
-  it("ao iniciar o app não lê nem grava nada e não avisa nada (só existe quando a pessoa abre a tela)", () => {
+  it("ao iniciar o app só LÊ o que estava guardado (para retomar o cronômetro): não grava, não avisa, não toca", async () => {
     const calls: string[] = [];
     const gateway = new Proxy(memoryGateway(), {
       get(target, key, receiver) {
@@ -31,10 +31,14 @@ describe("módulo Foco", () => {
       events: createEventBus(),
       views: createViewRegistry(),
     });
-    registry.add(createFocusModule(gateway, { platform }));
+    const alarm = alarmStub();
+    registry.add(createFocusModule(gateway, { platform, alarm }));
     registry.start();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(calls).toEqual([]);
+    expect(calls.sort()).toEqual(["getSettings", "getTimer", "listSessions"]);
     expect(platform.notify).not.toHaveBeenCalled();
+    expect(alarm.ring).not.toHaveBeenCalled();
+    expect(alarm.unlock).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ const KNOWN_CODES: ReadonlySet<string> = new Set<FocusErrorCode>([
   "focus.archived",
   "focus.session-invalid",
   "focus.settings-invalid",
+  "focus.timer-invalid",
   "focus.internal",
 ]);
 

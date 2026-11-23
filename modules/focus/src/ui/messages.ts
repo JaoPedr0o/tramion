@@ -10,6 +10,7 @@ const MESSAGES: Record<FocusErrorCode, string> = {
   "focus.archived": "Este hábito está arquivado. Desarquive para marcar dias.",
   "focus.session-invalid": "Não foi possível registrar esta sessão.",
   "focus.settings-invalid": "Os ajustes estão fora dos limites permitidos.",
+  "focus.timer-invalid": "Não foi possível guardar o cronômetro.",
   "focus.internal": "Algo deu errado. Tente novamente.",
 };
 
