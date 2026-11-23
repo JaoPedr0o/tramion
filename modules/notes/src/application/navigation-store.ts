@@ -5,7 +5,7 @@
  *
  * É um objeto simples (sem React) para ser testado sozinho; a tela o lê com `useSyncExternalStore`.
  */
-export type Mode = "pages" | "trash" | "today";
+export type Mode = "pages" | "trash" | "today" | "graph";
 
 export interface NavigationState {
   readonly mode: Mode;
@@ -30,6 +30,8 @@ export interface NavigationStore {
   showTrash(): void;
   /** A página "Hoje": tarefas, agenda e páginas recentes. */
   showToday(): void;
+  /** O grafo de conexões entre as páginas. */
+  showGraph(): void;
   toggle(id: string): void;
   /** Deixa abertas as páginas indicadas (para uma página nova ou movida aparecer na árvore). */
   reveal(ids: readonly string[]): void;
@@ -87,6 +89,10 @@ export function createNavigationStore(): NavigationStore {
 
     showTrash() {
       update({ mode: "trash", selectedId: null, actionError: null });
+    },
+
+    showGraph() {
+      update({ mode: "graph", selectedId: null, actionError: null });
     },
 
     showToday() {

@@ -23,6 +23,8 @@ permissions = [
   "allow-set-reminders",
   "allow-due-tasks",
   "allow-upcoming-tasks",
+  "allow-backlinks",
+  "allow-graph",
   "allow-save-asset",
   "allow-set-appearance",
   "allow-report-error",

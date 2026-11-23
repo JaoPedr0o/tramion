@@ -74,6 +74,8 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     setReminders: unused,
     dueTasks: unused,
     upcomingTasks: unused,
+    backlinks: unused,
+    graph: unused,
     renameNote: unused,
     ...overrides,
   };

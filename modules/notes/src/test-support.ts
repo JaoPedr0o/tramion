@@ -63,6 +63,8 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     purge: vi.fn(async () => []),
     emptyTrash: vi.fn(async () => []),
     search: vi.fn(async () => []),
+    backlinks: vi.fn(async () => []),
+    graph: vi.fn(async () => ({ nodes: [], edges: [] })),
     duplicate: vi.fn(async () => []),
     listTemplates: vi.fn(async () => []),
     createFromTemplate: vi.fn(async () => aNote()),
@@ -343,6 +345,42 @@ export function createFakeGateway() {
       return affected;
     },
 
+    async backlinks(id) {
+      return [...notes.values()]
+        .filter((n) => n.deletedAt === null && n.id !== id && referencesIn(n.content).includes(id))
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .map((n) => ({ id: n.id, title: n.title, icon: n.icon, isDatabase: databases.has(n.id) }));
+    },
+
+    async graph() {
+      const alive = [...notes.values()].filter((n) => n.deletedAt === null);
+      const rowIds = new Set(
+        alive.filter((n) => n.parentId && databases.has(n.parentId)).map((n) => n.id),
+      );
+      const nodes = alive.filter((n) => !rowIds.has(n.id));
+      const ids = new Set(nodes.map((n) => n.id));
+      const edges: Array<{ from: string; to: string; kind: "link" | "child" }> = [];
+      for (const n of nodes)
+        if (n.parentId && ids.has(n.parentId))
+          edges.push({ from: n.parentId, to: n.id, kind: "child" });
+      for (const n of nodes) {
+        for (const target of referencesIn(n.content)) {
+          const isChild = notes.get(target)?.parentId === n.id;
+          if (target !== n.id && ids.has(target) && !isChild)
+            edges.push({ from: n.id, to: target, kind: "link" });
+        }
+      }
+      return {
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          title: n.title,
+          icon: n.icon,
+          isDatabase: databases.has(n.id),
+        })),
+        edges,
+      };
+    },
+
     async duplicate(id) {
       const root = must(id);
       if (root.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
@@ -486,6 +524,30 @@ export function createFakeGateway() {
           Array.isArray(value) && value.every((id) => typeof id === "string" && optionIds.has(id))
         );
     }
+  };
+
+  /** Ids de páginas citados no conteúdo (menções e subpáginas), como `extract_references` do Rust. */
+  const referencesIn = (content: string): string[] => {
+    const found: string[] = [];
+    const walk = (value: unknown) => {
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (value && typeof value === "object") {
+        const object = value as { type?: unknown; props?: { pageId?: unknown } };
+        if (
+          (object.type === "childPage" || object.type === "mention") &&
+          typeof object.props?.pageId === "string"
+        ) {
+          if (!found.includes(object.props.pageId)) found.push(object.props.pageId);
+        }
+        Object.values(object).forEach(walk);
+      }
+    };
+    try {
+      walk(JSON.parse(content));
+    } catch {
+      /* conteúdo ilegível: nada citado */
+    }
+    return found;
   };
 
   /** Imita a varredura de tarefas do Rust: bases com lembretes ligados, linhas ativas, não concluídas. */

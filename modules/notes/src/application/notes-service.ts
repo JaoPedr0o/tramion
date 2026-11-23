@@ -15,6 +15,8 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  PageGraph,
+  PageRef,
   SearchHit,
   SetAppearance,
   TemplateInfo,
@@ -39,6 +41,8 @@ export interface NotesService {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez tudo o que está na lixeira; devolve os ids de todas as páginas apagadas. */
   emptyTrash(): Promise<readonly string[]>;
+  backlinks(id: string): Promise<readonly PageRef[]>;
+  graph(): Promise<PageGraph>;
   /** Duplica a página e a subárvore; devolve os ids criados (a cópia da página escolhida primeiro). */
   duplicate(id: string): Promise<readonly string[]>;
   listTemplates(): Promise<readonly TemplateInfo[]>;
@@ -125,6 +129,9 @@ export function createNotesService(deps: {
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
       return affected;
     },
+
+    backlinks: (id) => gateway.backlinks(id),
+    graph: () => gateway.graph(),
 
     // Um evento por página criada: duplicar uma página com subpáginas cria várias.
     async duplicate(id) {

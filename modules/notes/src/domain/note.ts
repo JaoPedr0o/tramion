@@ -86,3 +86,23 @@ export interface TemplateInfo {
   readonly icon: string;
   readonly description: string;
 }
+
+/** Uma página citada numa lista de ligações. */
+export interface PageRef {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+  readonly isDatabase: boolean;
+}
+
+/** Uma ligação do grafo: `link` = menção ou subpágina escrita no texto; `child` = hierarquia. */
+export interface GraphEdge {
+  readonly from: string;
+  readonly to: string;
+  readonly kind: "link" | "child";
+}
+
+export interface PageGraph {
+  readonly nodes: readonly PageRef[];
+  readonly edges: readonly GraphEdge[];
+}

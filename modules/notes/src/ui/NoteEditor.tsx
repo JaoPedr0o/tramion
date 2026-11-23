@@ -11,6 +11,7 @@ import { ancestorsOf } from "../application/page-tree.ts";
 import type { Note } from "../domain/note.ts";
 import type { BlockEditorHandle } from "./block-editor-types.ts";
 import type { NotesUiDeps } from "./deps.ts";
+import { Backlinks } from "./Backlinks.tsx";
 import { messageFor } from "./messages.ts";
 import { PageCover, PageHeader, type Picker } from "./PageAppearance.tsx";
 import { usePages } from "./useNoteList.ts";
@@ -250,6 +251,7 @@ export function NoteEditor({ deps, note }: Props) {
             </Suspense>
           </ErrorBoundary>
         </div>
+        <Backlinks deps={deps} id={note.id} pages={allPages ?? []} />
       </article>
     </div>
   );

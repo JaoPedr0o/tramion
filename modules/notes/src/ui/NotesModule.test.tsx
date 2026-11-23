@@ -2533,4 +2533,147 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(main().queryByRole("textbox", { name: "Título" })).toBeNull();
     });
   });
+
+  describe("backlinks e grafo", () => {
+    type Fake = ReturnType<typeof setup>["fake"];
+    const mention = (id: string) => [
+      { type: "paragraph", content: [{ type: "mention", props: { pageId: id } }] },
+    ];
+
+    /** "Alfa" menciona "Beta"; "Gama" não tem ligações. */
+    async function seed(fake: Fake, events: ReturnType<typeof setup>["events"]) {
+      const beta = await fake.gateway.create({ title: "Beta", body: "" });
+      const alfa = await fake.gateway.create({ title: "Alfa", body: "" });
+      await fake.gateway.create({ title: "Gama", body: "" });
+      await fake.gateway.update({
+        id: alfa.id,
+        title: "Alfa",
+        body: "",
+        content: JSON.stringify(mention(beta.id)),
+        expectedUpdatedAt: alfa.updatedAt,
+      });
+      act(() => events.emit("note.created", { id: beta.id }));
+      return { alfa, beta };
+    }
+    const openGraph = async (user: User) => {
+      await user.click(sidebar().getByRole("button", { name: "Grafo" }));
+      return await main().findByRole("group", { name: "Grafo de conexões entre as páginas" });
+    };
+
+    it("a página mostra 'Mencionada em' com quem a menciona, e clicar abre essa página", async () => {
+      const { user, fake, events } = setup();
+      await seed(fake, events);
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Beta" }));
+
+      const section = await main().findByRole("region", { name: "Mencionada em" });
+      await user.click(within(section).getByRole("button", { name: "Alfa" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Alfa",
+      );
+    });
+
+    it("sem menções não aparece a seção", async () => {
+      const { user, fake, events } = setup();
+      await seed(fake, events);
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Gama" }));
+      await main().findByRole("textbox", { name: "Título" });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(800);
+      });
+
+      expect(main().queryByRole("region", { name: "Mencionada em" })).toBeNull();
+    });
+
+    it("o grafo mostra uma página por ponto, as ligações e abre a página ao clicar", async () => {
+      const { user, fake, events } = setup();
+      await seed(fake, events);
+
+      const canvas = await openGraph(user);
+
+      expect(
+        within(canvas)
+          .getAllByRole("button")
+          .map((n) => n.getAttribute("aria-label"))
+          .sort(),
+      ).toEqual(["Alfa", "Beta", "Gama"]);
+      expect(canvas.querySelectorAll(".graph__edge--link")).toHaveLength(1);
+      expect(sidebar().getByRole("button", { name: "Grafo" }).getAttribute("aria-current")).toBe(
+        "page",
+      );
+      expect(topbar().getByText("Grafo")).toBeTruthy();
+
+      await user.click(within(canvas).getByRole("button", { name: "Gama" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Gama",
+      );
+    });
+
+    it("passar o mouse (ou o foco) realça a vizinhança e apaga o resto", async () => {
+      const { user, fake, events } = setup();
+      await seed(fake, events);
+      const canvas = await openGraph(user);
+
+      await user.hover(within(canvas).getByRole("button", { name: "Alfa" }));
+
+      const dim = (name: string) =>
+        within(canvas).getByRole("button", { name: name }).classList.contains("graph__node--dim");
+      expect(dim("Alfa")).toBe(false);
+      expect(dim("Beta")).toBe(false); // vizinha
+      expect(dim("Gama")).toBe(true);
+
+      await user.unhover(within(canvas).getByRole("button", { name: "Alfa" }));
+      expect(dim("Gama")).toBe(false);
+    });
+
+    it("Enter num ponto abre a página; os botões aproximam, afastam e ajustam", async () => {
+      const { user, fake, events } = setup();
+      await seed(fake, events);
+      const canvas = await openGraph(user);
+      const transform = () => canvas.querySelector("svg > g, g")!.getAttribute("transform");
+
+      expect(transform()).toContain("scale(1)");
+      await user.click(main().getByRole("button", { name: "Aproximar" }));
+      expect(transform()).toContain("scale(1.25)");
+      await user.click(main().getByRole("button", { name: "Afastar" }));
+      await user.click(main().getByRole("button", { name: "Afastar" }));
+      expect(transform()).toContain("scale(0.8)");
+      await user.click(main().getByRole("button", { name: "Ajustar à tela" }));
+      expect(transform()).toContain("scale(1)");
+
+      within(canvas).getByRole("button", { name: "Beta" }).focus();
+      await user.keyboard("{Enter}");
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Beta",
+      );
+    });
+
+    it("sem páginas e sem conexões o grafo explica", async () => {
+      const { user, fake } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Grafo" }));
+      expect(await main().findByText("Ainda não há páginas.")).toBeTruthy();
+
+      await fake.gateway.create({ title: "Sozinha", body: "" });
+      await user.click(sidebar().getByRole("button", { name: "Hoje" }));
+      await user.click(sidebar().getByRole("button", { name: "Grafo" }));
+      expect(await main().findByText(/Ainda não há conexões/)).toBeTruthy();
+    });
+
+    it("falha ao montar o grafo mostra um aviso", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "graph").mockRejectedValue(new NotesError("notes.internal", "x"));
+
+      await user.click(sidebar().getByRole("button", { name: "Grafo" }));
+
+      expect((await main().findByRole("alert")).textContent).toContain(
+        "Não foi possível montar o grafo",
+      );
+    });
+  });
 });

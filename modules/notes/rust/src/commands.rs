@@ -8,6 +8,7 @@ use crate::duplicate;
 use crate::error::NotesError;
 use crate::exports;
 use crate::external;
+use crate::links::{self, Graph, PageRef};
 use crate::model::{
     DatabaseData, DueTask, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary,
     UpdateNote, View,
@@ -429,4 +430,19 @@ pub async fn upcoming_tasks(
     days: i64,
 ) -> Result<Vec<DueTask>, CommandError> {
     with_db(&db, |conn| database::upcoming_tasks(conn, &today, days))
+}
+
+/// As páginas que mencionam a página `id`.
+#[tauri::command]
+pub async fn backlinks(
+    db: State<'_, SharedDatabase>,
+    id: String,
+) -> Result<Vec<PageRef>, CommandError> {
+    with_db(&db, |conn| links::backlinks(conn, &id))
+}
+
+/// O grafo de conexões entre as páginas.
+#[tauri::command]
+pub async fn graph(db: State<'_, SharedDatabase>) -> Result<Graph, CommandError> {
+    with_db(&db, links::graph)
 }

@@ -23,6 +23,8 @@ const COMMANDS: &[&str] = &[
     "set_reminders",
     "due_tasks",
     "upcoming_tasks",
+    "backlinks",
+    "graph",
     "save_asset",
     "set_appearance",
     "report_error",

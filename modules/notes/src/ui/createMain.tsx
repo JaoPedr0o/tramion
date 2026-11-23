@@ -1,6 +1,7 @@
 import { Logo } from "@tramion/ui";
 import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
+import { GraphView } from "./GraphView.tsx";
 import { NotePanel } from "./NotePanel.tsx";
 import { SearchDialog } from "./SearchDialog.tsx";
 import { TodayView } from "./TodayView.tsx";
@@ -54,6 +55,8 @@ export function createMain(deps: NotesUiDeps): ComponentType {
           <TrashView service={service} events={events} store={store} />
         ) : nav.mode === "today" ? (
           <TodayView deps={deps} />
+        ) : nav.mode === "graph" ? (
+          <GraphView deps={deps} />
         ) : nav.selectedId ? (
           <NotePanel key={nav.selectedId} deps={deps} id={nav.selectedId} />
         ) : (

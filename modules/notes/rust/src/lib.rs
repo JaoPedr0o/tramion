@@ -11,6 +11,7 @@ pub mod duplicate;
 pub mod error;
 pub mod exports;
 pub mod external;
+pub mod links;
 pub mod model;
 pub mod repository;
 pub mod samples;
@@ -96,6 +97,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::set_reminders,
             commands::due_tasks,
             commands::upcoming_tasks,
+            commands::backlinks,
+            commands::graph,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

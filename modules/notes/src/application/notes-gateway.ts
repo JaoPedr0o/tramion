@@ -14,6 +14,8 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  PageGraph,
+  PageRef,
   SearchHit,
   SetAppearance,
   TemplateInfo,
@@ -45,6 +47,10 @@ export interface NotesGateway {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez TUDO o que está na lixeira; devolve os ids apagados (lista vazia se não havia nada). */
   emptyTrash(): Promise<readonly string[]>;
+  /** As páginas ativas que mencionam esta página (ou a têm como subpágina no texto). */
+  backlinks(id: string): Promise<readonly PageRef[]>;
+  /** O grafo de conexões entre as páginas ativas. */
+  graph(): Promise<PageGraph>;
   /** Duplica a página e toda a subárvore ativa; devolve os ids criados, com a cópia da página escolhida primeiro. */
   duplicate(id: string): Promise<readonly string[]>;
   /** Os modelos de página embutidos. */
