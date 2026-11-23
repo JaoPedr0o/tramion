@@ -160,8 +160,8 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(statusText()).toContain("não salvas");
       await settle();
 
+      await vi.waitFor(() => expect(statusText()).toContain("Salvo"));
       expect(fake.notes.get("n1")?.title).toBe("Compras");
-      expect(statusText()).toContain("Salvo");
     });
 
     it("título vazio não é salvo: mostra o motivo e mantém o texto na tela", async () => {
@@ -171,7 +171,7 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.clear(title);
       await settle();
 
-      expect(statusText()).toContain("O título não pode ficar vazio");
+      await vi.waitFor(() => expect(statusText()).toContain("O título não pode ficar vazio"));
       expect(fake.notes.get("n1")?.title).toBe("Sem título");
     });
 
@@ -231,7 +231,7 @@ describe("módulo de notas (a tela inteira)", () => {
 
       expect(fake.notes.get("n1")?.body).toBe("meu texto");
       expect(main().queryByRole("alert")).toBeNull();
-      expect(statusText()).toContain("Salvo");
+      await vi.waitFor(() => expect(statusText()).toContain("Salvo"));
     });
 
     it("'carregar a versão salva' troca a tela pelo texto do outro lugar", async () => {
@@ -619,7 +619,7 @@ describe("módulo de notas (a tela inteira)", () => {
 
       const alert = await main().findByRole("alert");
       expect(alert.textContent).toContain("Algo deu errado");
-      expect(statusText()).toBe("Salvo"); // o estado do salvamento não é contaminado
+      await vi.waitFor(() => expect(statusText()).toBe("Salvo")); // o estado do salvamento não é contaminado
       expect(fake.notes.get("n1")?.deletedAt).toBeNull();
     });
 
