@@ -7,7 +7,14 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/target/**", "**/node_modules/**", "**/src-tauri/gen/**"],
+    ignores: [
+      "**/dist/**",
+      "**/target/**",
+      "**/node_modules/**",
+      "**/src-tauri/gen/**",
+      // Cópias de trabalho isoladas do repositório (git worktree): não fazem parte do projeto.
+      "**/worktrees/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
