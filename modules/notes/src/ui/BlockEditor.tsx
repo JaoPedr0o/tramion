@@ -29,7 +29,24 @@ import {
   useExtensionState,
 } from "@blocknote/react";
 import "@blocknote/mantine/style.css";
-import { createContext, useContext, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+} from "react";
+import {
+  COLUMN,
+  COLUMN_LIST,
+  dropBeside,
+  findBlock,
+  newColumns,
+  normalizeColumns,
+  type Side,
+} from "../application/columns.ts";
 import { hostnameOf, normalizeHttpUrl, videoEmbed } from "../application/embeds.ts";
 import { detectLanguage } from "../application/language-detect.ts";
 import {
@@ -58,6 +75,7 @@ interface EditorApi {
   focus(): void;
   removeBlocks(ids: string[]): void;
   insertBlocks(blocks: unknown[], reference: { id: string }, placement: "after"): void;
+  replaceBlocks(ids: string[], blocks: unknown[]): void;
   updateBlock(id: string, update: unknown): void;
   insertInlineContent(content: unknown[]): void;
   getTextCursorPosition(): {
@@ -263,11 +281,32 @@ const EmbedVideoBlock = createReactBlockSpec(
   },
 );
 
+// ───────── Colunas (blocos lado a lado) ─────────
+
+/**
+ * As colunas são duas estruturas invisíveis: uma LISTA de colunas e as COLUNAS dela; os blocos de verdade são filhos de
+ * cada coluna. O desenho lado a lado vem do CSS (`notes.css`) sobre a aninhação que o editor já tem. Os dois blocos não
+ * têm conteúdo próprio: só marcam a estrutura (e ficam escondidos).
+ */
+const ColumnListBlock = createReactBlockSpec(
+  { type: COLUMN_LIST, propSchema: {}, content: "none" },
+  { render: () => <div className="columns-marker" aria-hidden="true" /> },
+);
+const ColumnBlock = createReactBlockSpec(
+  { type: COLUMN, propSchema: {}, content: "none" },
+  { render: () => <div className="columns-marker" aria-hidden="true" /> },
+);
+
+/** O id do bloco que está sendo arrastado pela alça (para saber, ao soltar, qual bloco vai para o lado de outro). */
+const DragSource = createContext<{ set(id: string | null): void }>({ set: () => {} });
+
 // ───────── Esquema e menus ─────────
 
 const schema = BlockNoteSchema.create({
   blockSpecs: {
     ...defaultBlockSpecs,
+    columnList: ColumnListBlock(),
+    column: ColumnBlock(),
     childPage: ChildPageBlock(),
     bookmark: BookmarkBlock(),
     embedVideo: EmbedVideoBlock(),
@@ -396,10 +435,22 @@ function BlockMenu() {
 
 /** Menu lateral do bloco: "+" para inserir e a alça (arrastar), que abre o menu acima. */
 function CustomSideMenu(props: Parameters<typeof SideMenu>[0]) {
+  const drag = useContext(DragSource);
+  const block = useExtensionState(SideMenuExtension, { selector: (state) => state?.block });
+  // A estrutura das colunas não tem alça: quem se arrasta são os blocos de dentro delas.
+  if (block && (block.type === COLUMN_LIST || block.type === COLUMN)) return null;
   return (
     <SideMenu {...props}>
       <AddBlockButton />
-      <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+      {/* Guarda qual bloco a alça arrasta, para o "soltar ao lado" (colunas) saber o que mover. */}
+      <div
+        className="drag-handle-source"
+        onDragStartCapture={() => {
+          drag.set(block?.id ?? null);
+        }}
+      >
+        <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+      </div>
     </SideMenu>
   );
 }
@@ -442,8 +493,28 @@ export default function BlockEditor({
 
   useImperativeHandle(handleRef, () => ({ focus: () => api.focus() }), [api]);
 
+  // Estrutura de colunas inválida (coluna vazia, lista com uma coluna só...): conserta uma vez, fora do tratador de mudança.
+  const fixing = useRef(false);
+  const fixColumns = (blocks: Block[]): boolean => {
+    const { blocks: fixed, changed } = normalizeColumns(blocks);
+    if (!changed || fixing.current) return false;
+    fixing.current = true;
+    setTimeout(() => {
+      try {
+        api.replaceBlocks(
+          api.document.map((block) => block.id),
+          fixed as unknown[],
+        );
+      } finally {
+        fixing.current = false;
+      }
+    }, 0);
+    return true;
+  };
+
   const emitChange = () => {
     const blocks = api.document as unknown as Block[];
+    if (fixColumns(blocks)) return; // o conserto dispara outra mudança, já com a estrutura válida
     // Bloco de subpágina apagado do texto: a subpágina vai para a lixeira.
     const ids = childPageIds(blocks);
     for (const pageId of removedChildPageIds(previousChildren.current, ids))
@@ -535,6 +606,22 @@ export default function BlockEditor({
 
   const customItems = [
     {
+      title: "Duas colunas",
+      subtext: "Blocos lado a lado (arraste um bloco para o lado de outro)",
+      aliases: ["colunas", "coluna", "lado a lado", "2 colunas", "columns"],
+      group: "Layout",
+      icon: <TableIcon />,
+      onItemClick: () => insertOrUpdateBlockForSlashMenu(editor as never, newColumns(2) as never),
+    },
+    {
+      title: "Três colunas",
+      subtext: "Três blocos lado a lado",
+      aliases: ["colunas", "coluna", "lado a lado", "3 colunas", "columns"],
+      group: "Layout",
+      icon: <TableIcon />,
+      onItemClick: () => insertOrUpdateBlockForSlashMenu(editor as never, newColumns(3) as never),
+    },
+    {
       title: "Página",
       subtext: "Cria uma subpágina dentro desta página",
       aliases: ["page", "pagina", "subpagina", "subpágina"],
@@ -568,13 +655,106 @@ export default function BlockEditor({
     },
   ];
 
+  // ───────── Soltar ao lado de um bloco (colunas) ─────────
+  const dragSource = useRef<string | null>(null);
+  const [dragControl] = useState(() => ({
+    set: (id: string | null) => {
+      dragSource.current = id;
+    },
+  }));
+  const wrapper = useRef<HTMLDivElement>(null);
+  const indicator = useRef<HTMLDivElement>(null);
+  const sideHit = useRef<{ targetId: string; side: Side } | null>(null);
+
+  const hideIndicator = () => {
+    if (indicator.current) indicator.current.hidden = true;
+    sideHit.current = null;
+  };
+
+  /** Apaga a linha azul do cursor de arrastar padrão do editor, que ficaria parada ao soltar "ao lado". */
+  const clearDropCursor = () => {
+    wrapper.current
+      ?.querySelector(".ProseMirror")
+      ?.dispatchEvent(new Event("dragleave", { bubbles: true }));
+  };
+
+  /** Onde, em relação a um bloco, o ponteiro está: na faixa da esquerda ou da direita dele (ou em nenhuma). */
+  const locate = (event: ReactDragEvent) => {
+    const draggedId = dragSource.current;
+    if (!draggedId) return null;
+    const outer = (event.target as HTMLElement).closest?.<HTMLElement>(".bn-block-outer");
+    const targetId = outer?.getAttribute("data-id");
+    if (!outer || !targetId || targetId === draggedId) return null;
+    const target = findBlock(api.document as unknown as Block[], targetId);
+    if (!target || target.type === COLUMN_LIST || target.type === COLUMN) return null;
+    const content = outer.querySelector<HTMLElement>(":scope > .bn-block > .bn-block-content");
+    if (!content) return null;
+    const rect = content.getBoundingClientRect();
+    if (event.clientY < rect.top || event.clientY > rect.bottom) return null;
+    const zone = Math.min(72, rect.width * 0.2);
+    const side: Side | null =
+      event.clientX <= rect.left + zone
+        ? "left"
+        : event.clientX >= rect.right - zone
+          ? "right"
+          : null;
+    return side ? { targetId, side, rect } : null;
+  };
+
+  const onDragOverCapture = (event: ReactDragEvent) => {
+    const hit = locate(event);
+    const box = wrapper.current?.getBoundingClientRect();
+    if (!hit || !box || !indicator.current) {
+      hideIndicator();
+      return;
+    }
+    // Perto da lateral de um bloco: é "colocar ao lado". O cursor horizontal padrão não deve aparecer.
+    event.preventDefault();
+    event.stopPropagation();
+    if (!sideHit.current) clearDropCursor();
+    sideHit.current = { targetId: hit.targetId, side: hit.side };
+    const style = indicator.current.style;
+    style.top = `${hit.rect.top - box.top}px`;
+    style.height = `${hit.rect.height}px`;
+    style.left = `${(hit.side === "left" ? hit.rect.left : hit.rect.right) - box.left - 1}px`;
+    indicator.current.hidden = false;
+  };
+
+  const onDropCapture = (event: ReactDragEvent) => {
+    const hit = sideHit.current;
+    const draggedId = dragSource.current;
+    hideIndicator();
+    if (!hit || !draggedId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearDropCursor();
+    const next = dropBeside(api.document as unknown as Block[], hit.targetId, draggedId, hit.side);
+    if (next) {
+      api.replaceBlocks(
+        api.document.map((block) => block.id),
+        next as unknown[],
+      );
+    }
+    dragSource.current = null;
+  };
+
   return (
     <EditorContext.Provider
       value={{ titleOf, iconOf, open: onOpenPage, openExternal: onOpenExternal }}
     >
       {/* Links de verdade no texto abrem no navegador do sistema, nunca dentro do app. */}
       <div
+        ref={wrapper}
         className="block-editor"
+        onDragOverCapture={onDragOverCapture}
+        onDropCapture={onDropCapture}
+        onDragEndCapture={() => {
+          hideIndicator();
+          dragSource.current = null;
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) hideIndicator();
+        }}
         onPaste={detectLanguageAfterPaste}
         onClick={(event) => {
           const href = (event.target as HTMLElement).closest?.("a[href]")?.getAttribute("href");
@@ -584,42 +764,48 @@ export default function BlockEditor({
           }
         }}
       >
-        <BlockNoteView
-          editor={editor as never}
-          theme={scheme}
-          slashMenu={false}
-          sideMenu={false}
-          onChange={emitChange}
-          onSelectionChange={scheduleCleanup}
-        >
-          <SideMenuController sideMenu={CustomSideMenu} />
-          <SuggestionMenuController
-            triggerCharacter="/"
-            getItems={async (query) =>
-              filterSuggestionItems(
-                [
-                  ...getDefaultReactSlashMenuItems(editor as never).map(withAliases),
-                  ...customItems,
-                ],
-                query,
-              )
-            }
-          />
-          <SuggestionMenuController
-            triggerCharacter="@"
-            getItems={async (query) =>
-              filterSuggestionItems(
-                pages.map((page) => ({
-                  title: page.title,
-                  icon: <PageGlyph icon={page.icon} />,
-                  onItemClick: () =>
-                    api.insertInlineContent([{ type: "mention", props: { pageId: page.id } }, " "]),
-                })),
-                query,
-              ).slice(0, 10)
-            }
-          />
-        </BlockNoteView>
+        <div ref={indicator} className="column-drop-indicator" hidden aria-hidden="true" />
+        <DragSource.Provider value={dragControl}>
+          <BlockNoteView
+            editor={editor as never}
+            theme={scheme}
+            slashMenu={false}
+            sideMenu={false}
+            onChange={emitChange}
+            onSelectionChange={scheduleCleanup}
+          >
+            <SideMenuController sideMenu={CustomSideMenu} />
+            <SuggestionMenuController
+              triggerCharacter="/"
+              getItems={async (query) =>
+                filterSuggestionItems(
+                  [
+                    ...getDefaultReactSlashMenuItems(editor as never).map(withAliases),
+                    ...customItems,
+                  ],
+                  query,
+                )
+              }
+            />
+            <SuggestionMenuController
+              triggerCharacter="@"
+              getItems={async (query) =>
+                filterSuggestionItems(
+                  pages.map((page) => ({
+                    title: page.title,
+                    icon: <PageGlyph icon={page.icon} />,
+                    onItemClick: () =>
+                      api.insertInlineContent([
+                        { type: "mention", props: { pageId: page.id } },
+                        " ",
+                      ]),
+                  })),
+                  query,
+                ).slice(0, 10)
+              }
+            />
+          </BlockNoteView>
+        </DragSource.Provider>
       </div>
     </EditorContext.Provider>
   );

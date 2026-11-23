@@ -2904,3 +2904,66 @@
     font-size: 16px; /* abaixo de 16px o navegador do celular amplia a tela ao tocar no campo */
   }
 }
+
+/* ───────── Colunas (blocos lado a lado) ───────── */
+.block-editor {
+  position: relative;
+}
+
+/*
+ * O editor desenha cada bloco de estrutura dentro de um invólucro (`.react-renderer.node-<tipo>`), e a lista de filhos é
+ * IRMÃ desse invólucro. A lista de colunas e as colunas são só estrutura: o marcador de cada uma fica escondido.
+ */
+.react-renderer.node-columnList,
+.react-renderer.node-column {
+  display: none;
+}
+
+/* O espaço de "clicar para adicionar um bloco no fim" que o editor põe no começo de cada coluna deixava um vão em cima. */
+.bn-block:has(> .react-renderer.node-column) > .bn-trailing-block {
+  display: none;
+}
+
+/* Os filhos da lista (as colunas) ficam lado a lado, e cada coluna divide o espaço por igual. */
+.react-renderer.node-columnList ~ .bn-block-group {
+  display: flex;
+  gap: var(--space-4);
+  margin-left: 0;
+}
+
+.react-renderer.node-columnList ~ .bn-block-group > .bn-block-outer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Dentro da coluna, os blocos usam a largura toda, sem o recuo nem a linha guia dos filhos de outros blocos. */
+.react-renderer.node-column ~ .bn-block-group {
+  margin-left: 0;
+}
+
+.react-renderer.node-columnList ~ .bn-block-group > .bn-block-outer::before,
+.react-renderer.node-column ~ .bn-block-group > .bn-block-outer::before {
+  display: none !important;
+}
+
+/* A linha que mostra onde o bloco será colocado ao soltá-lo ao lado de outro. */
+.column-drop-indicator {
+  position: absolute;
+  z-index: 5;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+
+.drag-handle-source {
+  display: contents;
+}
+
+/* No celular as colunas não cabem lado a lado: empilham, uma embaixo da outra. */
+@media (max-width: 719px) {
+  .react-renderer.node-columnList ~ .bn-block-group {
+    flex-direction: column;
+    gap: 0;
+  }
+}
