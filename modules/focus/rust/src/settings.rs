@@ -17,6 +17,8 @@ pub struct PomodoroSettings {
     pub long_break_every: u32,
     /// Avisa com notificação do sistema ao fim. Desligado por padrão: só avisa quem pedir.
     pub notify: bool,
+    /// Toca o sino ao fim, com o app aberto (e é o som do alarme no celular). Ligado por padrão.
+    pub sound: bool,
 }
 
 impl Default for PomodoroSettings {
@@ -27,6 +29,7 @@ impl Default for PomodoroSettings {
             long_break_min: 15,
             long_break_every: 0,
             notify: false,
+            sound: true,
         }
     }
 }
@@ -66,6 +69,8 @@ pub fn get(conn: &Connection) -> Result<PomodoroSettings, FocusError> {
         long_break_min: number("long_break_min", defaults.long_break_min)?,
         long_break_every: number("long_break_every", defaults.long_break_every)?,
         notify: read(conn, "notify")?.is_some_and(|text| text == "1"),
+        // Nunca gravado = ligado (o padrão); só "0" desliga.
+        sound: read(conn, "sound")?.is_none_or(|text| text != "0"),
     };
     // Valor gravado fora dos limites (banco editado à mão, versão futura): volta ao padrão inteiro.
     Ok(if validate(&settings).is_ok() {
@@ -86,6 +91,7 @@ pub fn set(conn: &Connection, settings: &PomodoroSettings) -> Result<PomodoroSet
             "notify",
             if settings.notify { "1" } else { "0" }.to_string(),
         ),
+        ("sound", if settings.sound { "1" } else { "0" }.to_string()),
     ];
     let tx = conn.unchecked_transaction()?;
     for (key, value) in entries {

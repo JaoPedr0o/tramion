@@ -5,6 +5,7 @@ use tramion_focus::error::FocusError;
 use tramion_focus::habits::{self, Frequency, HabitInput, is_valid_day};
 use tramion_focus::sessions;
 use tramion_focus::settings::{self, PomodoroSettings};
+
 use tramion_infra_sqlite::Database;
 
 fn db() -> Database {
@@ -298,6 +299,7 @@ fn ajustes_tem_padrao_validacao_e_persistencia() {
         (25, 5, 0)
     );
     assert!(!defaults.notify, "notificação só se a pessoa ligar");
+    assert!(defaults.sound, "o sino ao fim vem ligado");
 
     let custom = PomodoroSettings {
         focus_min: 50,
@@ -305,6 +307,7 @@ fn ajustes_tem_padrao_validacao_e_persistencia() {
         long_break_min: 30,
         long_break_every: 4,
         notify: true,
+        sound: false,
     };
     assert_eq!(settings::set(c, &custom).unwrap(), custom);
     assert_eq!(settings::get(c).unwrap(), custom);

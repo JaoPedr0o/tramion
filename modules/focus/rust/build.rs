@@ -10,6 +10,9 @@ const COMMANDS: &[&str] = &[
     "session_list",
     "settings_get",
     "settings_set",
+    "timer_get",
+    "timer_set",
+    "timer_finish",
 ];
 
 fn main() {

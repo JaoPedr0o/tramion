@@ -21,6 +21,8 @@ pub enum FocusError {
     SessionInvalid,
     /// Ajustes do pomodoro fora dos limites.
     SettingsInvalid,
+    /// Estado do cronômetro incoerente (fase, horas ou ciclo fora do aceitável).
+    TimerInvalid,
     Storage(rusqlite::Error),
     Internal(String),
 }
@@ -36,6 +38,7 @@ impl FocusError {
             FocusError::Archived => "focus.archived",
             FocusError::SessionInvalid => "focus.session-invalid",
             FocusError::SettingsInvalid => "focus.settings-invalid",
+            FocusError::TimerInvalid => "focus.timer-invalid",
             FocusError::Storage(_) | FocusError::Internal(_) => "focus.internal",
         }
     }
@@ -52,6 +55,7 @@ impl fmt::Display for FocusError {
             FocusError::Archived => write!(f, "o hábito está arquivado"),
             FocusError::SessionInvalid => write!(f, "a sessão não é válida"),
             FocusError::SettingsInvalid => write!(f, "os ajustes estão fora dos limites"),
+            FocusError::TimerInvalid => write!(f, "o estado do cronômetro não é válido"),
             FocusError::Storage(error) => write!(f, "erro de armazenamento: {error}"),
             FocusError::Internal(message) => write!(f, "erro interno: {message}"),
         }

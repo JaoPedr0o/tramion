@@ -11,4 +11,7 @@ permissions = [
   "allow-session-list",
   "allow-settings-get",
   "allow-settings-set",
+  "allow-timer-get",
+  "allow-timer-set",
+  "allow-timer-finish",
 ]

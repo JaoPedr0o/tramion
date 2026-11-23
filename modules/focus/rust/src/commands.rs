@@ -4,6 +4,7 @@ use crate::error::FocusError;
 use crate::habits::{self, Habit, HabitCheck, HabitInput};
 use crate::sessions::{self, Session};
 use crate::settings::{self, PomodoroSettings};
+use crate::timer::{self, Finish, TimerState};
 use serde::Serialize;
 use tauri::State;
 use tramion_infra_sqlite::SharedDatabase;
@@ -123,4 +124,25 @@ pub async fn settings_set(
     settings: PomodoroSettings,
 ) -> Result<PomodoroSettings, CommandError> {
     with_db(&db, |conn| settings::set(conn, &settings))
+}
+
+#[tauri::command]
+pub async fn timer_get(db: State<'_, SharedDatabase>) -> Result<TimerState, CommandError> {
+    with_db(&db, timer::get)
+}
+
+#[tauri::command]
+pub async fn timer_set(
+    db: State<'_, SharedDatabase>,
+    state: TimerState,
+) -> Result<TimerState, CommandError> {
+    with_db(&db, |conn| timer::set(conn, &state))
+}
+
+#[tauri::command]
+pub async fn timer_finish(
+    db: State<'_, SharedDatabase>,
+    cycle: i64,
+) -> Result<Finish, CommandError> {
+    with_db(&db, |conn| timer::finish(conn, cycle))
 }

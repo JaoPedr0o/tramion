@@ -8,6 +8,7 @@ pub mod error;
 pub mod habits;
 pub mod sessions;
 pub mod settings;
+pub mod timer;
 
 use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
@@ -17,10 +18,16 @@ use tramion_infra_sqlite::{Migration, ModuleMigrations};
 pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
     module: "focus",
     depends_on: &[],
-    migrations: &[Migration {
-        version: 1,
-        sql: include_str!("../migrations/0001_focus.sql"),
-    }],
+    migrations: &[
+        Migration {
+            version: 1,
+            sql: include_str!("../migrations/0001_focus.sql"),
+        },
+        Migration {
+            version: 2,
+            sql: include_str!("../migrations/0002_focus_timer.sql"),
+        },
+    ],
 };
 
 /// O plugin do Tauri deste módulo. A interface o chama por `plugin:focus|<comando>`.
@@ -37,6 +44,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::session_list,
             commands::settings_get,
             commands::settings_set,
+            commands::timer_get,
+            commands::timer_set,
+            commands::timer_finish,
         ])
         .build()
 }
