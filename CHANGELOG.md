@@ -4,6 +4,38 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.0] - 2026-11-24
+
+### Adicionado
+
+- **Pomodoro que continua com o app fechado (celular)**: o cronômetro é salvo e, ao abrir o app, retoma de onde estava
+  (se o tempo acabou enquanto estava fechado, a sessão é registrada com o início real). O fim é avisado por um **alarme do
+  sistema com som e vibração** e, enquanto o pomodoro roda, uma **notificação fixa** com o horário de término. O som é
+  um sino gerado para o app; "Som ao terminar" fica nos ajustes (ligado por padrão).
+- **Navegação entre telas com ícones**: no computador, um controle com ícone e nome no topo do menu lateral; no celular,
+  uma **barra de abas** embaixo da tela (Notas e Foco sempre à mão, sem abrir a gaveta).
+
+### Alterado
+
+- **Foco redesenhado**: pomodoro com um **anel de progresso e um tomate desenhado**, ciclo de pomodoros, cores diferentes
+  para foco e pausa e janela de **Ajustes** de verdade; hábitos em **cartões** com cor de destaque, botão grande de
+  marcar, sequência com selo, faixa dos últimos 7 dias e mapa de calor com legenda.
+- A tela de páginas passa a se chamar **Notas**, e as descrições do app (README e instaladores) agora falam de notas,
+  bases de dados e foco.
+
+### Corrigido
+
+- **Lembretes com hora não eram agendados** em bases sem "Lembretes" ligado (um botão escondido no menu da base). Agora,
+  escolher uma hora numa data **liga os lembretes da base**, usando aquela coluna como prazo (quem desligou de propósito
+  não é afetado).
+
+### Limites conhecidos
+
+- O visual novo do Foco, a notificação fixa e o alarme do pomodoro foram verificados por testes e por compilação, mas o
+  alarme agendado e a notificação fixa **ainda precisam ser vistos funcionando num celular** (alguns fabricantes
+  limitam alarmes de apps com a bateria muito restrita).
+- Os dados do Foco ainda não sincronizam entre PC e celular.
+
 ## [0.5.0] - 2026-11-24
 
 ### Adicionado
@@ -122,6 +154,7 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
+[0.6.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.6.0
 [0.5.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.5.0
 [0.4.1]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.1
 [0.4.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.0
