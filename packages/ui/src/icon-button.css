@@ -1,0 +1,28 @@
+.ui-icon-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ui-icon-button:hover {
+  background: var(--color-hover);
+}
+
+.ui-icon-button[aria-pressed="true"],
+.ui-icon-button[aria-expanded="true"] {
+  background: var(--color-hover);
+}
+
+.ui-icon-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
