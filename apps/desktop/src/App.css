@@ -124,8 +124,8 @@
   padding: var(--space-1) var(--space-2) var(--space-2);
 }
 
-/* Telas de celular: uma coluna só; a barra lateral vira uma gaveta por cima do conteúdo. */
-@media (max-width: 720px) {
+/* Telas de celular (abaixo de 720 px): uma coluna só; a barra lateral vira uma gaveta por cima do conteúdo. */
+@media (max-width: 719px) {
   .shell,
   .shell[data-sidebar="collapsed"] {
     grid-template-columns: minmax(0, 1fr);
@@ -137,5 +137,38 @@
     z-index: 20;
     width: min(86vw, 320px);
     box-shadow: 4px 0 24px rgb(0 0 0 / 25%);
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Fechada, a gaveta sai pela esquerda (e só some da ordem do Tab depois de sair). */
+  .shell[data-sidebar="collapsed"] .shell__sidebar {
+    transform: translateX(-100%);
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 220ms;
+  }
+
+  .shell__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: rgb(0 0 0 / 40%);
+  }
+
+  .shell__topbar {
+    padding: 0 var(--space-2);
+  }
+
+  /* Dedos pedem alvos maiores que o ponteiro do mouse. */
+  .shell__view,
+  .shell__sidebar .sidebar-row,
+  .shell__sidebar .page-tree__item {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__sidebar {
+    transition: none !important;
   }
 }

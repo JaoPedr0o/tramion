@@ -10,18 +10,12 @@ import {
   Logo,
 } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import { isNarrowScreen, useDrawerGestures, useNarrowScreen } from "./drawer";
 import { applyTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
 
 const STORAGE_KEY = "tramion.sidebarCollapsed";
 /** Chaves dos nomes antigos do app: a preferência de quem já usava continua valendo. */
 const LEGACY_STORAGE_KEYS = ["aesthetic.sidebarCollapsed", "aun.sidebarCollapsed"];
-
-/** Largura (px) até a qual a tela é tratada como de celular: a barra lateral começa fechada e vira uma gaveta. */
-const NARROW_SCREEN = "(max-width: 720px)";
-
-function isNarrowScreen(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia(NARROW_SCREEN).matches;
-}
 
 // O armazenamento do navegador pode faltar (janela privada, dados bloqueados): nesse caso o app só
 // deixa de lembrar o estado da barra lateral, sem quebrar.
@@ -31,8 +25,8 @@ function readCollapsed(): boolean {
       [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]
         .map((key) => localStorage.getItem(key))
         .find((value) => value !== null) ?? undefined;
-    // Sem preferência guardada: em tela de celular a barra lateral começa fechada.
-    return stored === undefined ? isNarrowScreen() : stored === "1";
+    // Em tela de celular a gaveta sempre começa fechada (a preferência guardada é a do computador).
+    return isNarrowScreen() || stored === "1";
   } catch {
     return isNarrowScreen();
   }
@@ -67,8 +61,15 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [theme, setTheme] = useState(readTheme);
 
+  const narrow = useNarrowScreen();
   const toggleSidebar = useCallback(() => setCollapsed((previous) => !previous), []);
-  useEffect(() => saveCollapsed(collapsed), [collapsed]);
+  const openSidebar = useCallback(() => setCollapsed(false), []);
+  const closeSidebar = useCallback(() => setCollapsed(true), []);
+  // Na gaveta do celular, abrir e fechar é passageiro: só o estado do computador é lembrado.
+  useEffect(() => {
+    if (!narrow) saveCollapsed(collapsed);
+  }, [collapsed, narrow]);
+  useDrawerGestures(narrow, !collapsed, openSidebar, closeSidebar);
   useEffect(() => {
     applyTheme(theme);
     saveTheme(theme);
@@ -127,7 +128,19 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
             </nav>
           )}
 
-          <div className="shell__sidebar-body">{Sidebar && <Sidebar />}</div>
+          <div
+            className="shell__sidebar-body"
+            onClick={(event) => {
+              // No celular, escolher uma página ou uma ação fecha a gaveta. Botões que abrem um menu ou janelinha
+              // ancorada nela (aria-haspopup) a mantêm aberta, senão a janelinha perderia o lugar onde se apoia.
+              if (!narrow) return;
+              const target = event.target as HTMLElement;
+              if (target.closest("[aria-haspopup]")) return;
+              if (target.closest(".page-tree__item, .sidebar-row")) closeSidebar();
+            }}
+          >
+            {Sidebar && <Sidebar />}
+          </div>
 
           <div className="shell__footer">
             <Menu
@@ -144,6 +157,11 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
             />
           </div>
         </aside>
+
+        {/* Atrás da gaveta (celular): tocar fora dela a fecha. */}
+        {narrow && !collapsed && (
+          <div className="shell__backdrop" aria-hidden="true" onClick={closeSidebar} />
+        )}
 
         <div className="shell__page">
           <header className="shell__topbar">

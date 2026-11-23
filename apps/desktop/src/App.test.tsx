@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ViewContribution, ViewRegistry } from "@tramion/contracts";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -98,11 +98,83 @@ describe("moldura do app", () => {
       expect(shell().getAttribute("data-sidebar")).toBe("open");
     });
 
-    it("a preferência guardada vale mesmo em tela de celular", () => {
+    it("em tela de celular a gaveta começa fechada mesmo com a preferência do computador (aberta)", () => {
       narrow(true);
       localStorage.setItem("tramion.sidebarCollapsed", "0");
 
       render(<App views={registry(full)} />);
+
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+    });
+
+    it("abrir e fechar a gaveta no celular não muda a preferência guardada do computador", async () => {
+      narrow(true);
+      localStorage.setItem("tramion.sidebarCollapsed", "0");
+      const user = userEvent.setup();
+      render(<App views={registry(full)} />);
+
+      await user.click(
+        within(screen.getByRole("banner")).getByRole("button", { name: "Abrir a barra lateral" }),
+      );
+
+      expect(shell().getAttribute("data-sidebar")).toBe("open");
+      expect(localStorage.getItem("tramion.sidebarCollapsed")).toBe("0");
+    });
+
+    it("tocar no fundo atrás da gaveta a fecha", async () => {
+      narrow(true);
+      const user = userEvent.setup();
+      render(<App views={registry(full)} />);
+      await user.click(
+        within(screen.getByRole("banner")).getByRole("button", { name: "Abrir a barra lateral" }),
+      );
+
+      await user.click(document.querySelector(".shell__backdrop")!);
+
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+    });
+
+    it("sem a gaveta aberta, não há fundo escurecido; em tela larga também não", () => {
+      narrow(false);
+
+      render(<App views={registry(full)} />);
+
+      expect(document.querySelector(".shell__backdrop")).toBeNull();
+    });
+
+    it("arrastar da borda esquerda abre a gaveta e arrastar para a esquerda a fecha", () => {
+      narrow(true);
+      render(<App views={registry(full)} />);
+
+      const swipe = (from: number, to: number, y = 300) => {
+        fireEvent.touchStart(window, { touches: [{ clientX: from, clientY: y }] });
+        fireEvent.touchEnd(window, { changedTouches: [{ clientX: to, clientY: y + 4 }] });
+      };
+
+      swipe(100, 220); // longe da borda: não abre
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+      swipe(10, 140); // da borda: abre
+      expect(shell().getAttribute("data-sidebar")).toBe("open");
+      swipe(250, 120); // para a esquerda: fecha
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+    });
+
+    it("rolar na vertical não conta como gesto", () => {
+      narrow(true);
+      render(<App views={registry(full)} />);
+
+      fireEvent.touchStart(window, { touches: [{ clientX: 10, clientY: 100 }] });
+      fireEvent.touchEnd(window, { changedTouches: [{ clientX: 80, clientY: 400 }] });
+
+      expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
+    });
+
+    it("em tela larga os gestos não fazem nada", () => {
+      narrow(false);
+      render(<App views={registry(full)} />);
+
+      fireEvent.touchStart(window, { touches: [{ clientX: 250, clientY: 300 }] });
+      fireEvent.touchEnd(window, { changedTouches: [{ clientX: 100, clientY: 300 }] });
 
       expect(shell().getAttribute("data-sidebar")).toBe("open");
     });
