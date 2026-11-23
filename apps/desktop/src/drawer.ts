@@ -22,8 +22,12 @@ export function useNarrowScreen(): boolean {
   return useSyncExternalStore(subscribe, isNarrowScreen, () => false);
 }
 
-/** A faixa, na borda esquerda, onde começar a arrastar abre a gaveta. */
-export const EDGE_PX = 32;
+/**
+ * A faixa, perto da borda esquerda, onde começar a arrastar abre a gaveta. Ela NÃO começa na borda: os primeiros
+ * pixels pertencem ao gesto de "voltar" do Android, que fecharia o app em vez de abrir a gaveta.
+ */
+export const EDGE_MIN_PX = 28;
+export const EDGE_MAX_PX = 120;
 /** Quanto é preciso arrastar na horizontal para valer como gesto. */
 export const MIN_SWIPE_PX = 56;
 /** Se o dedo desvia mais que isto na vertical, é rolagem, não gesto. */
@@ -44,11 +48,12 @@ export function swipeAction(
   const dy = end.y - start.y;
   if (Math.abs(dy) > MAX_DRIFT_PX || Math.abs(dy) > Math.abs(dx)) return null;
   if (drawerOpen && dx <= -MIN_SWIPE_PX) return "close";
-  if (!drawerOpen && start.x <= EDGE_PX && dx >= MIN_SWIPE_PX) return "open";
+  if (!drawerOpen && start.x >= EDGE_MIN_PX && start.x <= EDGE_MAX_PX && dx >= MIN_SWIPE_PX)
+    return "open";
   return null;
 }
 
-/** Arrastar da borda esquerda abre a gaveta; arrastar para a esquerda com ela aberta a fecha. */
+/** Arrastar a partir da faixa da borda esquerda abre a gaveta; arrastar para a esquerda com ela aberta a fecha. */
 export function useDrawerGestures(
   enabled: boolean,
   drawerOpen: boolean,

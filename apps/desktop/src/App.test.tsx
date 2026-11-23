@@ -151,9 +151,10 @@ describe("moldura do app", () => {
         fireEvent.touchEnd(window, { changedTouches: [{ clientX: to, clientY: y + 4 }] });
       };
 
-      swipe(100, 220); // longe da borda: não abre
+      swipe(200, 320); // longe da borda: não abre
+      swipe(5, 140); // borda extrema (gesto de voltar do sistema): não abre
       expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
-      swipe(10, 140); // da borda: abre
+      swipe(60, 190); // da faixa da borda: abre
       expect(shell().getAttribute("data-sidebar")).toBe("open");
       swipe(250, 120); // para a esquerda: fecha
       expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
