@@ -1,81 +1,95 @@
 /* Tokens de design: a ÚNICA fonte de cores, medidas e tipografia.
-   Componentes usam var(--...) e nunca valores soltos. Trocar o tema = trocar variáveis. */
+   Componentes usam var(--...) e nunca valores soltos. Trocar o tema = trocar variáveis.
+
+   Identidade "Aesthetic": tons suaves de lavanda, rosé e creme no claro ("Pétala"); roxo profundo e
+   lilás no escuro ("Crepúsculo"). Títulos em serifa suave (Fraunces), texto em sans limpa (Inter). */
 :root {
   color-scheme: light dark;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-display: "Fraunces Variable", "Iowan Old Style", Palatino, Georgia, serif;
   --font-size-ui: 14px;
   --font-size-page: 16px;
-  --font-size-title: 40px;
+  --font-size-title: 42px;
 
   --space-0: 2px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;
   --space-4: 24px;
-  --radius: 4px;
-  --radius-lg: 6px;
+  --space-6: 32px;
+  --space-8: 48px;
+  --radius: 8px;
+  --radius-lg: 12px;
 
   /* Medidas do layout */
-  --sidebar-width: 240px;
-  --topbar-height: 45px;
+  --sidebar-width: 248px;
+  --topbar-height: 48px;
   --page-width: 708px;
-  --row-height: 28px;
+  --row-height: 30px;
 
-  /* Cores (tema claro) */
-  --color-bg: #ffffff;
-  --color-sidebar: #f7f7f5;
+  /* Cores (tema claro: "Pétala") */
+  --color-bg: #fffcf9;
+  --color-sidebar: #f8f1f5;
+  --sidebar-background: linear-gradient(180deg, #faf2f7 0%, #f6f0f9 58%, #f9f1ef 100%);
   --color-surface: #ffffff;
-  --color-text: #37352f;
-  --color-text-muted: #787774;
-  --color-border: #e9e9e7;
-  --color-hover: rgba(55, 53, 47, 0.08);
-  --color-selected: rgba(55, 53, 47, 0.12);
-  --color-accent: #2383e2;
-  --color-danger: #e03e3e;
-  --color-warning-bg: #fbf3db;
-  --color-danger-bg: #fbe4e4;
+  --color-text: #3a3042;
+  --color-text-muted: #85788f;
+  --color-border: #eee5ee;
+  --color-hover: rgba(138, 96, 168, 0.08);
+  --color-selected: rgba(170, 120, 210, 0.16);
+  --color-accent: #9b63cf;
+  --color-accent-soft: rgba(155, 99, 207, 0.14);
+  --color-danger: #d6455d;
+  --color-warning-bg: #fbf0dc;
+  --color-danger-bg: #fbe3e8;
+  --gradient-brand: linear-gradient(135deg, #c9a2ec 0%, #f4a6c7 52%, #ffd0b0 100%);
   --shadow-menu:
-    0 0 0 1px rgba(15, 15, 15, 0.05), 0 3px 6px rgba(15, 15, 15, 0.1),
-    0 9px 24px rgba(15, 15, 15, 0.2);
+    0 0 0 1px rgba(90, 60, 120, 0.06), 0 4px 10px rgba(90, 60, 120, 0.1),
+    0 12px 30px rgba(90, 60, 120, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #191919;
-    --color-sidebar: #202020;
-    --color-surface: #252525;
-    --color-text: rgba(255, 255, 255, 0.81);
-    --color-text-muted: #9b9b9b;
-    --color-border: #2f2f2f;
-    --color-hover: rgba(255, 255, 255, 0.055);
-    --color-selected: rgba(255, 255, 255, 0.09);
-    --color-accent: #2383e2;
-    --color-danger: #ff7369;
-    --color-warning-bg: #413b23;
-    --color-danger-bg: #4f2f2c;
+    --color-bg: #16131b;
+    --color-sidebar: #1c1823;
+    --sidebar-background: linear-gradient(180deg, #1e1926 0%, #1b1723 60%, #1d1820 100%);
+    --color-surface: #231e2b;
+    --color-text: rgba(255, 244, 250, 0.86);
+    --color-text-muted: #a597b3;
+    --color-border: #302838;
+    --color-hover: rgba(210, 170, 240, 0.07);
+    --color-selected: rgba(190, 140, 230, 0.16);
+    --color-accent: #c79bf0;
+    --color-accent-soft: rgba(199, 155, 240, 0.16);
+    --color-danger: #ff7f93;
+    --color-warning-bg: #42382a;
+    --color-danger-bg: #4d2a35;
     --shadow-menu:
-      0 0 0 1px rgba(255, 255, 255, 0.094), 0 3px 6px rgba(15, 15, 15, 0.2),
-      0 9px 24px rgba(15, 15, 15, 0.4);
+      0 0 0 1px rgba(220, 190, 250, 0.1), 0 4px 10px rgba(5, 2, 10, 0.3),
+      0 12px 30px rgba(5, 2, 10, 0.5);
   }
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #191919;
-  --color-sidebar: #202020;
-  --color-surface: #252525;
-  --color-text: rgba(255, 255, 255, 0.81);
-  --color-text-muted: #9b9b9b;
-  --color-border: #2f2f2f;
-  --color-hover: rgba(255, 255, 255, 0.055);
-  --color-selected: rgba(255, 255, 255, 0.09);
-  --color-accent: #2383e2;
-  --color-danger: #ff7369;
-  --color-warning-bg: #413b23;
-  --color-danger-bg: #4f2f2c;
+  --color-bg: #16131b;
+  --color-sidebar: #1c1823;
+  --sidebar-background: linear-gradient(180deg, #1e1926 0%, #1b1723 60%, #1d1820 100%);
+  --color-surface: #231e2b;
+  --color-text: rgba(255, 244, 250, 0.86);
+  --color-text-muted: #a597b3;
+  --color-border: #302838;
+  --color-hover: rgba(210, 170, 240, 0.07);
+  --color-selected: rgba(190, 140, 230, 0.16);
+  --color-accent: #c79bf0;
+  --color-accent-soft: rgba(199, 155, 240, 0.16);
+  --color-danger: #ff7f93;
+  --color-warning-bg: #42382a;
+  --color-danger-bg: #4d2a35;
   --shadow-menu:
-    0 0 0 1px rgba(255, 255, 255, 0.094), 0 3px 6px rgba(15, 15, 15, 0.2),
-    0 9px 24px rgba(15, 15, 15, 0.4);
+    0 0 0 1px rgba(220, 190, 250, 0.1), 0 4px 10px rgba(5, 2, 10, 0.3),
+    0 12px 30px rgba(5, 2, 10, 0.5);
 }
 
 /* Controles nativos (barras de rolagem, campos) acompanham o tema forçado. */
@@ -93,4 +107,15 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--font-size-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+/* Barras de rolagem finas e discretas. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }

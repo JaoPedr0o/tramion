@@ -7,6 +7,7 @@ import {
   SidebarToggleButton,
   SunIcon,
   type MenuItem,
+  Logo,
 } from "@aesthetic/ui";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { applyTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
@@ -91,7 +92,7 @@ export default function App({ views, workspaceName = "Aesthetic Notes" }: Props)
         <aside className="shell__sidebar" aria-label="Barra lateral" inert={collapsed}>
           <div className="shell__workspace">
             <span className="shell__avatar" aria-hidden="true">
-              {workspaceName.charAt(0)}
+              <Logo size={22} />
             </span>
             <span className="shell__workspace-name">{workspaceName}</span>
             {SidebarActions && <SidebarActions />}

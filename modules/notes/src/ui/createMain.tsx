@@ -1,3 +1,4 @@
+import { Logo } from "@aesthetic/ui";
 import type { ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { NotePanel } from "./NotePanel.tsx";
@@ -23,7 +24,11 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         ) : nav.selectedId ? (
           <NotePanel key={nav.selectedId} deps={deps} id={nav.selectedId} />
         ) : (
-          <p className="notes-main__placeholder">Selecione ou crie uma página.</p>
+          <div className="notes-empty">
+            <Logo size={72} />
+            <h1 className="notes-empty__title">Aesthetic Notes</h1>
+            <p className="notes-main__placeholder">Selecione ou crie uma página.</p>
+          </div>
         )}
       </div>
     );

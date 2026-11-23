@@ -14,7 +14,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  background: var(--color-sidebar);
+  background: var(--sidebar-background, var(--color-sidebar));
   box-shadow: inset -1px 0 0 var(--color-border);
 }
 
@@ -36,17 +36,15 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   margin-inline-end: var(--space-1);
-  border-radius: var(--radius);
-  background: var(--color-selected);
-  color: var(--color-text);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .shell__workspace-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.01em;
   flex: 1;
   min-width: 0;
   overflow: hidden;

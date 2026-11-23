@@ -288,8 +288,10 @@
 
 .note-page__title {
   padding: 0;
+  font-family: var(--font-display);
   font-size: var(--font-size-title);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -1004,8 +1006,10 @@
 
 .database__title {
   margin: 0 0 var(--space-3);
-  font-size: 40px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .database__title input {
@@ -1384,4 +1388,50 @@
 
 .board__add:hover {
   background: var(--color-selected);
+}
+
+/* ───────── Identidade "Aesthetic" ───────── */
+/* Títulos dentro da página, na mesma serifa suave do título da página. */
+.bn-block-content[data-content-type="heading"] {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Citação com uma barra na cor da marca. */
+.bn-block-content[data-content-type="quote"] blockquote {
+  border-left: 3px solid var(--color-accent);
+}
+
+/* Página selecionada na árvore: realce na cor da marca. */
+.page-tree__item[aria-selected="true"] {
+  background: var(--color-accent-soft);
+}
+
+/* Tela inicial, quando nenhuma página está aberta. */
+.notes-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.notes-empty__title {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.notes-empty p {
+  margin: 0;
+}
+
+.notes-empty .logo {
+  filter: drop-shadow(0 10px 24px rgb(201 162 236 / 45%));
 }

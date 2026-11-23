@@ -35,8 +35,12 @@
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/icon.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "Productivity",
+    "shortDescription": "Notas e bases de dados, bonitas e só suas.",
+    "longDescription": "Aesthetic Notes é um aplicativo de notas e bases de dados que guarda tudo no seu computador."
   }
 }
