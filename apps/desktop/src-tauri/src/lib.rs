@@ -49,7 +49,10 @@ pub fn run() {
             };
             let db = Database::open(&data_dir.join(legacy::CURRENT_DB), &migrations, &options)?;
 
-            // Primeira abertura com o banco vazio: cria as páginas de exemplo (uma única vez).
+            // Primeira abertura com o banco vazio: cria as páginas de exemplo (uma única vez). Só no computador: no
+            // celular elas seriam enviadas ao computador no primeiro pareamento e apareceriam repetidas lá. O celular
+            // começa vazio e recebe as páginas do computador.
+            #[cfg(desktop)]
             match tramion_notes::samples::seed_if_first_run(db.connection()) {
                 Ok(true) => eprintln!("[exemplos] páginas de exemplo criadas"),
                 Ok(false) => {}

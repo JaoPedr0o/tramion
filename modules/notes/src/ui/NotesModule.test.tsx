@@ -3381,12 +3381,15 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(platform.cancelPairing).toHaveBeenCalled(); // sair do modo "mostrar" invalida o QR
     });
 
-    it("no celular a câmera abre sozinha e o QR lido já pareia e sincroniza", async () => {
+    it("no celular a câmera NÃO abre sozinha: só ao tocar em 'Abrir a câmera', e o QR lido já pareia e sincroniza", async () => {
       const { user, platform } = setup();
       (platform as { canScanQr: boolean }).canScanQr = true;
       platform.scanQr.mockResolvedValue("  tramion-pair:1:lido  ");
 
       await open(user);
+      await within(dialog()).findByRole("button", { name: "Abrir a câmera" });
+      expect(platform.scanQr).not.toHaveBeenCalled();
+      await user.click(within(dialog()).getByRole("button", { name: "Abrir a câmera" }));
 
       await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalledTimes(1));
       await vi.waitFor(() =>
@@ -3403,6 +3406,7 @@ describe("módulo de notas (a tela inteira)", () => {
       (platform as { canScanQr: boolean }).canScanQr = true;
       platform.scanQr.mockResolvedValue(null);
       await open(user);
+      await user.click(await within(dialog()).findByRole("button", { name: "Abrir a câmera" }));
       await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalledTimes(1));
 
       await user.click(await within(dialog()).findByRole("button", { name: "Abrir a câmera" }));
@@ -3420,6 +3424,7 @@ describe("módulo de notas (a tela inteira)", () => {
       );
 
       await open(user);
+      await user.click(await within(dialog()).findByRole("button", { name: "Abrir a câmera" }));
 
       expect((await within(dialog()).findByRole("alert")).textContent).toContain(
         "Sem permissão para usar a câmera",
@@ -3432,7 +3437,8 @@ describe("módulo de notas (a tela inteira)", () => {
       (platform as { canScanQr: boolean }).canScanQr = true;
       platform.scanQr.mockResolvedValue(null);
       await open(user);
-      await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalled());
+      await within(dialog()).findByRole("button", { name: "Abrir a câmera" });
+      expect(platform.scanQr).not.toHaveBeenCalled();
 
       await user.click(
         within(dialog()).getByRole("button", { name: "Mostrar código neste aparelho" }),

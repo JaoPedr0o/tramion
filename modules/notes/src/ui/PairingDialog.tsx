@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PairedDevice, PairingOffer, SyncReport } from "../application/notes-platform.ts";
 import { NotesError } from "../domain/errors.ts";
@@ -24,8 +24,9 @@ function formatTime(ms: number): string {
 }
 
 /**
- * Janela "Parear aparelho". No celular ela já abre a câmera para ler o QR do computador; no computador ela mostra o
- * QR. O botão de cima troca o sentido (quem mostra e quem lê), e dá para colar o código se a câmera não servir.
+ * Janela "Parear aparelho". No celular ela começa no modo "ler" e a câmera só abre quando a pessoa toca em "Abrir a
+ * câmera" (nada abre sozinho: ela pode preferir mostrar o código deste aparelho ou colar o do outro). No computador
+ * ela mostra o QR. O botão de cima troca o sentido (quem mostra e quem lê).
  */
 export function PairingDialog({ deps }: { deps: NotesUiDeps }) {
   const nav = useNavigation(deps.store);
@@ -147,14 +148,6 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
       setScanning(false);
     }
   };
-
-  // No celular, entrar no modo "ler" abre a câmera sozinho (agendado, para o efeito não disparar estado direto).
-  const openCamera = useEffectEvent(() => void scan());
-  useEffect(() => {
-    if (mode !== "scan" || !platform.canScanQr) return;
-    const first = setTimeout(() => openCamera(), 0);
-    return () => clearTimeout(first);
-  }, [mode, platform]);
 
   const switchTo = (next: Mode) => {
     if (next === mode) return;
