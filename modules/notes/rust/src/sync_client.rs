@@ -71,16 +71,32 @@ const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(3);
 
 /// Conecta aos endereços guardados e, se nenhum responder, procura o aparelho pelo nome na rede (o IP dele pode ter
 /// mudado). Devolve a conexão e, quando veio da descoberta, os endereços novos para guardar.
-fn connect(device: &str, addrs: &[String]) -> Result<(TcpStream, Option<Vec<String>>), NotesError> {
-    match dial(addrs) {
-        Ok(stream) => Ok((stream, None)),
+/// Abre o canal seguro: conecta a um dos endereços e faz o aperto de mão. Quem responde sem ser o aparelho certo (outro
+/// aparelho que assumiu aquele IP) falha aqui, no aperto de mão, e conta como "não achei".
+fn open_channel(
+    addrs: &[String],
+    secret: &[u8; SECRET_LEN],
+) -> Result<SecureChannel<TcpStream>, NotesError> {
+    let stream = dial(addrs)?;
+    SecureChannel::connect(stream, secret).map_err(lan)
+}
+
+/// Abre o canal pelos endereços guardados e, se não der, procura o aparelho pelo nome na rede (o IP dele pode ter
+/// mudado). Devolve o canal e, quando veio da descoberta, os endereços novos para guardar.
+fn connect(
+    device: &str,
+    addrs: &[String],
+    secret: &[u8; SECRET_LEN],
+) -> Result<(SecureChannel<TcpStream>, Option<Vec<String>>), NotesError> {
+    match open_channel(addrs, secret) {
+        Ok(channel) => Ok((channel, None)),
         Err(first) => {
             let found = discovery::resolve(device, DISCOVERY_TIMEOUT);
             if found.is_empty() || found == addrs {
                 return Err(first);
             }
-            dial(&found)
-                .map(|stream| (stream, Some(found)))
+            open_channel(&found, secret)
+                .map(|channel| (channel, Some(found)))
                 .map_err(|_| first)
         }
     }
@@ -92,8 +108,7 @@ fn run(
     addrs: &[String],
     secret: &[u8; SECRET_LEN],
 ) -> Result<Outcome, NotesError> {
-    let (stream, rediscovered) = connect(device, addrs)?;
-    let mut channel = SecureChannel::connect(stream, secret).map_err(lan)?;
+    let (mut channel, rediscovered) = connect(device, addrs, secret)?;
     let outcome = run_initiator(&mut channel, &mut DbStore::new(db)).map_err(lan)?;
     if let Some(new_addrs) = rediscovered
         && let Ok(guard) = db.lock()
