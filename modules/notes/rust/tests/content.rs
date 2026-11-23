@@ -1,10 +1,10 @@
 //! Testes do conteúdo em blocos: o Rust guarda e valida; quem interpreta os blocos é o editor.
 
-use aun_infra_sqlite::Database;
-use aun_notes::MIGRATIONS;
-use aun_notes::error::NotesError;
-use aun_notes::model::{NewNote, Note, UpdateNote};
-use aun_notes::service::{self, MAX_CONTENT_BYTES};
+use aesthetic_infra_sqlite::Database;
+use aesthetic_notes::MIGRATIONS;
+use aesthetic_notes::error::NotesError;
+use aesthetic_notes::model::{NewNote, Note, UpdateNote};
+use aesthetic_notes::service::{self, MAX_CONTENT_BYTES};
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

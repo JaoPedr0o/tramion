@@ -16,7 +16,7 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev \
 
 ```bash
 pnpm install
-pnpm --filter @aun/desktop tauri dev
+pnpm --filter @aesthetic/desktop tauri dev
 ```
 
 A primeira compilação do Rust é demorada e gera vários GB em `apps/desktop/src-tauri/target/`.
@@ -44,15 +44,15 @@ O módulo `modules/notes` é o exemplo de referência. Um módulo é uma fatia v
 
 **Lado TypeScript** (`modules/<nome>/`):
 
-1. `package.json` com `name: "@aun/<nome>"`, `main` e `exports` apontando para `src/index.ts`, e dependências
-   `workspace:*` apenas de `@aun/contracts`, `@aun/core` e `@aun/ui`. O lint recusa qualquer outro módulo.
+1. `package.json` com `name: "@aesthetic/<nome>"`, `main` e `exports` apontando para `src/index.ts`, e dependências
+   `workspace:*` apenas de `@aesthetic/contracts`, `@aesthetic/core` e `@aesthetic/ui`. O lint recusa qualquer outro módulo.
 2. `src/index.ts` exporta a função que cria o `ModuleManifest` (`id`, `version`, `dependsOn`, `register`).
 3. No `register`, o módulo registra suas telas em `views` e assina/publica eventos em `events`.
 4. Camadas: `domain/` (tipos), `application/` (casos de uso e a interface do gateway),
    `infrastructure/` (adaptador que chama o Rust), `ui/` (React).
-5. Eventos novos entram em `AppEvents` no pacote `@aun/contracts`.
+5. Eventos novos entram em `AppEvents` no pacote `@aesthetic/contracts`.
 
-**Lado Rust** (`modules/<nome>/rust/`, crate `aun-<nome>`):
+**Lado Rust** (`modules/<nome>/rust/`, crate `aesthetic-<nome>`):
 
 1. `Cargo.toml` com `links = "tauri-plugin-<nome>"`, e `build.rs` listando os comandos
    (`tauri_plugin::Builder::new(COMMANDS).build()`).
@@ -63,7 +63,7 @@ O módulo `modules/notes` é o exemplo de referência. Um módulo é uma fatia v
 **Ligar ao app** (as duas únicas linhas que conhecem o módulo):
 
 - `apps/desktop/src/bootstrap.ts`: `registry.add(createXModule())`.
-- `apps/desktop/src-tauri/src/lib.rs`: `.plugin(aun_x::init())` e incluir `aun_x::MIGRATIONS` na lista.
+- `apps/desktop/src-tauri/src/lib.rs`: `.plugin(aesthetic_x::init())` e incluir `aesthetic_x::MIGRATIONS` na lista.
 - `apps/desktop/src-tauri/capabilities/default.json`: habilitar `"<nome>:default"`.
 - Dependência do crate no `Cargo.toml` do `src-tauri` e do pacote no `package.json` do app.
 
@@ -71,10 +71,10 @@ Rode `pnpm install` e `pnpm check`.
 
 ## Dados locais
 
-O app grava em `~/.local/share/dev.aun.notes/` (banco `aesthetic-ugly-notes.db` e pasta `backups/`).
+O app grava em `~/.local/share/dev.aesthetic.notes/` (banco `aesthetic-notes.db` e pasta `backups/`).
 Em desenvolvimento, apagar essa pasta recria o banco do zero.
 
-## Núcleo (`@aun/core`)
+## Núcleo (`@aesthetic/core`)
 
 - `createEventBus<E>()`: barramento tipado e síncrono (ADR 0007).
 - `createModuleRegistry({ events })`: `add(manifest)` e `start()`, que registra os módulos pela ordem de

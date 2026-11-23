@@ -1,4 +1,4 @@
-import { PlusIcon, StarFilledIcon, StarIcon, TrashIcon, type MenuItem } from "@aun/ui";
+import { PlusIcon, StarFilledIcon, StarIcon, TrashIcon, type MenuItem } from "@aesthetic/ui";
 import type { NoteSummary } from "../domain/note.ts";
 
 export interface PageMenuHandlers {

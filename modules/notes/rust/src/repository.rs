@@ -3,7 +3,7 @@
 //! As operações com várias instruções são juntadas numa transação pelo serviço.
 
 use crate::model::{Note, NoteSummary};
-use aun_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, params};
+use aesthetic_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, params};
 
 /// Instante atual em milissegundos, calculado pelo próprio SQLite.
 const NOW_MS: &str = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";

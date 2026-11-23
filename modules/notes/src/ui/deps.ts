@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus } from "@aun/contracts";
+import type { AppEvents, EventBus } from "@aesthetic/contracts";
 import type { NavigationStore } from "../application/navigation-store.ts";
 import type { NotesService } from "../application/notes-service.ts";
 import type { ComponentType } from "react";

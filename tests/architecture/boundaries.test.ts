@@ -20,7 +20,7 @@ async function boundaryErrors(filePath: string, code: string): Promise<string[]>
 describe("fronteiras de arquitetura", () => {
   it("permite ao core importar contracts pelo nome do pacote", async () => {
     expect(
-      await boundaryErrors("packages/core/src/virtual.ts", 'import "@aun/contracts";'),
+      await boundaryErrors("packages/core/src/virtual.ts", 'import "@aesthetic/contracts";'),
     ).toEqual([]);
   });
 
@@ -39,21 +39,24 @@ describe("fronteiras de arquitetura", () => {
   });
 
   it("proíbe contracts de importar outro pacote do projeto", async () => {
-    const errors = await boundaryErrors("packages/contracts/src/virtual.ts", 'import "@aun/core";');
+    const errors = await boundaryErrors(
+      "packages/contracts/src/virtual.ts",
+      'import "@aesthetic/core";',
+    );
     expect(errors).toHaveLength(1);
   });
 
-  it("proíbe também imports de SUBCAMINHO de pacote (@aun/ui/tokens.css)", async () => {
+  it("proíbe também imports de SUBCAMINHO de pacote (@aesthetic/ui/tokens.css)", async () => {
     const errors = await boundaryErrors(
       "packages/core/src/virtual.ts",
-      'import "@aun/ui/tokens.css";',
+      'import "@aesthetic/ui/tokens.css";',
     );
     expect(errors).toHaveLength(1);
   });
 
   it("permite subcaminho de um pacote que a regra libera", async () => {
     expect(
-      await boundaryErrors("packages/core/src/virtual.ts", 'import "@aun/contracts/algo";'),
+      await boundaryErrors("packages/core/src/virtual.ts", 'import "@aesthetic/contracts/algo";'),
     ).toEqual([]);
   });
 
@@ -61,17 +64,17 @@ describe("fronteiras de arquitetura", () => {
     const file = "modules/notes/src/virtual.ts";
 
     it("proíbe um módulo de importar outro módulo", async () => {
-      expect(await boundaryErrors(file, 'import "@aun/tasks";')).toHaveLength(1);
+      expect(await boundaryErrors(file, 'import "@aesthetic/tasks";')).toHaveLength(1);
     });
 
     it("proíbe QUALQUER outro módulo de importar o módulo de notas (pacote real)", async () => {
-      // O alvo aqui é um pacote que existe de verdade (@aun/notes), não um nome inventado.
+      // O alvo aqui é um pacote que existe de verdade (@aesthetic/notes), não um nome inventado.
       const other = "modules/outro/src/virtual.ts";
-      expect(await boundaryErrors(other, 'import "@aun/notes";')).toHaveLength(1);
+      expect(await boundaryErrors(other, 'import "@aesthetic/notes";')).toHaveLength(1);
     });
 
     it("proíbe um módulo de importar o app", async () => {
-      expect(await boundaryErrors(file, 'import "@aun/desktop";')).toHaveLength(1);
+      expect(await boundaryErrors(file, 'import "@aesthetic/desktop";')).toHaveLength(1);
     });
 
     it("proíbe import relativo que sai do módulo para outro pacote", async () => {
@@ -81,7 +84,8 @@ describe("fronteiras de arquitetura", () => {
     });
 
     it("permite ao módulo usar contracts, core e ui", async () => {
-      const code = 'import "@aun/contracts"; import "@aun/core"; import "@aun/ui";';
+      const code =
+        'import "@aesthetic/contracts"; import "@aesthetic/core"; import "@aesthetic/ui";';
       expect(await boundaryErrors(file, code)).toEqual([]);
     });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@aun/desktop",
+  "name": "@aesthetic/desktop",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -14,10 +14,10 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "@tauri-apps/api": "^2",
-    "@aun/ui": "workspace:*",
-    "@aun/core": "workspace:*",
-    "@aun/contracts": "workspace:*",
-    "@aun/notes": "workspace:*"
+    "@aesthetic/ui": "workspace:*",
+    "@aesthetic/core": "workspace:*",
+    "@aesthetic/contracts": "workspace:*",
+    "@aesthetic/notes": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

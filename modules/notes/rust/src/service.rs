@@ -9,7 +9,7 @@
 use crate::error::NotesError;
 use crate::model::{MoveNote, NewNote, Note, NoteSummary, TrashSummary, UpdateNote};
 use crate::repository;
-use aun_infra_sqlite::rusqlite::Connection;
+use aesthetic_infra_sqlite::rusqlite::Connection;
 use std::collections::HashMap;
 
 /// Máximo de caracteres do título (o `CHECK` da migração 1 impõe o mesmo limite).

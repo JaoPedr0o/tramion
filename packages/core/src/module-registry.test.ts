@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@aun/contracts";
+import type { ModuleManifest } from "@aesthetic/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { AppError } from "./errors.ts";
 import { createEventBus } from "./event-bus.ts";

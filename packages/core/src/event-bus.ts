@@ -1,4 +1,4 @@
-import type { EventBus, Unsubscribe } from "@aun/contracts";
+import type { EventBus, Unsubscribe } from "@aesthetic/contracts";
 
 export interface EventBusOptions {
   /**

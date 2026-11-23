@@ -1,5 +1,5 @@
-import { createEventBus } from "@aun/core";
-import type { AppEvents } from "@aun/contracts";
+import { createEventBus } from "@aesthetic/core";
+import type { AppEvents } from "@aesthetic/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { NotesError } from "../domain/errors.ts";
 import { aNote, aSummary, gatewayStub } from "../test-support.ts";

@@ -13,7 +13,7 @@ pub mod model;
 pub mod repository;
 pub mod service;
 
-use aun_infra_sqlite::{Migration, ModuleMigrations};
+use aesthetic_infra_sqlite::{Migration, ModuleMigrations};
 use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
 
@@ -41,6 +41,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
         Migration {
             version: 5,
             sql: include_str!("../migrations/0005_databases.sql"),
+        },
+        Migration {
+            version: 6,
+            sql: include_str!("../migrations/0006_rename_app_data_paths.sql"),
         },
     ],
 };

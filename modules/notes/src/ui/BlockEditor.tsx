@@ -1,4 +1,4 @@
-import { LinkIcon, PageIcon, TableIcon } from "@aun/ui";
+import { LinkIcon, PageIcon, TableIcon } from "@aesthetic/ui";
 import {
   BlockNoteSchema,
   defaultBlockSpecs,

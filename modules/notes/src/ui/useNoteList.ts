@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus } from "@aun/contracts";
+import type { AppEvents, EventBus } from "@aesthetic/contracts";
 import { useEffect, useState } from "react";
 import type { NotesService } from "../application/notes-service.ts";
 import type { NoteSummary, TrashSummary } from "../domain/note.ts";

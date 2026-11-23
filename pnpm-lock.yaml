@@ -217,16 +217,16 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@aun/contracts':
+      '@aesthetic/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aun/core':
+      '@aesthetic/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@aun/notes':
+      '@aesthetic/notes':
         specifier: workspace:*
         version: link:../../modules/notes
-      '@aun/ui':
+      '@aesthetic/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tauri-apps/api':
@@ -260,10 +260,10 @@ importers:
 
   modules/notes:
     dependencies:
-      '@aun/contracts':
+      '@aesthetic/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@aun/ui':
+      '@aesthetic/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@blocknote/code-block':
@@ -294,7 +294,7 @@ importers:
         specifier: ^19.1.0
         version: 19.3.1
     devDependencies:
-      '@aun/core':
+      '@aesthetic/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@types/react':
@@ -315,13 +315,13 @@ importers:
 
   packages/core:
     dependencies:
-      '@aun/contracts':
+      '@aesthetic/contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/ui:
     dependencies:
-      '@aun/contracts':
+      '@aesthetic/contracts':
         specifier: workspace:*
         version: link:../contracts
       react:

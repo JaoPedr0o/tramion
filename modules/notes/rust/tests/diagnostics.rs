@@ -1,4 +1,4 @@
-use aun_notes::diagnostics::{MAX_REPORT_CHARS, format_report};
+use aesthetic_notes::diagnostics::{MAX_REPORT_CHARS, format_report};
 
 #[test]
 fn mantem_o_texto_e_acrescenta_o_prefixo() {

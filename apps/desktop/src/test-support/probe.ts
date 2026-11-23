@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@aun/contracts";
+import type { ModuleManifest } from "@aesthetic/contracts";
 
 /**
  * Um "segundo módulo" mínimo, definido AQUI, só para provar que o app aceita outro módulo. Escuta eventos

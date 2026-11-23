@@ -1,5 +1,5 @@
 [package]
-name = "aun-infra-sqlite"
+name = "aesthetic-infra-sqlite"
 version = "0.1.0"
 description = "Infraestrutura de persistência SQLite: abertura segura, migrações por módulo e backup"
 edition = "2024"

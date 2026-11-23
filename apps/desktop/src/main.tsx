@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { bootstrap } from "./bootstrap";
-import "@aun/ui/tokens.css";
+import "@aesthetic/ui/tokens.css";
 import "./App.css";
 import { applyTheme, readTheme } from "./theme";
 import { installErrorReporting } from "./error-reporting";

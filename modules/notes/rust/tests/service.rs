@@ -1,10 +1,10 @@
 //! Testes das regras de negócio das notas, com banco em memória e as migrações reais.
 
-use aun_infra_sqlite::Database;
-use aun_notes::error::NotesError;
-use aun_notes::model::{NewNote, Note, UpdateNote};
-use aun_notes::service::{self, MAX_TITLE_CHARS};
-use aun_notes::{MIGRATIONS, repository};
+use aesthetic_infra_sqlite::Database;
+use aesthetic_notes::error::NotesError;
+use aesthetic_notes::model::{NewNote, Note, UpdateNote};
+use aesthetic_notes::service::{self, MAX_TITLE_CHARS};
+use aesthetic_notes::{MIGRATIONS, repository};
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

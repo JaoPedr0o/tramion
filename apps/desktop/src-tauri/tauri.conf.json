@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Aesthetic Ugly Notes",
+  "productName": "Aesthetic Notes",
   "version": "0.1.0",
-  "identifier": "dev.aun.notes",
+  "identifier": "dev.aesthetic.notes",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Aesthetic Ugly Notes",
+        "title": "Aesthetic Notes",
         "width": 1200,
         "height": 760,
         "minWidth": 720,

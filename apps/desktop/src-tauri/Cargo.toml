@@ -1,8 +1,8 @@
 [package]
 name = "desktop"
 version = "0.1.0"
-description = "Aesthetic Ugly Notes: aplicativo desktop local-first de organização pessoal"
-authors = ["Aesthetic Ugly Notes"]
+description = "Aesthetic Notes: aplicativo desktop local-first de organização pessoal"
+authors = ["Aesthetic Notes"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,9 +17,12 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[dev-dependencies]
+tempfile = "3.27.0"
+
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-aun-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
-aun-notes = { version = "0.1.0", path = "../../../modules/notes/rust" }
+aesthetic-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
+aesthetic-notes = { version = "0.1.0", path = "../../../modules/notes/rust" }

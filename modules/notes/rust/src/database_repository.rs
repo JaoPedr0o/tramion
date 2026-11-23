@@ -1,7 +1,7 @@
 //! SQL das bases de dados (colunas e células). Sem regras de negócio: quem valida é `database.rs`.
 
 use crate::model::Property;
-use aun_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, params};
+use aesthetic_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, params};
 
 /// Linha crua da base: `(id, título, símbolo, versão)`.
 pub type RowSummary = (String, String, Option<String>, i64);

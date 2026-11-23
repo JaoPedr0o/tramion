@@ -1,11 +1,11 @@
 //! Testes da hierarquia de páginas: criar sob um pai, mover, excluir/restaurar/apagar subárvores.
 //! Usam banco em memória e as migrações reais.
 
-use aun_infra_sqlite::Database;
-use aun_notes::MIGRATIONS;
-use aun_notes::error::NotesError;
-use aun_notes::model::{MoveNote, NewNote, Note};
-use aun_notes::service;
+use aesthetic_infra_sqlite::Database;
+use aesthetic_notes::MIGRATIONS;
+use aesthetic_notes::error::NotesError;
+use aesthetic_notes::model::{MoveNote, NewNote, Note};
+use aesthetic_notes::service;
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

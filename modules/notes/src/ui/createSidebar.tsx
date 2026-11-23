@@ -1,4 +1,4 @@
-import { IconButton, PlusIcon, TrashIcon } from "@aun/ui";
+import { IconButton, PlusIcon, TrashIcon } from "@aesthetic/ui";
 import { useEffect, useState, type ComponentType } from "react";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";

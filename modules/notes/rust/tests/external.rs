@@ -1,5 +1,5 @@
-use aun_notes::error::NotesError;
-use aun_notes::external::validate_external_url;
+use aesthetic_notes::error::NotesError;
+use aesthetic_notes::external::validate_external_url;
 
 #[test]
 fn aceita_http_e_https() {

@@ -1,4 +1,4 @@
-import { IconButton, Menu, MoreIcon, StarFilledIcon, StarIcon, TrashIcon } from "@aun/ui";
+import { IconButton, Menu, MoreIcon, StarFilledIcon, StarIcon, TrashIcon } from "@aesthetic/ui";
 import { Fragment, useState, type ComponentType } from "react";
 import { ancestorsOf } from "../application/page-tree.ts";
 import type { NoteSummary } from "../domain/note.ts";

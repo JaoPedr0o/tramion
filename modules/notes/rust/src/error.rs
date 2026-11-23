@@ -1,4 +1,4 @@
-use aun_infra_sqlite::rusqlite;
+use aesthetic_infra_sqlite::rusqlite;
 use std::fmt;
 
 /// O que pode dar errado nas operações de notas.

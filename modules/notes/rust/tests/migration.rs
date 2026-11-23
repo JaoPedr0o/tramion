@@ -1,9 +1,9 @@
 //! Teste da migração 2 sobre um banco que JÁ TEM páginas criadas na versão 1, como o do usuário.
 
-use aun_infra_sqlite::rusqlite::Connection;
-use aun_infra_sqlite::{Database, ModuleMigrations, OpenOptions};
-use aun_notes::MIGRATIONS;
-use aun_notes::service;
+use aesthetic_infra_sqlite::rusqlite::Connection;
+use aesthetic_infra_sqlite::{Database, ModuleMigrations, OpenOptions};
+use aesthetic_notes::MIGRATIONS;
+use aesthetic_notes::service;
 use std::fs;
 use tempfile::TempDir;
 

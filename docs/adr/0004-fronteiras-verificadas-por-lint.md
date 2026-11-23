@@ -16,8 +16,8 @@ Regras: ver `docs/architecture.md`.
 A primeira versão da configuração, escrita por diretório, **parecia correta e não protegia nada**.
 Só percebemos porque testamos com imports proibidos de propósito.
 
-Motivo: o pnpm liga pacotes do workspace por link simbólico, e o plugin resolve `@aun/core` para
-`packages/contracts/node_modules/@aun/core/src/index.ts`. Esse caminho começa com `packages/contracts`,
+Motivo: o pnpm liga pacotes do workspace por link simbólico, e o plugin resolve `@aesthetic/core` para
+`packages/contracts/node_modules/@aesthetic/core/src/index.ts`. Esse caminho começa com `packages/contracts`,
 então o plugin entende que o pacote está importando a si mesmo e libera.
 
 Correção:

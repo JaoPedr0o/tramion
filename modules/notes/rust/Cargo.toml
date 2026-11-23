@@ -1,5 +1,5 @@
 [package]
-name = "aun-notes"
+name = "aesthetic-notes"
 version = "0.1.0"
 description = "Módulo de notas: migrações, lógica e comandos (plugin do Tauri)"
 edition = "2024"
@@ -8,7 +8,7 @@ publish = false
 links = "tauri-plugin-notes"
 
 [dependencies]
-aun-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
+aesthetic-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
 open = "5"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"

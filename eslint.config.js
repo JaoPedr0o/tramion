@@ -39,38 +39,45 @@ export default tseslint.config(
       "boundaries/dependencies": [
         2,
         {
-          checkAllOrigins: true, // também confere imports por nome de pacote (@aun/*)
+          checkAllOrigins: true, // também confere imports por nome de pacote (@aesthetic/*)
           checkInternals: true,
           default: "allow",
           // Atenção: a ÚLTIMA política que casa vence.
           policies: [
             // 1) Entre pacotes do projeto, tudo é proibido por padrão...
             {
-              disallow: { to: { module: { origin: "external", source: "@aun/*" } } },
+              disallow: { to: { module: { origin: "external", source: "@aesthetic/*" } } },
               message:
                 "Dependência entre pacotes não permitida pela arquitetura (ver docs/architecture.md)",
             },
             // 2) ...e só liberamos o que a arquitetura permite.
-            // contracts: nenhum pacote @aun.
+            // contracts: nenhum pacote @aesthetic.
             {
               from: { element: { type: "core" } },
-              allow: { to: { module: { source: "@aun/contracts" } } },
+              allow: { to: { module: { source: "@aesthetic/contracts" } } },
             },
             {
               from: { element: { type: "ui" } },
-              allow: { to: { module: { source: "@aun/contracts" } } },
+              allow: { to: { module: { source: "@aesthetic/contracts" } } },
             },
             {
               from: { element: { type: "infra" } },
-              allow: { to: { module: { source: ["@aun/contracts", "@aun/core"] } } },
+              allow: { to: { module: { source: ["@aesthetic/contracts", "@aesthetic/core"] } } },
             },
             // módulos: contracts, core e ui. NUNCA outro módulo.
             {
               from: { element: { type: "module" } },
-              allow: { to: { module: { source: ["@aun/contracts", "@aun/core", "@aun/ui"] } } },
+              allow: {
+                to: {
+                  module: { source: ["@aesthetic/contracts", "@aesthetic/core", "@aesthetic/ui"] },
+                },
+              },
             },
             // app = composition root: liga tudo.
-            { from: { element: { type: "app" } }, allow: { to: { module: { source: "@aun/*" } } } },
+            {
+              from: { element: { type: "app" } },
+              allow: { to: { module: { source: "@aesthetic/*" } } },
+            },
             // 3) Import RELATIVO que sai do próprio pacote é sempre proibido.
             //    Para cruzar a fronteira, use o nome do pacote.
             {

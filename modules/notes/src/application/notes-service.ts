@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus } from "@aun/contracts";
+import type { AppEvents, EventBus } from "@aesthetic/contracts";
 import type {
   DatabaseData,
   NewProperty,

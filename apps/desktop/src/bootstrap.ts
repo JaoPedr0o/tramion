@@ -1,7 +1,7 @@
 // Composition root (TypeScript): o ÚNICO lugar que conhece todos os módulos e os liga ao núcleo.
-import type { AppEvents, ViewRegistry } from "@aun/contracts";
-import { createEventBus, createModuleRegistry, createViewRegistry } from "@aun/core";
-import { createNotesModule } from "@aun/notes";
+import type { AppEvents, ViewRegistry } from "@aesthetic/contracts";
+import { createEventBus, createModuleRegistry, createViewRegistry } from "@aesthetic/core";
+import { createNotesModule } from "@aesthetic/notes";
 
 export function bootstrap(): { views: ViewRegistry } {
   const events = createEventBus<AppEvents>();

@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus, ModuleManifest, ViewRegistry } from "@aun/contracts";
+import type { AppEvents, EventBus, ModuleManifest, ViewRegistry } from "@aesthetic/contracts";
 import { AppError } from "./errors.ts";
 
 export interface ModuleRegistry {

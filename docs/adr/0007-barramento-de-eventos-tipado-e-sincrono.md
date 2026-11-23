@@ -9,9 +9,9 @@ Módulos não podem se importar. Precisam de um canal para reagir ao que acontec
 
 ## Decisão
 
-Barramento **tipado e síncrono** em `@aun/core`:
+Barramento **tipado e síncrono** em `@aesthetic/core`:
 
-- Cada evento tem nome e formato definidos em `AppEvents` (pacote `@aun/contracts`). Publicar com formato errado
+- Cada evento tem nome e formato definidos em `AppEvents` (pacote `@aesthetic/contracts`). Publicar com formato errado
   não compila. O catálogo mora em `contracts` porque quem escuta precisa conhecer o formato sem importar
   o módulo que publica.
 - `emit` chama os assinantes na hora, na ordem de assinatura.

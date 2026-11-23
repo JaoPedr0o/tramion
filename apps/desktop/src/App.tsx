@@ -1,4 +1,4 @@
-import type { ViewRegistry } from "@aun/contracts";
+import type { ViewRegistry } from "@aesthetic/contracts";
 import {
   Menu,
   MonitorIcon,
@@ -7,17 +7,19 @@ import {
   SidebarToggleButton,
   SunIcon,
   type MenuItem,
-} from "@aun/ui";
+} from "@aesthetic/ui";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { applyTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
 
-const STORAGE_KEY = "aun.sidebarCollapsed";
+const STORAGE_KEY = "aesthetic.sidebarCollapsed";
+/** Chave do nome antigo do app: a preferência de quem já usava continua valendo. */
+const LEGACY_STORAGE_KEY = "aun.sidebarCollapsed";
 
 // O armazenamento do navegador pode faltar (janela privada, dados bloqueados): nesse caso o app só
 // deixa de lembrar o estado da barra lateral, sem quebrar.
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "1";
+    return (localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)) === "1";
   } catch {
     return false;
   }
@@ -46,7 +48,7 @@ interface Props {
  * Moldura do app (a "casca"): barra lateral recolhível, barra superior e área principal. Os módulos
  * preenchem os espaços; a casca só cuida da disposição e do recolher/abrir da barra lateral.
  */
-export default function App({ views, workspaceName = "Aesthetic Ugly Notes" }: Props) {
+export default function App({ views, workspaceName = "Aesthetic Notes" }: Props) {
   const available = views.list();
   const [selectedId, setSelectedId] = useState(available[0]?.id);
   const [collapsed, setCollapsed] = useState(readCollapsed);

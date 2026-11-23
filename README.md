@@ -1,4 +1,4 @@
-# Aesthetic Ugly Notes
+# Aesthetic Notes
 
 Aplicativo desktop **local-first** de organização pessoal: notas, páginas, tarefas e bancos de dados
 personalizados, construído sobre uma arquitetura **modular** e extensível.
@@ -26,6 +26,6 @@ Veja [docs/development.md](docs/development.md) para pré-requisitos (Rust, Node
 
 ```bash
 pnpm install
-pnpm --filter @aun/desktop tauri dev   # abre o app
+pnpm --filter @aesthetic/desktop tauri dev   # abre o app
 pnpm check                             # lint + formatação + tipos + testes
 ```

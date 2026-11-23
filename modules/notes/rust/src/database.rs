@@ -12,7 +12,7 @@ use crate::external::validate_external_url;
 use crate::model::{DatabaseData, DatabaseRow, Note, Property};
 use crate::repository;
 use crate::service::{ensure_active_parent, validate_title};
-use aun_infra_sqlite::rusqlite::Connection;
+use aesthetic_infra_sqlite::rusqlite::Connection;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
 

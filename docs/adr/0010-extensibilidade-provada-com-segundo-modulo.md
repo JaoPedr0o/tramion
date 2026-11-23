@@ -15,7 +15,7 @@ Foi criado um módulo **descartável** (`modules/probe`, depois apagado) que esc
 Resultados medidos:
 
 - Os testes de integração passaram com o pacote real, sem nenhuma alteração.
-- O lint passou no pacote e **barrou** um `import "@aun/notes"` colocado de propósito dentro dele.
+- O lint passou no pacote e **barrou** um `import "@aesthetic/notes"` colocado de propósito dentro dele.
 - Para o módulo funcionar foi editado **zero código** em `notes`, `core` e `contracts`. As únicas edições em
   arquivos existentes foram as dependências do app (`package.json` e lockfile): é a composição, e cabe ao app.
 
@@ -31,7 +31,7 @@ O pacote foi apagado e a garantia ficou como teste permanente
 4. um módulo com defeito não derruba o primeiro (a exclusão acontece e o usuário não vê erro);
 5. remover o segundo módulo não afeta o primeiro.
 
-Também ficou permanente um teste de fronteira com um pacote real: **qualquer** módulo importando `@aun/notes`
+Também ficou permanente um teste de fronteira com um pacote real: **qualquer** módulo importando `@aesthetic/notes`
 é barrado pelo lint.
 
 ## Limites conhecidos

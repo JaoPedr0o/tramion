@@ -1,4 +1,4 @@
-import type { ViewContribution } from "@aun/contracts";
+import type { ViewContribution } from "@aesthetic/contracts";
 import { describe, expect, it } from "vitest";
 import { AppError } from "./errors.ts";
 import { createViewRegistry } from "./view-registry.ts";

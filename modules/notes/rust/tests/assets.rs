@@ -1,5 +1,5 @@
-use aun_notes::assets::{MAX_ASSET_BYTES, store, stored_name};
-use aun_notes::error::NotesError;
+use aesthetic_notes::assets::{MAX_ASSET_BYTES, store, stored_name};
+use aesthetic_notes::error::NotesError;
 use tempfile::TempDir;
 
 const PNG: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0];

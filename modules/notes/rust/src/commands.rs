@@ -10,8 +10,8 @@ use crate::model::{
     DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote,
 };
 use crate::service;
-use aun_infra_sqlite::SharedDatabase;
-use aun_infra_sqlite::rusqlite::Connection;
+use aesthetic_infra_sqlite::SharedDatabase;
+use aesthetic_infra_sqlite::rusqlite::Connection;
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager, Runtime, State};

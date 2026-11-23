@@ -1,0 +1,111 @@
+use desktop_lib::legacy::{CURRENT_DB, LEGACY_DB, migrate_legacy_data};
+use std::fs;
+use tempfile::tempdir;
+
+fn write(path: &std::path::Path, text: &str) {
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, text).unwrap();
+}
+
+fn read(path: &std::path::Path) -> String {
+    fs::read_to_string(path).unwrap()
+}
+
+#[test]
+fn move_a_pasta_inteira_e_renomeia_o_banco_com_os_arquivos_do_wal() {
+    let root = tempdir().unwrap();
+    let legacy = root.path().join("dev.aun.notes");
+    let data = root.path().join("dev.aesthetic.notes");
+    write(&legacy.join(LEGACY_DB), "banco");
+    write(&legacy.join(format!("{LEGACY_DB}-wal")), "wal");
+    write(&legacy.join(format!("{LEGACY_DB}-shm")), "shm");
+    write(&legacy.join("assets/foto.png"), "img");
+    write(&legacy.join("backups/b1.db"), "bkp");
+
+    assert!(migrate_legacy_data(&data, &legacy).unwrap());
+
+    assert_eq!(read(&data.join(CURRENT_DB)), "banco");
+    assert_eq!(read(&data.join(format!("{CURRENT_DB}-wal"))), "wal");
+    assert_eq!(read(&data.join(format!("{CURRENT_DB}-shm"))), "shm");
+    assert_eq!(read(&data.join("assets/foto.png")), "img");
+    assert_eq!(read(&data.join("backups/b1.db")), "bkp");
+    assert!(
+        !legacy.exists(),
+        "a pasta antiga some: foi movida, não copiada"
+    );
+    assert!(!data.join(LEGACY_DB).exists());
+}
+
+#[test]
+fn sem_pasta_antiga_nao_faz_nada() {
+    let root = tempdir().unwrap();
+
+    let moved =
+        migrate_legacy_data(&root.path().join("novo"), &root.path().join("antigo")).unwrap();
+
+    assert!(!moved);
+    assert!(!root.path().join("novo").exists());
+}
+
+#[test]
+fn pasta_antiga_sem_banco_e_deixada_em_paz() {
+    let root = tempdir().unwrap();
+    let legacy = root.path().join("antigo");
+    write(&legacy.join("outra-coisa.txt"), "x");
+
+    assert!(!migrate_legacy_data(&root.path().join("novo"), &legacy).unwrap());
+    assert!(legacy.join("outra-coisa.txt").exists());
+}
+
+#[test]
+fn se_a_pasta_nova_ja_tem_banco_nada_e_tocado() {
+    let root = tempdir().unwrap();
+    let legacy = root.path().join("antigo");
+    let data = root.path().join("novo");
+    write(&legacy.join(LEGACY_DB), "velho");
+    write(&data.join(CURRENT_DB), "atual");
+
+    assert!(!migrate_legacy_data(&data, &legacy).unwrap());
+
+    assert_eq!(read(&data.join(CURRENT_DB)), "atual");
+    assert_eq!(
+        read(&legacy.join(LEGACY_DB)),
+        "velho",
+        "os dados antigos continuam intactos"
+    );
+}
+
+#[test]
+fn pasta_nova_ja_criada_vazia_recebe_os_itens_sem_sobrescrever() {
+    let root = tempdir().unwrap();
+    let legacy = root.path().join("antigo");
+    let data = root.path().join("novo");
+    write(&legacy.join(LEGACY_DB), "banco");
+    write(&legacy.join("assets/a.png"), "a");
+    write(&legacy.join("config.txt"), "antigo");
+    write(&data.join("config.txt"), "novo");
+
+    assert!(migrate_legacy_data(&data, &legacy).unwrap());
+
+    assert_eq!(read(&data.join(CURRENT_DB)), "banco");
+    assert_eq!(read(&data.join("assets/a.png")), "a");
+    assert_eq!(
+        read(&data.join("config.txt")),
+        "novo",
+        "o que já existia não é sobrescrito"
+    );
+    assert_eq!(read(&legacy.join("config.txt")), "antigo");
+}
+
+#[test]
+fn rodar_duas_vezes_e_seguro() {
+    let root = tempdir().unwrap();
+    let legacy = root.path().join("antigo");
+    let data = root.path().join("novo");
+    write(&legacy.join(LEGACY_DB), "banco");
+
+    assert!(migrate_legacy_data(&data, &legacy).unwrap());
+    assert!(!migrate_legacy_data(&data, &legacy).unwrap());
+
+    assert_eq!(read(&data.join(CURRENT_DB)), "banco");
+}

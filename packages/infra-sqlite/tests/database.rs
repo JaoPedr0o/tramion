@@ -1,6 +1,6 @@
 //! Testes da API pública: abrir, migrar, recusar bancos suspeitos e fazer backup.
 
-use aun_infra_sqlite::{Database, DbError, Migration, ModuleMigrations, OpenOptions};
+use aesthetic_infra_sqlite::{Database, DbError, Migration, ModuleMigrations, OpenOptions};
 use rusqlite::Connection;
 use std::fs;
 use std::path::Path;

@@ -1,11 +1,11 @@
 //! Testes das bases de dados: colunas, linhas, células e as regras de cada tipo.
 
-use aun_infra_sqlite::Database;
-use aun_notes::MIGRATIONS;
-use aun_notes::database::{self, MAX_PROPERTIES};
-use aun_notes::error::NotesError;
-use aun_notes::model::{NewNote, Note};
-use aun_notes::service;
+use aesthetic_infra_sqlite::Database;
+use aesthetic_notes::MIGRATIONS;
+use aesthetic_notes::database::{self, MAX_PROPERTIES};
+use aesthetic_notes::error::NotesError;
+use aesthetic_notes::model::{NewNote, Note};
+use aesthetic_notes::service;
 use serde_json::{Value, json};
 
 fn db() -> Database {
