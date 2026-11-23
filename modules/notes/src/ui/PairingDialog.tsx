@@ -204,145 +204,148 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
           </button>
         </div>
 
-        {error ? (
-          <p role="alert" className="pairing__error">
-            {error}
-          </p>
-        ) : null}
-
-        {mode === "show" ? (
-          <section className="pairing__section">
-            <p className="pairing__hint">
-              No outro aparelho, escolha “Ler código” e aponte a câmera para este QR. Os dois
-              precisam estar na mesma rede Wi-Fi.
+        {/* Só o meio rola: o título e o seletor ficam em cima, e o Fechar fica sempre à vista embaixo. */}
+        <div className="pairing__body">
+          {error ? (
+            <p role="alert" className="pairing__error">
+              {error}
             </p>
-            {offer && !expired ? (
-              <>
-                <img
-                  className="pairing__qr"
-                  alt="Código QR de pareamento"
-                  src={`data:image/svg+xml;utf8,${encodeURIComponent(offer.svg)}`}
-                />
-                <p className="pairing__expiry">
-                  Vale até {formatTime(offer.expiresAt)} e funciona uma única vez.
-                </p>
-                <details className="pairing__manual">
-                  <summary>Digitar o código</summary>
-                  <code aria-label="Código de pareamento">{offer.code}</code>
-                </details>
-                <p className="pairing__warning">
-                  Quem ler este código antes de você poderá parear. Não o compartilhe.
-                </p>
-              </>
-            ) : null}
-            {expired ? (
-              <div className="pairing__expired">
-                <p>O código expirou.</p>
-                <button type="button" className="pairing__btn" onClick={() => void generate()}>
-                  Gerar novo código
-                </button>
-              </div>
-            ) : null}
-          </section>
-        ) : (
-          <section className="pairing__section">
-            {platform.canScanQr ? (
-              <>
-                <p className="pairing__hint">
-                  Aponte a câmera para o QR mostrado no outro aparelho (em “Parear celular” →
-                  “Mostrar código”).
-                </p>
-                <button
-                  type="button"
-                  className="pairing__btn pairing__btn--primary pairing__btn--wide"
-                  disabled={busy || scanning}
-                  onClick={() => void scan()}
-                >
-                  {scanning ? "Câmera aberta…" : "Abrir a câmera"}
-                </button>
-              </>
-            ) : (
+          ) : null}
+
+          {mode === "show" ? (
+            <section className="pairing__section">
               <p className="pairing__hint">
-                Este aparelho não tem câmera para ler o QR: cole abaixo o código mostrado no outro
-                aparelho.
+                No outro aparelho, escolha “Ler código” e aponte a câmera para este QR. Os dois
+                precisam estar na mesma rede Wi-Fi.
               </p>
-            )}
-            <label className="pairing__field-label" htmlFor="pairing-code">
-              {platform.canScanQr ? "Ou cole o código" : "Código do outro aparelho"}
-            </label>
-            <div className="pairing__connect">
-              <input
-                id="pairing-code"
-                aria-label="Código do outro aparelho"
-                placeholder="tramion-pair:1:…"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
-              <button
-                type="button"
-                className="pairing__btn pairing__btn--primary"
-                disabled={busy || code.trim() === ""}
-                onClick={() => {
-                  void run(async () => [await platform.pairWithCode(code.trim())]).then((ok) => {
-                    if (ok) setCode("");
-                  });
-                }}
-              >
-                Conectar
-              </button>
-            </div>
-          </section>
-        )}
-
-        <section className="pairing__section">
-          <h3 className="pairing__subtitle">Aparelhos pareados</h3>
-          {peers.some((peer) => peer.canDial) ? (
-            <button
-              type="button"
-              className="pairing__btn pairing__btn--primary pairing__btn--wide"
-              disabled={busy}
-              onClick={() => void run(() => platform.syncNow())}
-            >
-              {busy ? "Sincronizando…" : "Sincronizar agora"}
-            </button>
-          ) : null}
-          {result ? (
-            <p role="status" className="pairing__result">
-              {result}
-            </p>
-          ) : null}
-          {peers.length === 0 ? (
-            <p className="pairing__empty">Nenhum aparelho pareado.</p>
+              {offer && !expired ? (
+                <>
+                  <img
+                    className="pairing__qr"
+                    alt="Código QR de pareamento"
+                    src={`data:image/svg+xml;utf8,${encodeURIComponent(offer.svg)}`}
+                  />
+                  <p className="pairing__expiry">
+                    Vale até {formatTime(offer.expiresAt)} e funciona uma única vez.
+                  </p>
+                  <details className="pairing__manual">
+                    <summary>Digitar o código</summary>
+                    <code aria-label="Código de pareamento">{offer.code}</code>
+                  </details>
+                  <p className="pairing__warning">
+                    Quem ler este código antes de você poderá parear. Não o compartilhe.
+                  </p>
+                </>
+              ) : null}
+              {expired ? (
+                <div className="pairing__expired">
+                  <p>O código expirou.</p>
+                  <button type="button" className="pairing__btn" onClick={() => void generate()}>
+                    Gerar novo código
+                  </button>
+                </div>
+              ) : null}
+            </section>
           ) : (
-            <ul className="pairing__peers" aria-label="Aparelhos pareados">
-              {peers.map((peer) => (
-                <li key={peer.device} className="pairing__peer">
-                  <span className="pairing__peer-info">
-                    <span className="pairing__peer-name">{peer.name}</span>
-                    <small>
-                      {peer.lastSyncAt === null
-                        ? "Ainda não sincronizou"
-                        : `Sincronizou ${new Date(peer.lastSyncAt).toLocaleString("pt-BR")}`}
-                    </small>
-                  </span>
+            <section className="pairing__section">
+              {platform.canScanQr ? (
+                <>
+                  <p className="pairing__hint">
+                    Aponte a câmera para o QR mostrado no outro aparelho (em “Parear celular” →
+                    “Mostrar código”).
+                  </p>
                   <button
                     type="button"
-                    className="pairing__btn pairing__btn--danger"
-                    aria-label={`Remover ${peer.name}`}
-                    onClick={() => {
-                      void platform
-                        .removePeer(peer.device)
-                        .then(refreshPeers)
-                        .catch((failure: unknown) => setError(reasonOf(failure)));
-                    }}
+                    className="pairing__btn pairing__btn--primary pairing__btn--wide"
+                    disabled={busy || scanning}
+                    onClick={() => void scan()}
                   >
-                    Remover
+                    {scanning ? "Câmera aberta…" : "Abrir a câmera"}
                   </button>
-                </li>
-              ))}
-            </ul>
+                </>
+              ) : (
+                <p className="pairing__hint">
+                  Este aparelho não tem câmera para ler o QR: cole abaixo o código mostrado no outro
+                  aparelho.
+                </p>
+              )}
+              <label className="pairing__field-label" htmlFor="pairing-code">
+                {platform.canScanQr ? "Ou cole o código" : "Código do outro aparelho"}
+              </label>
+              <div className="pairing__connect">
+                <input
+                  id="pairing-code"
+                  aria-label="Código do outro aparelho"
+                  placeholder="tramion-pair:1:…"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="pairing__btn pairing__btn--primary"
+                  disabled={busy || code.trim() === ""}
+                  onClick={() => {
+                    void run(async () => [await platform.pairWithCode(code.trim())]).then((ok) => {
+                      if (ok) setCode("");
+                    });
+                  }}
+                >
+                  Conectar
+                </button>
+              </div>
+            </section>
           )}
-        </section>
+
+          <section className="pairing__section">
+            <h3 className="pairing__subtitle">Aparelhos pareados</h3>
+            {peers.some((peer) => peer.canDial) ? (
+              <button
+                type="button"
+                className="pairing__btn pairing__btn--primary pairing__btn--wide"
+                disabled={busy}
+                onClick={() => void run(() => platform.syncNow())}
+              >
+                {busy ? "Sincronizando…" : "Sincronizar agora"}
+              </button>
+            ) : null}
+            {result ? (
+              <p role="status" className="pairing__result">
+                {result}
+              </p>
+            ) : null}
+            {peers.length === 0 ? (
+              <p className="pairing__empty">Nenhum aparelho pareado.</p>
+            ) : (
+              <ul className="pairing__peers" aria-label="Aparelhos pareados">
+                {peers.map((peer) => (
+                  <li key={peer.device} className="pairing__peer">
+                    <span className="pairing__peer-info">
+                      <span className="pairing__peer-name">{peer.name}</span>
+                      <small>
+                        {peer.lastSyncAt === null
+                          ? "Ainda não sincronizou"
+                          : `Sincronizou ${new Date(peer.lastSyncAt).toLocaleString("pt-BR")}`}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      className="pairing__btn pairing__btn--danger"
+                      aria-label={`Remover ${peer.name}`}
+                      onClick={() => {
+                        void platform
+                          .removePeer(peer.device)
+                          .then(refreshPeers)
+                          .catch((failure: unknown) => setError(reasonOf(failure)));
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
 
         <div className="pairing__footer">
           <button type="button" className="pairing__btn pairing__btn--wide" onClick={close}>
