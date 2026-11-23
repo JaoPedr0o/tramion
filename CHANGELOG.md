@@ -4,6 +4,35 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.5.0] - 2026-11-24
+
+### Adicionado
+
+- **Blocos lado a lado (colunas)**, como no Notion: arraste um bloco pela alça até a lateral de outro (uma linha
+  laranja mostra o destino) ou digite `/colunas`. Até 5 colunas; se uma coluna esvazia, a estrutura se desfaz sozinha;
+  no celular as colunas empilham. A busca e a exportação em Markdown leem as colunas em ordem.
+- **Sincronização automática no celular**: ao abrir o app, ao voltar para ele, ao entrar numa rede, a cada 2 minutos e
+  logo depois de você parar de editar. As listas (páginas, lixeira, lembretes) se atualizam sozinhas quando chegam
+  alterações do outro aparelho.
+- **Descoberta do computador pelo nome** (mDNS): se o IP ou a porta do computador mudar, o celular o acha sozinho.
+- **Lembretes com hora**: o prazo de uma tarefa aceita uma hora (opcional) e vira uma notificação agendada no sistema,
+  com antecedência configurável, que toca mesmo com o app fechado (Android). Veja o
+  [ADR 0021](docs/adr/0021-lembretes-com-hora.md).
+- **Módulo Foco (primeira versão)**: pomodoro com sessões registradas e hábitos com sequência de dias e mapa de calor.
+  É discreto (uma tela à parte no seletor do menu lateral, sem avisos nem perguntas ao abrir o app). Veja o
+  [ADR 0022](docs/adr/0022-modulo-foco.md).
+
+### Alterado
+
+- Telas de Captura rápida e Lembretes redesenhadas (botões firmes, alvos de toque de 44 px, cabeçalho e rodapé fixos).
+- O celular passa a mostrar as barras do sistema sem sobreposição e a gaveta lateral tem gestos.
+
+### Limites conhecidos
+
+- Os dados do Foco ainda **não sincronizam** entre PC e celular, e o cronômetro em andamento não sobrevive a fechar o app.
+- As notificações agendadas e o Foco foram verificados por testes automáticos, mas **não em um celular de verdade**.
+- Com o app fechado, o celular não sincroniza (é uma restrição do Android).
+
 ## [0.4.1] - 2026-11-24
 
 ### Corrigido
@@ -93,6 +122,7 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
+[0.5.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.5.0
 [0.4.1]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.1
 [0.4.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.0
 [0.3.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.3.0
