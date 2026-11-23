@@ -519,6 +519,65 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(fake.notes.has("n1")).toBe(true);
     });
 
+    it("esvaziar a lixeira avisa o total, só apaga o que está na lixeira e deixa as páginas ativas", async () => {
+      const { user, fake } = setup();
+      await parentWithChild(user); // Pai + Filha
+      await user.click(treeitem("Pai"));
+      await openPageMenu(user, "Mover para a lixeira");
+      await newPageTitled(user, "Ativa");
+      await user.click(sidebar().getByRole("button", { name: "Lixeira" }));
+
+      await user.click(await main().findByRole("button", { name: "Esvaziar lixeira" }));
+      expect(main().getByRole("alertdialog", { name: "Esvaziar a lixeira" }).textContent).toContain(
+        "apagará de vez 2 páginas e não pode ser desfeito",
+      );
+      expect(fake.notes.size).toBe(3); // ainda não apagou
+
+      await user.click(main().getByRole("button", { name: "Esvaziar agora" }));
+
+      expect(await main().findByText("A lixeira está vazia.")).toBeTruthy();
+      expect([...fake.notes.values()].map((n) => n.title)).toEqual(["Ativa"]);
+      expect(main().queryByRole("button", { name: "Esvaziar lixeira" })).toBeNull();
+    });
+
+    it("cancelar o esvaziamento não apaga nada", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Rascunho");
+      await openPageMenu(user, "Mover para a lixeira");
+      await user.click(sidebar().getByRole("button", { name: "Lixeira" }));
+      await user.click(await main().findByRole("button", { name: "Esvaziar lixeira" }));
+
+      await user.click(main().getByRole("button", { name: "Cancelar" }));
+
+      expect(main().queryByRole("alertdialog")).toBeNull();
+      expect(fake.notes.has("n1")).toBe(true);
+      expect(main().getByRole("button", { name: "Esvaziar lixeira" })).toBeTruthy();
+    });
+
+    it("com a lixeira vazia não há botão de esvaziar", async () => {
+      const { user } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Lixeira" }));
+
+      expect(await main().findByText("A lixeira está vazia.")).toBeTruthy();
+      expect(main().queryByRole("button", { name: "Esvaziar lixeira" })).toBeNull();
+    });
+
+    it("falha ao esvaziar mostra um aviso e nada é apagado", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Rascunho");
+      await openPageMenu(user, "Mover para a lixeira");
+      await user.click(sidebar().getByRole("button", { name: "Lixeira" }));
+      vi.spyOn(fake.gateway, "emptyTrash").mockRejectedValue(
+        new NotesError("notes.internal", "falhou"),
+      );
+
+      await user.click(await main().findByRole("button", { name: "Esvaziar lixeira" }));
+      await user.click(main().getByRole("button", { name: "Esvaziar agora" }));
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+      expect(fake.notes.has("n1")).toBe(true);
+    });
+
     it("falha ao excluir mostra um aviso próprio e a página segue ativa", async () => {
       const { user, fake } = setup();
       await newPageTitled(user, "Rascunho");

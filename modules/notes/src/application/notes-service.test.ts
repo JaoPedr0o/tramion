@@ -264,4 +264,27 @@ describe("serviço de notas: leituras e repasse", () => {
       expect(published).toEqual([]);
     });
   });
+
+  it("esvaziar a lixeira publica um note.purged por página apagada", async () => {
+    const { service, published } = setup({ emptyTrash: vi.fn(async () => ["a", "b", "c"]) });
+
+    expect(await service.emptyTrash()).toEqual(["a", "b", "c"]);
+
+    expect(published).toEqual([
+      ["note.purged", { id: "a" }],
+      ["note.purged", { id: "b" }],
+      ["note.purged", { id: "c" }],
+    ]);
+  });
+
+  it("esvaziar uma lixeira vazia não publica nada; se falhar, o erro sobe sem eventos", async () => {
+    const empty = setup({ emptyTrash: vi.fn(async () => []) });
+    await empty.service.emptyTrash();
+    expect(empty.published).toEqual([]);
+
+    const failure = new NotesError("notes.internal", "x");
+    const failing = setup({ emptyTrash: vi.fn(async () => Promise.reject(failure)) });
+    await expect(failing.service.emptyTrash()).rejects.toBe(failure);
+    expect(failing.published).toEqual([]);
+  });
 });

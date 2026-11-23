@@ -31,6 +31,8 @@ export interface NotesService {
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
   purge(id: string): Promise<readonly string[]>;
+  /** Apaga de vez tudo o que está na lixeira; devolve os ids de todas as páginas apagadas. */
+  emptyTrash(): Promise<readonly string[]>;
 
   createDatabase(input: { title: string; parentId: string | null }): Promise<Note>;
   getDatabase(id: string): Promise<DatabaseData>;
@@ -100,6 +102,13 @@ export function createNotesService(deps: {
     async restore(id) {
       const affected = await gateway.restore(id);
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
+      return affected;
+    },
+
+    // Um evento por página apagada, como em `purge`.
+    async emptyTrash() {
+      const affected = await gateway.emptyTrash();
+      for (const affectedId of affected) events.emit("note.purged", { id: affectedId });
       return affected;
     },
 

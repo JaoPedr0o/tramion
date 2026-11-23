@@ -52,6 +52,7 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     delete: vi.fn(async () => []),
     restore: vi.fn(async () => []),
     purge: vi.fn(async () => []),
+    emptyTrash: vi.fn(async () => []),
     createDatabase: vi.fn(async () => aNote()),
     getDatabase: vi.fn(async () => ({ id: "n1", title: "Base", properties: [], rows: [] })),
     addProperty: vi.fn(async () => {
@@ -300,6 +301,22 @@ export function createFakeGateway() {
             queue.push(n.id);
           }
         }
+      }
+      return affected;
+    },
+
+    async emptyTrash() {
+      const affected = [...notes.values()].filter((n) => n.deletedAt !== null).map((n) => n.id);
+      for (const id of affected) {
+        notes.delete(id);
+        databases.delete(id);
+      }
+      for (const [propertyId, property] of [...properties]) {
+        if (!notes.has(property.databaseId)) properties.delete(propertyId);
+      }
+      for (const key of [...cells.keys()]) {
+        const [rowId, propertyId] = key.split("|");
+        if (!notes.has(rowId!) || !properties.has(propertyId!)) cells.delete(key);
       }
       return affected;
     },

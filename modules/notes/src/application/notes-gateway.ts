@@ -37,6 +37,8 @@ export interface NotesGateway {
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
   purge(id: string): Promise<readonly string[]>;
+  /** Apaga de vez TUDO o que está na lixeira; devolve os ids apagados (lista vazia se não havia nada). */
+  emptyTrash(): Promise<readonly string[]>;
 
   // ─── Bases de dados ───
   /** Cria uma base (página marcada) no fim das irmãs de `parentId` (`null` = raiz). */

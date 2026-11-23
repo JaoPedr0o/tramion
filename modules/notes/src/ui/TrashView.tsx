@@ -5,6 +5,12 @@ import { subpagesText } from "./format.ts";
 import { messageFor } from "./messages.ts";
 import { useTrash } from "./useNoteList.ts";
 
+/** Total de páginas que sairão: cada item da lixeira mais as subpáginas que foram junto. */
+const totalPages = (items: readonly { descendantCount: number }[]) =>
+  items.reduce((sum, item) => sum + 1 + item.descendantCount, 0);
+
+const pagesText = (count: number) => (count === 1 ? "1 página" : `${count} páginas`);
+
 /**
  * Lixeira como tela própria: só as RAÍZES de cada exclusão, com a contagem de subpáginas. Restaurar traz de
  * volta a página e o que foi excluído junto; apagar de vez pede confirmação e avisa o que leva junto.
@@ -16,11 +22,13 @@ export function TrashView({
 }: Pick<NotesUiDeps, "service" | "events" | "store">) {
   const trash = useTrash(service, events);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmingAll, setConfirmingAll] = useState(false);
 
   const run = async (action: () => Promise<unknown>) => {
     try {
       await action();
       setConfirmingId(null);
+      setConfirmingAll(false);
     } catch (error) {
       store.fail(messageFor(error));
     }
@@ -28,9 +36,41 @@ export function TrashView({
 
   return (
     <section className="trash-view" aria-labelledby="trash-title">
-      <h1 id="trash-title" className="trash-view__title">
-        Lixeira
-      </h1>
+      <div className="trash-view__header">
+        <h1 id="trash-title" className="trash-view__title">
+          Lixeira
+        </h1>
+        {trash.status === "ready" && trash.items.length > 0 && !confirmingAll && (
+          <button
+            type="button"
+            className="trash-view__empty"
+            onClick={() => {
+              setConfirmingId(null);
+              setConfirmingAll(true);
+            }}
+          >
+            Esvaziar lixeira
+          </button>
+        )}
+      </div>
+
+      {trash.status === "ready" && trash.items.length > 0 && confirmingAll && (
+        <div role="alertdialog" aria-label="Esvaziar a lixeira" className="trash-view__confirm-all">
+          <span className="trash-view__warning">
+            Isto apagará de vez {pagesText(totalPages(trash.items))} e não pode ser desfeito.
+          </span>
+          <button
+            type="button"
+            className="trash-view__danger"
+            onClick={() => run(() => service.emptyTrash())}
+          >
+            Esvaziar agora
+          </button>
+          <button type="button" onClick={() => setConfirmingAll(false)}>
+            Cancelar
+          </button>
+        </div>
+      )}
 
       {trash.status === "loading" && <p role="status">Carregando…</p>}
       {trash.status === "error" && <p role="alert">Não foi possível carregar a lixeira.</p>}

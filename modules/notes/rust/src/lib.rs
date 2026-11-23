@@ -67,6 +67,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::delete,
             commands::restore,
             commands::purge,
+            commands::empty_trash,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

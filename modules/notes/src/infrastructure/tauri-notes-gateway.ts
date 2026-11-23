@@ -32,6 +32,7 @@ export function createTauriNotesGateway(): NotesGateway {
     delete: (id) => call<string[]>("delete", { id }),
     restore: (id) => call<string[]>("restore", { id }),
     purge: (id) => call<string[]>("purge", { id }),
+    emptyTrash: () => call<string[]>("empty_trash"),
     createDatabase: ({ title, parentId }) => call<Note>("create_database", { title, parentId }),
     getDatabase: (id) => call<DatabaseData>("get_database", { id }),
     addProperty: ({ databaseId, name, type }) =>

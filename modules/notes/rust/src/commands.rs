@@ -312,3 +312,8 @@ pub async fn rename_note(
         database::rename_note(conn, &id, &title, expected_updated_at)
     })
 }
+
+#[tauri::command]
+pub async fn empty_trash(db: State<'_, SharedDatabase>) -> Result<Vec<String>, CommandError> {
+    with_db(&db, service::empty_trash)
+}

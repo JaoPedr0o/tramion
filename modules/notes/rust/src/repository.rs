@@ -302,3 +302,11 @@ pub fn rename_if_current(
     )
     .optional()
 }
+
+/// Apaga de vez TUDO o que está na lixeira, de uma só vez (uma instrução: as chaves estrangeiras são conferidas no
+/// fim, então pais e filhas saem juntos). Devolve os ids apagados.
+pub fn purge_all_trashed(conn: &Connection) -> Result<Vec<String>> {
+    let mut stmt =
+        conn.prepare("DELETE FROM notes_note WHERE deleted_at IS NOT NULL RETURNING id")?;
+    stmt.query_map([], |row| row.get(0))?.collect()
+}

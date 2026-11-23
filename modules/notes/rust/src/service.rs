@@ -321,3 +321,12 @@ pub fn purge(conn: &Connection, id: &str) -> Result<Vec<String>, NotesError> {
     tx.commit()?;
     Ok(purged)
 }
+
+/// Esvazia a lixeira: apaga de vez todas as páginas excluídas (e as colunas e células das bases que estavam nela).
+/// Devolve os ids apagados; lixeira vazia devolve lista vazia.
+pub fn empty_trash(conn: &Connection) -> Result<Vec<String>, NotesError> {
+    let tx = conn.unchecked_transaction()?;
+    let purged = repository::purge_all_trashed(&tx)?;
+    tx.commit()?;
+    Ok(purged)
+}

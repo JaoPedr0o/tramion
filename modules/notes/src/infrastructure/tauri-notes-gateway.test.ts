@@ -177,4 +177,12 @@ describe("gateway do Tauri", () => {
 
     expect(invokeMock).toHaveBeenCalledWith(command, args);
   });
+
+  it("esvaziar a lixeira chama o comando sem argumentos", async () => {
+    invokeMock.mockResolvedValue(["a"]);
+
+    expect(await createTauriNotesGateway().emptyTrash()).toEqual(["a"]);
+
+    expect(invokeMock).toHaveBeenCalledWith("plugin:notes|empty_trash", undefined);
+  });
 });

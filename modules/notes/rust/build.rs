@@ -11,6 +11,7 @@ const COMMANDS: &[&str] = &[
     "delete",
     "restore",
     "purge",
+    "empty_trash",
     "save_asset",
     "set_appearance",
     "report_error",
