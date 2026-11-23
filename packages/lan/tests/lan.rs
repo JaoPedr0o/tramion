@@ -13,11 +13,13 @@ struct Mem {
     id: String,
     records: Vec<Record>,
     bases: HashMap<String, Vec<Record>>,
+    secrets: HashMap<String, String>,
 }
 
 impl Mem {
     fn new(id: &str, records: Vec<Record>) -> Self {
         Mem {
+            secrets: HashMap::new(),
             id: id.into(),
             records,
             bases: HashMap::new(),
@@ -46,6 +48,10 @@ impl Store for Mem {
         self.bases.insert(peer.into(), records.to_vec());
         Ok(())
     }
+    fn rotate_secret(&mut self, peer: &str, secret_hex: &str) -> Result<(), String> {
+        self.secrets.insert(peer.into(), secret_hex.into());
+        Ok(())
+    }
 }
 
 fn rec(id: &str, at: i64, device: &str, text: &str) -> Record {
@@ -71,7 +77,7 @@ fn meet(
     let handle = thread::spawn(move || {
         let (stream, _) = listener.accept().unwrap();
         let result = SecureChannel::accept(stream, &server_secret)
-            .and_then(|mut ch| run_responder(&mut ch, &mut server))
+            .and_then(|mut ch| run_responder(&mut ch, &mut server, None))
             .map(|_| ());
         (server, result)
     });
@@ -225,4 +231,64 @@ fn codigo_do_qr_ida_e_volta_e_validacoes() {
 #[test]
 fn segredos_gerados_sao_diferentes() {
     assert_ne!(new_secret().unwrap(), new_secret().unwrap());
+}
+
+#[test]
+fn accept_any_escolhe_o_segredo_certo_entre_varios() {
+    let (a, b, c) = (
+        new_secret().unwrap(),
+        new_secret().unwrap(),
+        new_secret().unwrap(),
+    );
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        SecureChannel::accept_any(stream, &[a, b, c]).map(|(_, i)| i)
+    });
+
+    let stream = TcpStream::connect(addr).unwrap();
+    SecureChannel::connect(stream, &b).unwrap();
+
+    assert_eq!(server.join().unwrap().unwrap(), 1);
+}
+
+#[test]
+fn accept_any_recusa_quando_nenhum_segredo_serve() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let known = [new_secret().unwrap(), new_secret().unwrap()];
+    let server = thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        SecureChannel::accept_any(stream, &known).map(|_| ())
+    });
+
+    let stream = TcpStream::connect(addr).unwrap();
+    let _ = SecureChannel::connect(stream, &new_secret().unwrap());
+
+    assert!(matches!(server.join().unwrap(), Err(LanError::Crypto(_))));
+}
+
+#[test]
+fn o_segredo_definitivo_chega_ao_celular_pelo_canal_seguro() {
+    let secret = new_secret().unwrap();
+    let new = to_hex(&new_secret().unwrap());
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let new_for_server = new.clone();
+    let server = thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        let mut store = Mem::new("pc", vec![]);
+        let mut ch = SecureChannel::accept(stream, &secret).unwrap();
+        run_responder(&mut ch, &mut store, Some(&new_for_server)).unwrap();
+        store
+    });
+    let mut phone = Mem::new("cel", vec![]);
+    let mut ch = SecureChannel::connect(TcpStream::connect(addr).unwrap(), &secret).unwrap();
+
+    run_initiator(&mut ch, &mut phone).unwrap();
+
+    let pc = server.join().unwrap();
+    assert_eq!(phone.secrets.get("pc"), Some(&new));
+    assert_eq!(pc.secrets.get("cel"), Some(&new));
 }

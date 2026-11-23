@@ -72,6 +72,29 @@ impl<T: Read + Write> SecureChannel<T> {
         })
     }
 
+    /// Como [`accept`](Self::accept), mas aceita qualquer um dos segredos dados (os aparelhos já pareados e o do QR
+    /// aberto). Devolve o canal e o índice do segredo que valeu. Falha se nenhum serve.
+    pub fn accept_any(mut io: T, secrets: &[[u8; SECRET_LEN]]) -> Result<(Self, usize), LanError> {
+        let first = read_frame(&mut io)?;
+        let mut buf = vec![0u8; 1024];
+        for (index, secret) in secrets.iter().enumerate() {
+            let mut hs = builder(secret)?.build_responder().map_err(crypto)?;
+            if hs.read_message(&first, &mut buf).is_err() {
+                continue;
+            }
+            let n = hs.write_message(&[], &mut buf).map_err(crypto)?;
+            write_frame(&mut io, &buf[..n])?;
+            return Ok((
+                Self {
+                    io,
+                    noise: hs.into_transport_mode().map_err(crypto)?,
+                },
+                index,
+            ));
+        }
+        Err(LanError::Crypto("nenhum segredo conhecido serve".into()))
+    }
+
     /// Envia uma mensagem inteira (em pedaços cifrados).
     pub fn send(&mut self, message: &[u8]) -> Result<(), LanError> {
         if message.len() > MAX_MESSAGE {

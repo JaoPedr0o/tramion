@@ -4,7 +4,7 @@
 //! a base do último encontro com aquele aparelho, aplica o que lhe cabe e devolve o que o outro deve aplicar. No fim,
 //! os dois guardam o estado final como nova base.
 
-use crate::{LanError, channel::SecureChannel};
+use crate::{LanError, channel::SecureChannel, pairing::secret_from_hex};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use tramion_sync::{Record, merge};
@@ -20,6 +20,9 @@ pub trait Store {
     /// O estado de ambos no último encontro com `peer` (vazio no primeiro).
     fn base(&mut self, peer: &str) -> Result<Vec<Record>, String>;
     fn save_base(&mut self, peer: &str, records: &[Record]) -> Result<(), String>;
+    /// Guarda o segredo definitivo do pareamento com `peer` (recebido, já dentro do canal seguro, no lugar do que
+    /// estava no QR).
+    fn rotate_secret(&mut self, peer: &str, secret_hex: &str) -> Result<(), String>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,6 +36,7 @@ enum Message {
     Plan {
         apply: Vec<Record>,
         conflicts: usize,
+        rotate: Option<String>,
     },
     Done,
 }
@@ -70,13 +74,24 @@ pub fn run_initiator<T: Read + Write, S: Store>(
         device: store.device_id(),
         records,
     }))?;
-    let Message::Plan { apply, conflicts } = decode(&channel.recv()?)? else {
+    let Message::Plan {
+        apply,
+        conflicts,
+        rotate,
+    } = decode(&channel.recv()?)?
+    else {
         return Err(LanError::Protocol("esperava o plano".into()));
     };
     store.apply(&apply).map_err(store_err)?;
     channel.send(&encode(&Message::Done))?;
     // A outra ponta ficou com os registros dela + os nossos mesclados: guardamos o que temos agora.
     let peer = read_peer_id(channel)?;
+    if let Some(secret) = rotate {
+        if secret_from_hex(&secret).is_err() {
+            return Err(LanError::Protocol("segredo definitivo inválido".into()));
+        }
+        store.rotate_secret(&peer, &secret).map_err(store_err)?;
+    }
     let after = store.export().map_err(store_err)?;
     store.save_base(&peer, &after).map_err(store_err)?;
     Ok(Outcome {
@@ -93,10 +108,12 @@ fn read_peer_id<T: Read + Write>(channel: &mut SecureChannel<T>) -> Result<Strin
     }
 }
 
-/// Quem recebe (o computador).
+/// Quem recebe (o computador). Se `rotate` traz um segredo (primeiro pareamento, feito pelo QR), ele é entregue ao
+/// outro aparelho pelo canal seguro e passa a ser o segredo definitivo: o do QR morre ali.
 pub fn run_responder<T: Read + Write, S: Store>(
     channel: &mut SecureChannel<T>,
     store: &mut S,
+    rotate: Option<&str>,
 ) -> Result<Outcome, LanError> {
     let Message::Hello {
         protocol,
@@ -118,6 +135,7 @@ pub fn run_responder<T: Read + Write, S: Store>(
     channel.send(&encode(&Message::Plan {
         apply: result.for_b.apply,
         conflicts: result.conflicts.len(),
+        rotate: rotate.map(str::to_string),
     }))?;
     let Message::Done = decode(&channel.recv()?)? else {
         return Err(LanError::Protocol("esperava a confirmação".into()));
@@ -127,6 +145,9 @@ pub fn run_responder<T: Read + Write, S: Store>(
         device: store.device_id(),
         records: Vec::new(),
     }))?;
+    if let Some(secret) = rotate {
+        store.rotate_secret(&peer, secret).map_err(store_err)?;
+    }
     let after = store.export().map_err(store_err)?;
     store.save_base(&peer, &after).map_err(store_err)?;
     Ok(Outcome {
