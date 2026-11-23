@@ -1,6 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.desktop" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!-- Atrás das barras do sistema aparece a cor do papel do app (claro ou escuro), não branco/preto. -->
+        <item name="android:windowBackground">@color/tramion_window_background</item>
     </style>
 </resources>

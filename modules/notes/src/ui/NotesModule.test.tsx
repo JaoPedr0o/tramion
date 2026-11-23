@@ -52,6 +52,8 @@ function setup() {
     cancelPairing: vi.fn<NotesPlatform["cancelPairing"]>(async () => {}),
     listPeers: vi.fn<NotesPlatform["listPeers"]>(async () => []),
     removePeer: vi.fn<NotesPlatform["removePeer"]>(async () => {}),
+    canScanQr: false,
+    scanQr: vi.fn<NotesPlatform["scanQr"]>(async () => null),
     pairWithCode: vi.fn<NotesPlatform["pairWithCode"]>(async () => ({
       device: "pc",
       name: "Computador",
@@ -3255,9 +3257,12 @@ describe("módulo de notas (a tela inteira)", () => {
     it("celular: colar o código conecta, mostra o resultado e limpa o campo", async () => {
       const { user, platform } = setup();
       await open(user);
+      await user.click(
+        within(dialog()).getByRole("button", { name: "Ler código de outro aparelho" }),
+      );
 
       await user.type(
-        within(dialog()).getByLabelText("Código do computador"),
+        within(dialog()).getByLabelText("Código do outro aparelho"),
         "tramion-pair:1:abc",
       );
       await user.click(within(dialog()).getByRole("button", { name: "Conectar" }));
@@ -3266,12 +3271,18 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await within(dialog()).findByRole("status")).textContent).toContain(
         "3 alterações recebidas",
       );
-      expect(within(dialog()).getByLabelText("Código do computador")).toHaveProperty("value", "");
+      expect(within(dialog()).getByLabelText("Código do outro aparelho")).toHaveProperty(
+        "value",
+        "",
+      );
     });
 
     it("Conectar fica desativado sem código", async () => {
       const { user } = setup();
       await open(user);
+      await user.click(
+        within(dialog()).getByRole("button", { name: "Ler código de outro aparelho" }),
+      );
 
       expect(
         within(dialog()).getByRole("button", { name: "Conectar" }).hasAttribute("disabled"),
@@ -3284,9 +3295,12 @@ describe("módulo de notas (a tela inteira)", () => {
         new NotesError("notes.internal", "não foi possível alcançar o computador"),
       );
       await open(user);
+      await user.click(
+        within(dialog()).getByRole("button", { name: "Ler código de outro aparelho" }),
+      );
 
       await user.type(
-        within(dialog()).getByLabelText("Código do computador"),
+        within(dialog()).getByLabelText("Código do outro aparelho"),
         "tramion-pair:1:abc",
       );
       await user.click(within(dialog()).getByRole("button", { name: "Conectar" }));
@@ -3294,7 +3308,7 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await within(dialog()).findByRole("alert")).textContent).toContain(
         "não foi possível alcançar",
       );
-      expect(within(dialog()).getByLabelText("Código do computador")).toHaveProperty(
+      expect(within(dialog()).getByLabelText("Código do outro aparelho")).toHaveProperty(
         "value",
         "tramion-pair:1:abc",
       );
@@ -3350,6 +3364,84 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await within(dialog()).findByRole("alert")).textContent).toContain(
         "Computador: sem rede",
       );
+    });
+
+    it("no computador (sem câmera) abre mostrando o QR; o modo de ler pede para colar o código", async () => {
+      const { user, platform } = setup();
+      await open(user);
+      await within(dialog()).findByRole("img", { name: "Código QR de pareamento" });
+
+      await user.click(
+        within(dialog()).getByRole("button", { name: "Ler código de outro aparelho" }),
+      );
+
+      expect(within(dialog()).queryByRole("button", { name: "Abrir a câmera" })).toBeNull();
+      expect(within(dialog()).getByText(/não tem câmera/)).toBeTruthy();
+      expect(within(dialog()).queryByRole("img", { name: "Código QR de pareamento" })).toBeNull();
+      expect(platform.cancelPairing).toHaveBeenCalled(); // sair do modo "mostrar" invalida o QR
+    });
+
+    it("no celular a câmera abre sozinha e o QR lido já pareia e sincroniza", async () => {
+      const { user, platform } = setup();
+      (platform as { canScanQr: boolean }).canScanQr = true;
+      platform.scanQr.mockResolvedValue("  tramion-pair:1:lido  ");
+
+      await open(user);
+
+      await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalledTimes(1));
+      await vi.waitFor(() =>
+        expect(platform.pairWithCode).toHaveBeenCalledWith("tramion-pair:1:lido"),
+      );
+      expect((await within(dialog()).findByRole("status")).textContent).toContain(
+        "3 alterações recebidas",
+      );
+      expect(platform.startPairing).not.toHaveBeenCalled(); // no celular, o padrão é ler, não mostrar
+    });
+
+    it("no celular, cancelar a câmera não pareia nem dá erro, e dá para abrir de novo", async () => {
+      const { user, platform } = setup();
+      (platform as { canScanQr: boolean }).canScanQr = true;
+      platform.scanQr.mockResolvedValue(null);
+      await open(user);
+      await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalledTimes(1));
+
+      await user.click(await within(dialog()).findByRole("button", { name: "Abrir a câmera" }));
+
+      expect(platform.scanQr).toHaveBeenCalledTimes(2);
+      expect(platform.pairWithCode).not.toHaveBeenCalled();
+      expect(within(dialog()).queryByRole("alert")).toBeNull();
+    });
+
+    it("sem permissão da câmera mostra o motivo e o campo de colar continua disponível", async () => {
+      const { user, platform } = setup();
+      (platform as { canScanQr: boolean }).canScanQr = true;
+      platform.scanQr.mockRejectedValue(
+        new NotesError("notes.internal", "Sem permissão para usar a câmera."),
+      );
+
+      await open(user);
+
+      expect((await within(dialog()).findByRole("alert")).textContent).toContain(
+        "Sem permissão para usar a câmera",
+      );
+      expect(within(dialog()).getByLabelText("Código do outro aparelho")).toBeTruthy();
+    });
+
+    it("no celular dá para trocar e mostrar o QR dele (o computador lê ou cola o código)", async () => {
+      const { user, platform } = setup();
+      (platform as { canScanQr: boolean }).canScanQr = true;
+      platform.scanQr.mockResolvedValue(null);
+      await open(user);
+      await vi.waitFor(() => expect(platform.scanQr).toHaveBeenCalled());
+
+      await user.click(
+        within(dialog()).getByRole("button", { name: "Mostrar código neste aparelho" }),
+      );
+
+      expect(
+        await within(dialog()).findByRole("img", { name: "Código QR de pareamento" }),
+      ).toBeTruthy();
+      expect(platform.startPairing).toHaveBeenCalledTimes(1);
     });
 
     it("QR expirado some e oferece gerar outro", async () => {

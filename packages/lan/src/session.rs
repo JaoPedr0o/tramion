@@ -15,6 +15,14 @@ pub const PROTOCOL: u32 = 1;
 /// O que o aparelho precisa oferecer à sincronização.
 pub trait Store {
     fn device_id(&self) -> String;
+    /// Como este aparelho se apresenta ao outro ("Computador", "Celular"...).
+    fn device_name(&self) -> String {
+        "Aparelho".into()
+    }
+    /// O outro aparelho se identificou (id e nome). Chamado antes de qualquer mescla; serve para registrá-lo.
+    fn peer_seen(&mut self, _peer: &str, _name: &str) -> Result<(), String> {
+        Ok(())
+    }
     fn export(&mut self) -> Result<Vec<Record>, String>;
     fn apply(&mut self, records: &[Record]) -> Result<(), String>;
     /// O estado de ambos no último encontro com `peer` (vazio no primeiro).
@@ -31,6 +39,9 @@ enum Message {
     Hello {
         protocol: u32,
         device: String,
+        /// Nome de quem fala (ausente em versões antigas).
+        #[serde(default)]
+        name: Option<String>,
         records: Vec<Record>,
     },
     Plan {
@@ -72,6 +83,7 @@ pub fn run_initiator<T: Read + Write, S: Store>(
     channel.send(&encode(&Message::Hello {
         protocol: PROTOCOL,
         device: store.device_id(),
+        name: Some(store.device_name()),
         records,
     }))?;
     let Message::Plan {
@@ -85,12 +97,15 @@ pub fn run_initiator<T: Read + Write, S: Store>(
     store.apply(&apply).map_err(store_err)?;
     channel.send(&encode(&Message::Done))?;
     // A outra ponta ficou com os registros dela + os nossos mesclados: guardamos o que temos agora.
-    let peer = read_peer_id(channel)?;
+    let (peer, peer_name) = read_peer_id(channel)?;
     if let Some(secret) = rotate {
         if secret_from_hex(&secret).is_err() {
             return Err(LanError::Protocol("segredo definitivo inválido".into()));
         }
         store.rotate_secret(&peer, &secret).map_err(store_err)?;
+    }
+    if let Some(name) = peer_name {
+        store.peer_seen(&peer, &name).map_err(store_err)?;
     }
     let after = store.export().map_err(store_err)?;
     store.save_base(&peer, &after).map_err(store_err)?;
@@ -101,9 +116,11 @@ pub fn run_initiator<T: Read + Write, S: Store>(
     })
 }
 
-fn read_peer_id<T: Read + Write>(channel: &mut SecureChannel<T>) -> Result<String, LanError> {
+fn read_peer_id<T: Read + Write>(
+    channel: &mut SecureChannel<T>,
+) -> Result<(String, Option<String>), LanError> {
     match decode(&channel.recv()?)? {
-        Message::Hello { device, .. } => Ok(device),
+        Message::Hello { device, name, .. } => Ok((device, name)),
         _ => Err(LanError::Protocol("esperava a identificação final".into())),
     }
 }
@@ -118,6 +135,7 @@ pub fn run_responder<T: Read + Write, S: Store>(
     let Message::Hello {
         protocol,
         device: peer,
+        name: peer_name,
         records: theirs,
     } = decode(&channel.recv()?)?
     else {
@@ -129,6 +147,9 @@ pub fn run_responder<T: Read + Write, S: Store>(
         )));
     }
     let ours = store.export().map_err(store_err)?;
+    store
+        .peer_seen(&peer, peer_name.as_deref().unwrap_or("Aparelho"))
+        .map_err(store_err)?;
     let base = store.base(&peer).map_err(store_err)?;
     let result = merge(&base, &ours, &theirs);
     store.apply(&result.for_a.apply).map_err(store_err)?;
@@ -143,6 +164,7 @@ pub fn run_responder<T: Read + Write, S: Store>(
     channel.send(&encode(&Message::Hello {
         protocol: PROTOCOL,
         device: store.device_id(),
+        name: Some(store.device_name()),
         records: Vec::new(),
     }))?;
     if let Some(secret) = rotate {

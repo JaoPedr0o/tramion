@@ -91,18 +91,66 @@ impl SyncState {
 
 /// Endereços (IPv4 de rede local) onde o celular pode achar este computador.
 pub fn local_addrs(port: u16) -> Vec<String> {
-    let mut found: Vec<String> = local_ip_address::list_afinet_netifas()
+    let ifaces = local_ip_address::list_afinet_netifas()
         .unwrap_or_default()
         .into_iter()
-        .filter_map(|(_, ip)| match ip {
-            IpAddr::V4(v4) if v4.is_private() && !v4.is_loopback() => Some(format!("{v4}:{port}")),
+        .filter_map(|(name, ip)| match ip {
+            IpAddr::V4(v4) => Some((name, v4)),
             _ => None,
         })
         .collect();
-    found.sort();
-    found.dedup();
-    found.truncate(8);
-    found
+    rank_addrs(ifaces, port)
+}
+
+/// Interfaces virtuais (contêineres, máquinas virtuais, VPNs): o celular nunca as alcança.
+const VIRTUAL_PREFIXES: [&str; 16] = [
+    "docker",
+    "podman",
+    "br-",
+    "virbr",
+    "veth",
+    "cni",
+    "lxc",
+    "lxd",
+    "vmnet",
+    "vboxnet",
+    "tun",
+    "tap",
+    "tailscale",
+    "zt",
+    "wg",
+    "flannel",
+];
+/// Interfaces que costumam ser a rede de verdade (cabo, Wi-Fi, ponto de acesso).
+const PREFERRED_PREFIXES: [&str; 6] = ["wl", "en", "eth", "wlan", "ap", "swlan"];
+
+/// Escolhe e ordena os endereços a colocar no QR: só IPv4 de rede local, sem interfaces virtuais, com Wi-Fi e cabo
+/// primeiro (o celular tenta na ordem, e cada endereço morto custa alguns segundos).
+pub fn rank_addrs(ifaces: Vec<(String, std::net::Ipv4Addr)>, port: u16) -> Vec<String> {
+    let mut usable: Vec<(u8, String, std::net::Ipv4Addr)> = ifaces
+        .into_iter()
+        .filter(|(name, ip)| {
+            ip.is_private()
+                && !ip.is_loopback()
+                && !VIRTUAL_PREFIXES
+                    .iter()
+                    .any(|p| name.to_lowercase().starts_with(p))
+        })
+        .map(|(name, ip)| {
+            let preferred = PREFERRED_PREFIXES
+                .iter()
+                .any(|p| name.to_lowercase().starts_with(p));
+            (u8::from(!preferred), name, ip)
+        })
+        .collect();
+    usable.sort();
+    let mut out: Vec<String> = usable
+        .into_iter()
+        .map(|(_, _, ip)| format!("{ip}:{port}"))
+        .collect();
+    out.dedup();
+    out.truncate(8);
+    out
 }
 
 /// Monta a oferta de pareamento: código, QR e validade.
@@ -132,6 +180,29 @@ impl Store for PairingStore<'_> {
     fn device_id(&self) -> String {
         self.inner.device_id()
     }
+    fn device_name(&self) -> String {
+        self.inner.device_name()
+    }
+    /// Quem entrou pelo QR é registrado aqui, já com o segredo DEFINITIVO e o nome que ele informou, antes da mescla
+    /// (para a base do encontro ter onde ser guardada).
+    fn peer_seen(&mut self, peer: &str, name: &str) -> Result<(), String> {
+        if let Some(secret) = self.register.take() {
+            let short: String = peer.chars().take(4).collect();
+            let label = if name.trim().is_empty() {
+                format!("Aparelho ({short})")
+            } else {
+                name.chars().take(100).collect()
+            };
+            let db = self
+                .db
+                .lock()
+                .map_err(|_| "banco indisponível".to_string())?;
+            sync_peers::add_peer(db.connection(), peer, &label, &secret)
+                .map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+        self.inner.peer_seen(peer, name)
+    }
     fn export(&mut self) -> Result<Vec<Record>, String> {
         self.inner.export()
     }
@@ -139,27 +210,13 @@ impl Store for PairingStore<'_> {
         self.inner.apply(records)
     }
     fn base(&mut self, peer: &str) -> Result<Vec<Record>, String> {
-        if let Some(secret) = self.register.take() {
-            let short: String = peer.chars().take(4).collect();
-            let db = self
-                .db
-                .lock()
-                .map_err(|_| "banco indisponível".to_string())?;
-            sync_peers::add_peer(
-                db.connection(),
-                peer,
-                &format!("Celular ({short})"),
-                &secret,
-            )
-            .map_err(|e| e.to_string())?;
-        }
         self.inner.base(peer)
     }
     fn save_base(&mut self, peer: &str, records: &[Record]) -> Result<(), String> {
         self.inner.save_base(peer, records)
     }
     fn rotate_secret(&mut self, _peer: &str, _secret_hex: &str) -> Result<(), String> {
-        Ok(()) // o computador já registrou o segredo definitivo em `base`
+        Ok(()) // quem recebe já registrou o segredo definitivo em `peer_seen`
     }
 }
 

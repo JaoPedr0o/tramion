@@ -323,3 +323,66 @@ fn sem_aparelhos_pareados_sincronizar_agora_nao_faz_nada() {
 
     assert!(sync_all(&phone).unwrap().is_empty());
 }
+
+// ───────── Endereços do QR e nomes ─────────
+
+use std::net::Ipv4Addr;
+use tramion_notes::sync_server::rank_addrs;
+
+fn iface(name: &str, ip: [u8; 4]) -> (String, Ipv4Addr) {
+    (name.to_string(), Ipv4Addr::from(ip))
+}
+
+#[test]
+fn enderecos_do_qr_ignoram_interfaces_virtuais_e_priorizam_wifi_e_cabo() {
+    let addrs = rank_addrs(
+        vec![
+            iface("podman0", [10, 88, 0, 1]),
+            iface("virbr0", [192, 168, 122, 1]),
+            iface("docker0", [172, 17, 0, 1]),
+            iface("tailscale0", [100, 64, 0, 1]),
+            iface("lo", [127, 0, 0, 1]),
+            iface("zzcustom0", [10, 1, 1, 5]),
+            iface("wlan0", [192, 168, 1, 20]),
+            iface("enp5s0", [192, 168, 1, 10]),
+            iface("eth1", [8, 8, 8, 8]),
+        ],
+        47653,
+    );
+
+    assert_eq!(
+        addrs,
+        ["192.168.1.10:47653", "192.168.1.20:47653", "10.1.1.5:47653"]
+    );
+}
+
+#[test]
+fn enderecos_repetidos_e_em_excesso_sao_cortados() {
+    let many: Vec<(String, Ipv4Addr)> = (0..20)
+        .map(|i| iface("wlan0", [192, 168, 1, i + 1]))
+        .collect();
+    let dup = vec![
+        iface("wlan0", [192, 168, 1, 5]),
+        iface("wlan0", [192, 168, 1, 5]),
+    ];
+
+    assert_eq!(rank_addrs(many, 1).len(), 8);
+    assert_eq!(rank_addrs(dup, 1), ["192.168.1.5:1"]);
+}
+
+#[test]
+fn quem_conecta_e_registrado_com_o_nome_que_informou() {
+    let desktop = leak(shared("pc"));
+    let state = leak(SyncState::default());
+    let phone = shared("cel");
+    let (addr, server) = serve(desktop, state, 1);
+
+    pair_with_code(&phone, &code_for(state, "pc", &addr)).unwrap();
+
+    server.join().unwrap();
+    // Os dois lados de teste são "Computador" (a máquina de teste não é Android).
+    let on_desktop = list_peers(desktop.lock().unwrap().connection()).unwrap();
+    let on_phone = list_peers(phone.lock().unwrap().connection()).unwrap();
+    assert_eq!(on_desktop[0].name, "Computador");
+    assert_eq!(on_phone[0].name, "Computador");
+}

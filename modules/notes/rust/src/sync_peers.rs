@@ -84,19 +84,25 @@ pub fn add_peer(
     Ok(())
 }
 
-/// Guarda o nome e os endereços de um aparelho pareado (o celular guarda onde achar o computador).
-pub fn set_peer_info(
-    conn: &Connection,
-    device: &str,
-    name: &str,
-    addrs: &[String],
-) -> Result<(), NotesError> {
+/// Guarda os endereços de um aparelho pareado (quem conecta guarda onde achar o outro).
+pub fn set_peer_addrs(conn: &Connection, device: &str, addrs: &[String]) -> Result<(), NotesError> {
     let json = serde_json::to_string(addrs).map_err(|e| NotesError::Internal(e.to_string()))?;
     conn.execute(
-        "UPDATE notes_sync_peer SET name = ?2, addrs = ?3 WHERE device = ?1",
-        params![device, name, json],
+        "UPDATE notes_sync_peer SET addrs = ?2 WHERE device = ?1",
+        params![device, json],
     )?;
     Ok(())
+}
+
+/// O nome de um aparelho pareado.
+pub fn peer_name(conn: &Connection, device: &str) -> Result<Option<String>, NotesError> {
+    Ok(conn
+        .query_row(
+            "SELECT name FROM notes_sync_peer WHERE device = ?1",
+            [device],
+            |r| r.get(0),
+        )
+        .optional()?)
 }
 
 /// Um aparelho que este sabe procurar: id, segredo e endereços.
@@ -145,6 +151,30 @@ impl<'a> DbStore<'a> {
 }
 
 impl Store for DbStore<'_> {
+    fn device_name(&self) -> String {
+        if cfg!(target_os = "android") {
+            "Celular"
+        } else {
+            "Computador"
+        }
+        .to_string()
+    }
+
+    fn peer_seen(&mut self, peer: &str, name: &str) -> Result<(), String> {
+        let name: String = name.chars().take(100).collect();
+        if name.trim().is_empty() {
+            return Ok(());
+        }
+        self.lock()?
+            .connection()
+            .execute(
+                "UPDATE notes_sync_peer SET name = ?2 WHERE device = ?1",
+                params![peer, name],
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+
     fn device_id(&self) -> String {
         self.lock()
             .ok()

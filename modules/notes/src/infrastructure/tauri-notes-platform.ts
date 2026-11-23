@@ -11,6 +11,7 @@ import type {
   PairingOffer,
   SyncReport,
 } from "../application/notes-platform.ts";
+import { NotesError } from "../domain/errors.ts";
 import { toNotesError } from "./notes-error.ts";
 
 /** Cumpre o contrato chamando o plugin Rust do módulo. */
@@ -68,6 +69,30 @@ export function createTauriNotesPlatform(): NotesPlatform {
       try {
         await invoke("plugin:notes|sync_peer_remove", { device });
       } catch (error) {
+        throw toNotesError(error);
+      }
+    },
+
+    canScanQr: /Android|iPhone|iPad/i.test(globalThis.navigator?.userAgent ?? ""),
+
+    async scanQr() {
+      // O plugin só existe no celular: é carregado sob demanda, para o app do computador nem tocar nele.
+      const scanner = await import("@tauri-apps/plugin-barcode-scanner");
+      try {
+        let permission = await scanner.checkPermissions();
+        if (permission !== "granted") permission = await scanner.requestPermissions();
+        if (permission !== "granted") {
+          throw new NotesError(
+            "notes.internal",
+            "Sem permissão para usar a câmera. Ative a câmera para o Tramion nas configurações do aparelho.",
+          );
+        }
+        const result = await scanner.scan({ windowed: false, formats: [scanner.Format.QRCode] });
+        return result.content;
+      } catch (error) {
+        if (error instanceof NotesError) throw error;
+        // Fechar a câmera sem ler nada rejeita a promessa: não é um erro, a pessoa só desistiu.
+        if (/cancel/i.test(String(error))) return null;
         throw toNotesError(error);
       }
     },

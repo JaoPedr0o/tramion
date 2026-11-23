@@ -2561,3 +2561,46 @@
   font: inherit;
   font-size: 13px;
 }
+
+.pairing__modes {
+  display: flex;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+}
+
+.pairing__modes button {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pairing__modes button[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+
+.pairing__camera {
+  display: block;
+  width: 100%;
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pairing__camera:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

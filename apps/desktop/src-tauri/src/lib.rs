@@ -13,6 +13,9 @@ use tramion_infra_sqlite::{Database, OpenOptions, SharedDatabase};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default();
+    // Só no celular: leitor de QR pela câmera (pareamento).
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
     // Só no computador: uma segunda abertura não cria outro aplicativo (dois processos no mesmo banco), traz a
     // janela de volta.
     #[cfg(desktop)]

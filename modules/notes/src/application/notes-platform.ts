@@ -51,7 +51,11 @@ export interface NotesPlatform {
   listPeers(): Promise<PairedDevice[]>;
   /** Desfaz o pareamento de um aparelho. */
   removePeer(device: string): Promise<void>;
-  /** Celular: pareia com um computador pelo texto do QR e já sincroniza. */
+  /** Este aparelho tem câmera para ler o QR (celular). */
+  readonly canScanQr: boolean;
+  /** Abre a câmera e devolve o texto do QR lido, ou `null` se a pessoa cancelou. */
+  scanQr(): Promise<string | null>;
+  /** Pareia com outro aparelho pelo texto do QR e já sincroniza. */
   pairWithCode(code: string): Promise<SyncReport>;
   /** Celular: sincroniza com os computadores pareados (um relatório por aparelho). */
   syncNow(): Promise<SyncReport[]>;

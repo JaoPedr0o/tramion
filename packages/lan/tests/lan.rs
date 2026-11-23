@@ -14,11 +14,13 @@ struct Mem {
     records: Vec<Record>,
     bases: HashMap<String, Vec<Record>>,
     secrets: HashMap<String, String>,
+    names: HashMap<String, String>,
 }
 
 impl Mem {
     fn new(id: &str, records: Vec<Record>) -> Self {
         Mem {
+            names: HashMap::new(),
             secrets: HashMap::new(),
             id: id.into(),
             records,
@@ -46,6 +48,13 @@ impl Store for Mem {
     }
     fn save_base(&mut self, peer: &str, records: &[Record]) -> Result<(), String> {
         self.bases.insert(peer.into(), records.to_vec());
+        Ok(())
+    }
+    fn device_name(&self) -> String {
+        format!("Nome de {}", self.id)
+    }
+    fn peer_seen(&mut self, peer: &str, name: &str) -> Result<(), String> {
+        self.names.insert(peer.into(), name.into());
         Ok(())
     }
     fn rotate_secret(&mut self, peer: &str, secret_hex: &str) -> Result<(), String> {
@@ -291,4 +300,27 @@ fn o_segredo_definitivo_chega_ao_celular_pelo_canal_seguro() {
     let pc = server.join().unwrap();
     assert_eq!(phone.secrets.get("pc"), Some(&new));
     assert_eq!(pc.secrets.get("cel"), Some(&new));
+}
+
+#[test]
+fn cada_aparelho_aprende_o_nome_do_outro() {
+    let secret = new_secret().unwrap();
+
+    let (server, client, rs, rc) = meet(
+        Mem::new("pc", vec![]),
+        Mem::new("cel", vec![]),
+        secret,
+        secret,
+    );
+
+    rs.unwrap();
+    rc.unwrap();
+    assert_eq!(
+        server.names.get("cel").map(String::as_str),
+        Some("Nome de cel")
+    );
+    assert_eq!(
+        client.names.get("pc").map(String::as_str),
+        Some("Nome de pc")
+    );
 }

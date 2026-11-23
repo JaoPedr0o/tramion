@@ -35,12 +35,12 @@ fn lan(e: LanError) -> NotesError {
 
 /// Tenta cada endereço até um conectar.
 fn dial(addrs: &[String]) -> Result<TcpStream, NotesError> {
-    let mut last = "nenhum endereço".to_string();
+    let mut tried: Vec<String> = Vec::new();
     for addr in addrs {
         let resolved: Vec<SocketAddr> = match addr.to_socket_addrs() {
             Ok(found) => found.collect(),
             Err(e) => {
-                last = format!("{addr}: {e}");
+                tried.push(format!("{addr}: {e}"));
                 continue;
             }
         };
@@ -51,12 +51,17 @@ fn dial(addrs: &[String]) -> Result<TcpStream, NotesError> {
                     let _ = stream.set_write_timeout(Some(IO_TIMEOUT));
                     return Ok(stream);
                 }
-                Err(e) => last = format!("{target}: {e}"),
+                Err(e) => tried.push(format!("{target}: {e}")),
             }
         }
     }
     Err(NotesError::Internal(format!(
-        "não foi possível alcançar o computador (confira se os dois estão na mesma rede Wi-Fi e se o Tramion está aberto lá): {last}"
+        "não foi possível alcançar o outro aparelho. Confira se os dois estão na mesma rede Wi-Fi e se o Tramion está aberto lá. Tentativas: {}",
+        if tried.is_empty() {
+            "nenhum endereço".to_string()
+        } else {
+            tried.join("; ")
+        }
     )))
 }
 
@@ -70,8 +75,8 @@ fn run(
     run_initiator(&mut channel, &mut DbStore::new(db)).map_err(lan)
 }
 
-/// Pareia com um computador a partir do texto do QR e já faz a primeira sincronização. Ao fim, o segredo do QR
-/// foi trocado pelo definitivo (dentro do canal seguro) e o computador fica guardado com seus endereços.
+/// Pareia com outro aparelho a partir do texto do QR e já faz a primeira sincronização. Ao fim, o segredo do QR
+/// foi trocado pelo definitivo (dentro do canal seguro) e o outro aparelho fica guardado com seus endereços.
 pub fn pair_with_code(db: &SharedDatabase, code: &str) -> Result<SyncReport, NotesError> {
     let pairing = Pairing::decode(code).map_err(lan)?;
     let secret = pairing.secret_bytes().map_err(lan)?;
@@ -79,15 +84,12 @@ pub fn pair_with_code(db: &SharedDatabase, code: &str) -> Result<SyncReport, Not
     let guard = db
         .lock()
         .map_err(|_| NotesError::Internal("banco indisponível".into()))?;
-    sync_peers::set_peer_info(
-        guard.connection(),
-        &pairing.device,
-        "Computador",
-        &pairing.addrs,
-    )?;
+    sync_peers::set_peer_addrs(guard.connection(), &pairing.device, &pairing.addrs)?;
+    let name = sync_peers::peer_name(guard.connection(), &pairing.device)?
+        .unwrap_or_else(|| "Aparelho".into());
     Ok(SyncReport {
         device: pairing.device,
-        name: "Computador".into(),
+        name,
         ok: true,
         applied: outcome.applied,
         conflicts: outcome.conflicts,

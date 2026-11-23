@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="tramion_icon_background">#1f1b16</color>
+    <color name="tramion_window_background">#f7f4ee</color>
 </resources>
