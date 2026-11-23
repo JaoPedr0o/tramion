@@ -1,8 +1,12 @@
 package dev.tramion.app
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -25,5 +29,20 @@ class MainActivity : TauriActivity() {
       WindowInsetsCompat.CONSUMED
     }
     ViewCompat.requestApplyInsets(content)
+
+    requestLocalNetworkAccess()
+  }
+
+  // No Android 17 (API 37) o app só fala com aparelhos da rede local (o computador do pareamento) depois que a pessoa
+  // permite. A permissão é pedida aqui, na abertura; o sistema mostra o aviso uma vez e lembra a escolha.
+  private fun requestLocalNetworkAccess() {
+    if (Build.VERSION.SDK_INT < 37) return
+    if (ContextCompat.checkSelfPermission(this, LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED) return
+    ActivityCompat.requestPermissions(this, arrayOf(LOCAL_NETWORK), REQUEST_LOCAL_NETWORK)
+  }
+
+  private companion object {
+    const val LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+    const val REQUEST_LOCAL_NETWORK = 4242
   }
 }
