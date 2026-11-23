@@ -118,7 +118,8 @@
 }
 
 .page-tree__item {
-  padding-inline-start: calc(var(--space-1) + var(--depth, 0) * var(--space-3));
+  /* Reserva uma faixa à esquerda para o ponto de acento da página aberta (abaixo): ele não pode cobrir a seta. */
+  padding-inline-start: calc(var(--space-2) + var(--depth, 0) * var(--space-3));
 }
 
 .page-tree__chevron {
@@ -1411,7 +1412,7 @@
 .page-tree__item[aria-selected="true"]::before {
   position: absolute;
   top: 50%;
-  left: 3px;
+  left: 1px;
   width: 5px;
   height: 5px;
   margin-top: -2.5px;
