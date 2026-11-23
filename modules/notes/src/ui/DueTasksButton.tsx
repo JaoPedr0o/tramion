@@ -155,7 +155,7 @@ export function DueTasksButton({
             {group("Hoje", today)}
 
             <div className="due__settings">
-              <label className="due__option">
+              <label className="due__option due__option--check">
                 <input
                   type="checkbox"
                   checked={settings.systemNotifications}

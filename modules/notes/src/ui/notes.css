@@ -2062,6 +2062,11 @@
   font-weight: 500;
 }
 
+/* A linha da caixa de seleção: a caixa e o texto juntos, à esquerda (e não o texto empurrado para a direita). */
+.due__option--check {
+  justify-content: flex-start;
+}
+
 .due__option input[type="checkbox"] {
   flex: none;
   width: 20px;
