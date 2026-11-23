@@ -8,6 +8,7 @@
 //! consegue nem completar o aperto de mão, então não lê nem grava nada.
 
 pub mod channel;
+pub mod discovery;
 pub mod pairing;
 pub mod session;
 

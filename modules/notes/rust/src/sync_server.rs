@@ -11,6 +11,7 @@ use tauri::{AppHandle, Manager, Runtime};
 use tramion_infra_sqlite::SharedDatabase;
 use tramion_lan::LanError;
 use tramion_lan::channel::SecureChannel;
+use tramion_lan::discovery::Advertiser;
 use tramion_lan::pairing::{Pairing, new_secret, secret_from_hex, to_hex};
 use tramion_lan::session::{Outcome, Store, run_responder};
 use tramion_sync::Record;
@@ -38,6 +39,8 @@ struct Pending {
 pub struct SyncState {
     pending: Mutex<Option<Pending>>,
     port: Mutex<Option<u16>>,
+    /// O anúncio mDNS deste aparelho (para o celular achá-lo mesmo se o IP mudar). Enquanto existir, é encontrável.
+    advertiser: Mutex<Option<Advertiser>>,
 }
 
 /// O que a tela de pareamento mostra.
@@ -282,6 +285,22 @@ pub fn ensure_running<R: Runtime>(app: &AppHandle<R>) -> Result<u16, NotesError>
         .map_err(|e| NotesError::Internal(e.to_string()))?
         .port();
     *port = Some(bound);
+    // Anuncia o aparelho na rede local. É "melhor esforço": sem multicast (algumas redes) o QR ainda funciona.
+    let device = {
+        let db = app.state::<SharedDatabase>();
+        let guard = db
+            .lock()
+            .map_err(|_| NotesError::Internal("banco indisponível".into()))?;
+        sync_io::device_id(guard.connection())?
+    };
+    match Advertiser::start(&device, bound) {
+        Ok(advertiser) => {
+            if let Ok(mut slot) = state.advertiser.lock() {
+                *slot = Some(advertiser);
+            }
+        }
+        Err(error) => eprintln!("[sync] não foi possível anunciar o aparelho na rede: {error}"),
+    }
     let app = app.clone();
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {

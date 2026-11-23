@@ -8,11 +8,12 @@ use std::time::Duration;
 use tramion_infra_sqlite::SharedDatabase;
 use tramion_lan::LanError;
 use tramion_lan::channel::SecureChannel;
+use tramion_lan::discovery;
 use tramion_lan::pairing::{Pairing, SECRET_LEN};
 use tramion_lan::session::{Outcome, run_initiator};
 
 /// Tempo máximo para uma tentativa de conexão a um endereço.
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const IO_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// O resultado de sincronizar com um aparelho, para a interface mostrar.
@@ -65,14 +66,42 @@ fn dial(addrs: &[String]) -> Result<TcpStream, NotesError> {
     )))
 }
 
+/// Quanto tempo procurar o aparelho na rede (mDNS) quando os endereços guardados não respondem.
+const DISCOVERY_TIMEOUT: Duration = Duration::from_secs(3);
+
+/// Conecta aos endereços guardados e, se nenhum responder, procura o aparelho pelo nome na rede (o IP dele pode ter
+/// mudado). Devolve a conexão e, quando veio da descoberta, os endereços novos para guardar.
+fn connect(device: &str, addrs: &[String]) -> Result<(TcpStream, Option<Vec<String>>), NotesError> {
+    match dial(addrs) {
+        Ok(stream) => Ok((stream, None)),
+        Err(first) => {
+            let found = discovery::resolve(device, DISCOVERY_TIMEOUT);
+            if found.is_empty() || found == addrs {
+                return Err(first);
+            }
+            dial(&found)
+                .map(|stream| (stream, Some(found)))
+                .map_err(|_| first)
+        }
+    }
+}
+
 fn run(
     db: &SharedDatabase,
+    device: &str,
     addrs: &[String],
     secret: &[u8; SECRET_LEN],
 ) -> Result<Outcome, NotesError> {
-    let stream = dial(addrs)?;
+    let (stream, rediscovered) = connect(device, addrs)?;
     let mut channel = SecureChannel::connect(stream, secret).map_err(lan)?;
-    run_initiator(&mut channel, &mut DbStore::new(db)).map_err(lan)
+    let outcome = run_initiator(&mut channel, &mut DbStore::new(db)).map_err(lan)?;
+    if let Some(new_addrs) = rediscovered
+        && let Ok(guard) = db.lock()
+    {
+        // O endereço mudou: guarda o novo, e a próxima sincronização já vai direto.
+        let _ = sync_peers::set_peer_addrs(guard.connection(), device, &new_addrs);
+    }
+    Ok(outcome)
 }
 
 /// Pareia com outro aparelho a partir do texto do QR e já faz a primeira sincronização. Ao fim, o segredo do QR
@@ -80,7 +109,7 @@ fn run(
 pub fn pair_with_code(db: &SharedDatabase, code: &str) -> Result<SyncReport, NotesError> {
     let pairing = Pairing::decode(code).map_err(lan)?;
     let secret = pairing.secret_bytes().map_err(lan)?;
-    let outcome = run(db, &pairing.addrs, &secret)?;
+    let outcome = run(db, &pairing.device, &pairing.addrs, &secret)?;
     let guard = db
         .lock()
         .map_err(|_| NotesError::Internal("banco indisponível".into()))?;
@@ -122,7 +151,7 @@ pub fn sync_all(db: &SharedDatabase) -> Result<Vec<SyncReport>, NotesError> {
     Ok(peers
         .into_iter()
         .map(
-            |(device, name, secret, addrs)| match run(db, &addrs, &secret) {
+            |(device, name, secret, addrs)| match run(db, &device, &addrs, &secret) {
                 Ok(o) => SyncReport {
                     device,
                     name,

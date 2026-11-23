@@ -324,3 +324,59 @@ fn cada_aparelho_aprende_o_nome_do_outro() {
         Some("Nome de pc")
     );
 }
+
+// ───────── Descoberta (partes que não dependem da rede) ─────────
+
+use std::net::{IpAddr, Ipv4Addr};
+use tramion_lan::discovery::{MAX_FOUND, fullname, is_device, pick_addrs};
+
+fn ip(a: u8, b: u8, c: u8, d: u8) -> IpAddr {
+    IpAddr::V4(Ipv4Addr::new(a, b, c, d))
+}
+
+#[test]
+fn nome_do_servico_e_a_comparacao_do_aparelho() {
+    assert_eq!(fullname("abc123"), "abc123._tramion._tcp.local.");
+    assert!(is_device("abc123._tramion._tcp.local.", "abc123"));
+    assert!(
+        is_device("ABC123._tramion._tcp.local.", "abc123"),
+        "sem diferenciar maiúsculas"
+    );
+    assert!(!is_device("outro._tramion._tcp.local.", "abc123"));
+    assert!(
+        !is_device("abc123x._tramion._tcp.local.", "abc123"),
+        "o prefixo não basta"
+    );
+}
+
+#[test]
+fn enderecos_achados_so_ipv4_de_rede_local_sem_repetir_e_limitados() {
+    let found = pick_addrs(
+        [
+            ip(192, 168, 1, 10),
+            ip(192, 168, 1, 10),
+            ip(8, 8, 8, 8),
+            ip(127, 0, 0, 1),
+            IpAddr::V6("fe80::1".parse().unwrap()),
+            ip(10, 0, 0, 5),
+        ],
+        47653,
+    );
+
+    assert_eq!(found, ["10.0.0.5:47653", "192.168.1.10:47653"]);
+    let many = pick_addrs((1..=20).map(|i| ip(192, 168, 1, i)), 1);
+    assert_eq!(many.len(), MAX_FOUND);
+}
+
+#[test]
+fn procurar_sem_ninguem_na_rede_volta_vazio_dentro_do_prazo() {
+    let started = std::time::Instant::now();
+
+    let found = tramion_lan::discovery::resolve(
+        "aparelho-que-nao-existe",
+        std::time::Duration::from_millis(400),
+    );
+
+    assert!(found.is_empty());
+    assert!(started.elapsed() < std::time::Duration::from_secs(5));
+}

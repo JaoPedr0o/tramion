@@ -4,6 +4,9 @@
     <!-- Android 17 ou mais novo bloqueia, sem esta permissão, a conexão do app com aparelhos da rede local (o computador
          do pareamento). Ela é pedida ao abrir o app; sem ela, a sincronização falha com "connection timed out". -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Descoberta do computador pelo nome (mDNS): o Android só entrega pacotes multicast ao app com este bloqueio. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <!-- Câmera: usada só para ler o QR de pareamento (e o app funciona em aparelhos sem câmera). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

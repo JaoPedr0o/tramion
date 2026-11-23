@@ -2,6 +2,7 @@ import { Logo } from "@tramion/ui";
 import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { GraphView } from "./GraphView.tsx";
+import { AutoSync } from "./AutoSync.tsx";
 import { PairingDialog } from "./PairingDialog.tsx";
 import { QuickCaptureDialog } from "./QuickCaptureDialog.tsx";
 import { VersionsDialog } from "./VersionsDialog.tsx";
@@ -60,6 +61,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         <VersionsDialog deps={deps} />
         <QuickCaptureDialog deps={deps} />
         <PairingDialog deps={deps} />
+        <AutoSync deps={deps} />
         {nav.notice && (
           <p role="status" className="notes-main__notice">
             <span>{nav.notice}</span>

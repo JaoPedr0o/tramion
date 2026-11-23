@@ -1,6 +1,7 @@
 package dev.tramion.app
 
 import android.content.pm.PackageManager
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -16,6 +17,7 @@ import kotlin.math.max
 
 class MainActivity : TauriActivity() {
   private var webView: WebView? = null
+  private var multicastLock: WifiManager.MulticastLock? = null
 
   // Margens seguras em pixels (esquerda, topo, direita, base): barras do sistema, recorte da câmera e teclado.
   private var safeLeft = 0
@@ -47,6 +49,29 @@ class MainActivity : TauriActivity() {
     ViewCompat.requestApplyInsets(content)
 
     requestLocalNetworkAccess()
+  }
+
+  // Com o app visível, o aparelho recebe os anúncios mDNS do computador (para achá-lo se o IP mudar). Fora da tela o
+  // bloqueio é solto, para não gastar bateria.
+  override fun onResume() {
+    super.onResume()
+    try {
+      val wifi = applicationContext.getSystemService(WIFI_SERVICE) as? WifiManager
+      if (multicastLock == null) {
+        multicastLock = wifi?.createMulticastLock("tramion-mdns")?.apply { setReferenceCounted(false) }
+      }
+      multicastLock?.acquire()
+    } catch (_: Exception) {
+      // Sem Wi-Fi ou sem permissão: a descoberta por nome não funciona, mas o endereço guardado ainda vale.
+    }
+  }
+
+  override fun onPause() {
+    super.onPause()
+    try {
+      if (multicastLock?.isHeld == true) multicastLock?.release()
+    } catch (_: Exception) {
+    }
   }
 
   override fun onWebViewCreate(webView: WebView) {

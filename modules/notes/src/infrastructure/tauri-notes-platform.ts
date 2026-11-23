@@ -74,6 +74,7 @@ export function createTauriNotesPlatform(): NotesPlatform {
     },
 
     canScanQr: /Android|iPhone|iPad/i.test(globalThis.navigator?.userAgent ?? ""),
+    syncsAutomatically: /Android|iPhone|iPad/i.test(globalThis.navigator?.userAgent ?? ""),
 
     async scanQr() {
       // O plugin só existe no celular: é carregado sob demanda, para o app do computador nem tocar nele.

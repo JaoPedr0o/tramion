@@ -4,7 +4,7 @@ import { createEventBus, createViewRegistry } from "@tramion/core";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { NotesPlatform } from "../application/notes-platform.ts";
+import type { NotesPlatform, SyncReport } from "../application/notes-platform.ts";
 import { NotesError } from "../domain/errors.ts";
 import { createNotesModule } from "../module.ts";
 import { StubBlockEditor } from "../test-block-editor.tsx";
@@ -32,7 +32,7 @@ function Frame({ view }: { view: ViewContribution }) {
   );
 }
 
-function setup() {
+function setup(options: { syncsAutomatically?: boolean; synced?: SyncReport[] } = {}) {
   const fake = createFakeGateway();
   const events = createEventBus<AppEvents>();
   const views = createViewRegistry();
@@ -53,6 +53,7 @@ function setup() {
     listPeers: vi.fn<NotesPlatform["listPeers"]>(async () => []),
     removePeer: vi.fn<NotesPlatform["removePeer"]>(async () => {}),
     canScanQr: false,
+    syncsAutomatically: options.syncsAutomatically ?? false,
     scanQr: vi.fn<NotesPlatform["scanQr"]>(async () => null),
     pairWithCode: vi.fn<NotesPlatform["pairWithCode"]>(async () => ({
       device: "pc",
@@ -62,7 +63,7 @@ function setup() {
       conflicts: 0,
       error: null,
     })),
-    syncNow: vi.fn<NotesPlatform["syncNow"]>(async () => []),
+    syncNow: vi.fn<NotesPlatform["syncNow"]>(async () => options.synced ?? []),
     onQuickCapture: vi.fn<NotesPlatform["onQuickCapture"]>(() => () => {}),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
@@ -3487,6 +3488,93 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await within(dialog()).findByLabelText("Código de pareamento")).textContent).toBe(
         "novo",
       );
+    });
+  });
+
+  describe("sincronização automática (celular)", () => {
+    const received = (applied: number): SyncReport[] => [
+      { device: "pc", name: "Computador", ok: true, applied, conflicts: 0, error: null },
+    ];
+    const pass = (ms: number) =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+
+    it("no computador não sincroniza sozinho (ele só atende)", async () => {
+      const { platform } = setup();
+
+      await pass(60_000);
+
+      expect(platform.syncNow).not.toHaveBeenCalled();
+    });
+
+    it("no celular sincroniza ao abrir e avisa quantas alterações chegaram", async () => {
+      const { platform } = setup({ syncsAutomatically: true, synced: received(2) });
+
+      await pass(100);
+
+      expect(platform.syncNow).toHaveBeenCalledTimes(1);
+      expect(await main().findByText("Sincronizado: 2 alterações recebidas.")).toBeTruthy();
+    });
+
+    it("se nada chegou, não avisa", async () => {
+      const { platform } = setup({ syncsAutomatically: true, synced: received(0) });
+
+      await pass(100);
+
+      expect(platform.syncNow).toHaveBeenCalledTimes(1);
+      expect(main().queryByText(/Sincronizado:/)).toBeNull();
+    });
+
+    it("ao voltar para o app depois de um tempo, sincroniza de novo", async () => {
+      const { platform } = setup({ syncsAutomatically: true });
+      await pass(100);
+
+      await pass(16_000);
+      act(() => {
+        window.dispatchEvent(new Event("focus"));
+      });
+      await pass(100);
+
+      expect(platform.syncNow.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("ao voltar a ter rede, sincroniza", async () => {
+      const { platform } = setup({ syncsAutomatically: true });
+      await pass(16_000);
+      const before = platform.syncNow.mock.calls.length;
+
+      act(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+      await pass(100);
+
+      expect(platform.syncNow.mock.calls.length).toBe(before + 1);
+    });
+
+    it("depois de editar uma página, sincroniza após uma pausa", async () => {
+      const { platform, events } = setup({ syncsAutomatically: true });
+      await pass(100);
+      expect(platform.syncNow).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        events.emit("note.updated", { id: "n1" });
+      });
+      await pass(30_000);
+
+      expect(platform.syncNow.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("uma falha ao sincronizar (sem rede) não mostra erro nem derruba a tela", async () => {
+      const { platform } = setup({ syncsAutomatically: true });
+      platform.syncNow.mockRejectedValue(new Error("sem rede"));
+      await pass(16_000);
+      act(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+      await pass(100);
+
+      expect(main().queryByRole("alert")).toBeNull();
     });
   });
 });
