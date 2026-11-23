@@ -2604,3 +2604,40 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/* ───────── Telas de celular (abaixo de 720 px) ───────── */
+@media (max-width: 719px) {
+  /* Margens menores: o editor e a lixeira não podem gastar metade da largura em espaço vazio. */
+  .note-page {
+    padding: 24px 20px 72px;
+  }
+
+  .trash-view {
+    padding: 24px 16px;
+  }
+
+  /* Janelinhas de largura fixa passam a caber na tela. */
+  .due__popover {
+    width: min(340px, calc(100vw - 16px));
+  }
+
+  .versions__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 40%) minmax(0, 1fr);
+  }
+
+  .chart__row {
+    grid-template-columns: minmax(64px, 110px) minmax(0, 1fr) 56px;
+    gap: var(--space-2);
+  }
+
+  .pairing__qr {
+    width: min(240px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .capture textarea {
+    font-size: 16px; /* abaixo de 16px o navegador do celular amplia a tela ao tocar no campo */
+  }
+}

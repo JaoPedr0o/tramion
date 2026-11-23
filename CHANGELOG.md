@@ -4,6 +4,24 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.4.1] - 2026-11-24
+
+### Corrigido
+
+- **Android:** o conteúdo não fica mais sob a barra de status nem sob a de navegação (nem sob o teclado ou o recorte da
+  câmera). O fundo atrás das barras segue o tema.
+- **Atualizar no Linux:** o instalador encerra o Tramion em execução. Antes, a versão antiga continuava escondida na
+  bandeja e o atalho trazia de volta a janela velha.
+- A mensagem de falha de conexão ao parear agora lista os endereços tentados.
+
+### Alterado
+
+- **Pareamento mais fácil:** o celular abre a câmera sozinho para ler o QR do computador, e um botão troca quem mostra e
+  quem lê o código (colar o código continua disponível). Os aparelhos aparecem com nome (Computador, Celular) e o QR
+  ignora interfaces virtuais, priorizando Wi-Fi e cabo.
+- **Layout de celular:** a barra lateral é uma gaveta que se abre arrastando da borda esquerda e se fecha arrastando para
+  a esquerda, tocando no fundo ou escolhendo uma página; margens e janelinhas se adaptam a telas pequenas.
+
 ## [0.4.0] - 2026-11-24
 
 ### Adicionado
@@ -75,6 +93,7 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
+[0.4.1]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.1
 [0.4.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.0
 [0.3.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.3.0
 [0.2.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.2.0
