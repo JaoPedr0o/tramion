@@ -135,3 +135,31 @@ export function planChildPageSync(
 
   return { toInsert: activeChildIds.filter((id) => !seen.has(id)), toRemove };
 }
+
+/** Blocos que pedem um endereço ou arquivo e, sem ele, são só um espaço vazio esperando. */
+const PLACEHOLDER_TYPES = new Set(["image", "video", "audio", "file", "bookmark", "embedVideo"]);
+
+/**
+ * Ids de blocos de mídia ou incorporação que ficaram VAZIOS (sem endereço): o usuário escolheu "imagem" ou
+ * "vídeo" e desistiu. `keepId` protege o bloco em que o cursor está (o que ele acabou de inserir e está preenchendo).
+ */
+export function emptyPlaceholderIds(blocks: readonly Block[], keepId?: string): string[] {
+  const found: string[] = [];
+  const walk = (list: readonly Block[]) => {
+    for (const block of list) {
+      const url = block.props?.url;
+      const empty = url === undefined || url === null || url === "";
+      if (
+        PLACEHOLDER_TYPES.has(block.type) &&
+        empty &&
+        block.id !== undefined &&
+        block.id !== keepId
+      ) {
+        found.push(block.id);
+      }
+      if (block.children?.length) walk(block.children);
+    }
+  };
+  walk(blocks);
+  return found;
+}

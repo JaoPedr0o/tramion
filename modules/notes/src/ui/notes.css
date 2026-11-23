@@ -300,9 +300,25 @@
 }
 
 .note-page__editor {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 60vh;
   margin-top: var(--space-3);
+}
+
+/* O editor ocupa TODA a altura da página: a área vazia abaixo do último bloco continua sendo do editor.
+   Sem isso, soltar um bloco abaixo do último (para movê-lo para o fim) não era reconhecido. */
+.note-page__editor .block-editor,
+.note-page__editor .bn-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.note-page__editor .bn-editor {
+  flex: 1;
+  padding-bottom: var(--space-4);
 }
 
 .note-page__loading {

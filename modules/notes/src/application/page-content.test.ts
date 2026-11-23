@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   blocksToPlainText,
   childPageIds,
+  emptyPlaceholderIds,
   parseContent,
   planChildPageSync,
   removedChildPageIds,
@@ -143,5 +144,52 @@ describe("sincronizar os blocos com a árvore", () => {
     const plan = planChildPageSync([child("a", "1")], []);
 
     expect(plan.toRemove).toEqual(["1"]);
+  });
+});
+
+describe("espaços vazios de mídia e incorporação", () => {
+  const media = (type: string, id: string, url?: string): Block => ({
+    id,
+    type,
+    props: url === undefined ? {} : { url },
+  });
+
+  it("acha imagem, vídeo, áudio, arquivo e incorporações sem endereço", () => {
+    const blocks = [
+      media("image", "1", ""),
+      media("video", "2", ""),
+      media("audio", "3"),
+      media("file", "4", ""),
+      media("bookmark", "5", ""),
+      media("embedVideo", "6", ""),
+    ];
+
+    expect(emptyPlaceholderIds(blocks)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("não toca em blocos preenchidos nem em blocos de texto", () => {
+    const blocks = [
+      media("image", "1", "https://x.com/a.png"),
+      media("bookmark", "2", "https://x.com"),
+      para("texto", "3"),
+    ];
+
+    expect(emptyPlaceholderIds(blocks)).toEqual([]);
+  });
+
+  it("protege o bloco em que o cursor está (o que está sendo preenchido)", () => {
+    const blocks = [media("image", "1", ""), media("image", "2", "")];
+
+    expect(emptyPlaceholderIds(blocks, "2")).toEqual(["1"]);
+  });
+
+  it("enxerga blocos aninhados", () => {
+    const blocks: Block[] = [{ ...para("pai", "p"), children: [media("image", "filho", "")] }];
+
+    expect(emptyPlaceholderIds(blocks)).toEqual(["filho"]);
+  });
+
+  it("um bloco de subpágina nunca é tratado como espaço vazio", () => {
+    expect(emptyPlaceholderIds([child("pagina", "1")])).toEqual([]);
   });
 });

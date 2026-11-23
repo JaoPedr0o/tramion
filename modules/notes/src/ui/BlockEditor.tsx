@@ -3,28 +3,44 @@ import {
   BlockNoteSchema,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
+  createCodeBlockSpec,
   filterSuggestionItems,
   insertOrUpdateBlockForSlashMenu,
 } from "@blocknote/core";
+import { SideMenuExtension } from "@blocknote/core/extensions";
+import { codeBlockOptions, syntaxHighlighter } from "@blocknote/code-block";
 import { pt } from "@blocknote/core/locales";
 import { BlockNoteView } from "@blocknote/mantine";
 import {
   createReactBlockSpec,
   createReactInlineContentSpec,
   getDefaultReactSlashMenuItems,
+  AddBlockButton,
+  BlockColorsItem,
+  DragHandleButton,
+  DragHandleMenu,
+  RemoveBlockItem,
+  SideMenu,
+  SideMenuController,
   SuggestionMenuController,
+  useBlockNoteEditor,
+  useComponentsContext,
   useCreateBlockNote,
+  useExtensionState,
 } from "@blocknote/react";
 import "@blocknote/mantine/style.css";
 import { createContext, useContext, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { hostnameOf, normalizeHttpUrl, videoEmbed } from "../application/embeds.ts";
+import { detectLanguage } from "../application/language-detect.ts";
 import {
   blocksToPlainText,
   childPageIds,
+  emptyPlaceholderIds,
   planChildPageSync,
   removedChildPageIds,
   type Block,
 } from "../application/page-content.ts";
+import { isCurrentOption, TURN_INTO_OPTIONS, TURNABLE_TYPES } from "../application/turn-into.ts";
 import type { BlockEditorProps } from "./block-editor-types.ts";
 import { useColorScheme } from "./useColorScheme.ts";
 
@@ -43,6 +59,9 @@ interface EditorApi {
   insertBlocks(blocks: unknown[], reference: { id: string }, placement: "after"): void;
   updateBlock(id: string, update: unknown): void;
   insertInlineContent(content: unknown[]): void;
+  getTextCursorPosition(): {
+    block: { id: string; type: string; props?: Record<string, unknown>; content?: unknown };
+  };
 }
 
 // O que os blocos e as menções precisam da página que os contém.
@@ -250,6 +269,12 @@ const schema = BlockNoteSchema.create({
     childPage: ChildPageBlock(),
     bookmark: BookmarkBlock(),
     embedVideo: EmbedVideoBlock(),
+    // Bloco de código com a lista de linguagens (menu no próprio bloco) e Tab para recuar.
+    codeBlock: createCodeBlockSpec({
+      indentLineWithTab: true,
+      defaultLanguage: codeBlockOptions.defaultLanguage,
+      supportedLanguages: codeBlockOptions.supportedLanguages,
+    }),
   } as never,
   inlineContentSpecs: { ...defaultInlineContentSpecs, mention: MentionInline } as never,
 });
@@ -281,6 +306,59 @@ const withAliases = <T extends { aliases?: string[] }>(item: T): T => {
   return extra ? { ...item, aliases: [...(item.aliases ?? []), ...extra] } : item;
 };
 
+/** "Transformar em": troca o tipo do bloco do menu (o texto é preservado). Só aparece em blocos de texto. */
+function TurnIntoItem() {
+  const Components = useComponentsContext()!;
+  const editor = useBlockNoteEditor();
+  const block = useExtensionState(SideMenuExtension, { selector: (state) => state?.block });
+
+  if (!block || !TURNABLE_TYPES.has(block.type)) return null;
+  return (
+    <Components.Generic.Menu.Root position="right" sub portalElement={null}>
+      <Components.Generic.Menu.Trigger sub>
+        <Components.Generic.Menu.Item subTrigger>Transformar em</Components.Generic.Menu.Item>
+      </Components.Generic.Menu.Trigger>
+      <Components.Generic.Menu.Dropdown sub className="bn-menu-dropdown bn-drag-handle-menu">
+        {TURN_INTO_OPTIONS.map((option) => (
+          <Components.Generic.Menu.Item
+            key={option.id}
+            checked={isCurrentOption(block as never, option)}
+            onClick={() =>
+              (editor as unknown as EditorApi).updateBlock(block.id, {
+                type: option.type,
+                ...(option.props ? { props: option.props } : {}),
+              })
+            }
+          >
+            {option.label}
+          </Components.Generic.Menu.Item>
+        ))}
+      </Components.Generic.Menu.Dropdown>
+    </Components.Generic.Menu.Root>
+  );
+}
+
+/** O menu da alça do bloco: Transformar em, Cores e Excluir. */
+function BlockMenu() {
+  return (
+    <DragHandleMenu>
+      <TurnIntoItem />
+      <BlockColorsItem>Cores</BlockColorsItem>
+      <RemoveBlockItem>Excluir</RemoveBlockItem>
+    </DragHandleMenu>
+  );
+}
+
+/** Menu lateral do bloco: "+" para inserir e a alça (arrastar), que abre o menu acima. */
+function CustomSideMenu(props: Parameters<typeof SideMenu>[0]) {
+  return (
+    <SideMenu {...props}>
+      <AddBlockButton />
+      <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+    </SideMenu>
+  );
+}
+
 export default function BlockEditor({
   initialBlocks,
   childPages,
@@ -305,6 +383,7 @@ export default function BlockEditor({
       schema,
       dictionary: pt,
       uploadFile: (file: File) => upload.current(file),
+      extensions: [syntaxHighlighter],
       // O editor não aceita lista vazia: sem blocos, começa com o parágrafo vazio padrão.
       ...(initialBlocks.length > 0 ? { initialContent: initialBlocks as never } : {}),
     } as never,
@@ -345,6 +424,49 @@ export default function BlockEditor({
       );
     }
   }, [api, childPages]);
+
+  // Blocos de imagem, vídeo etc. que o usuário abriu e abandonou (sem endereço) ficariam sobrando na página.
+  // São removidos ao abrir a página e, depois, quando o cursor sai de perto deles, com uma pausa para não
+  // atrapalhar quem ainda está escolhendo o arquivo (o seletor é uma janela suspensa fora do editor).
+  const cleanupTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const removeAbandonedPlaceholders = () => {
+    if (document.querySelector(".mantine-Popover-dropdown")) return; // seletor aberto: ainda em uso
+    let cursorId: string | undefined;
+    try {
+      cursorId = api.getTextCursorPosition().block.id;
+    } catch {
+      cursorId = undefined;
+    }
+    const ids = emptyPlaceholderIds(api.document as unknown as Block[], cursorId);
+    if (ids.length > 0) api.removeBlocks(ids);
+  };
+  const scheduleCleanup = () => {
+    clearTimeout(cleanupTimer.current);
+    cleanupTimer.current = setTimeout(removeAbandonedPlaceholders, 1200);
+  };
+  useEffect(() => {
+    removeAbandonedPlaceholders();
+    return () => clearTimeout(cleanupTimer.current);
+    // Só ao abrir a página (e ao sair): o resto é por seleção.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Colar num bloco de código sem linguagem escolhida: descobre a linguagem pelo trecho. Respeita a escolha
+  // do usuário: se ele já escolheu uma linguagem, nada muda.
+  const detectLanguageAfterPaste = () => {
+    setTimeout(() => {
+      try {
+        const block = api.getTextCursorPosition().block;
+        if (block.type !== "codeBlock") return;
+        const current = block.props?.language;
+        if (typeof current === "string" && current !== "" && current !== "text") return;
+        const language = detectLanguage(blocksToPlainText([block as unknown as Block]));
+        if (language) api.updateBlock(block.id, { props: { language } });
+      } catch {
+        /* sem cursor no editor: nada a fazer */
+      }
+    }, 0);
+  };
 
   const insertBlock = (type: string) =>
     insertOrUpdateBlockForSlashMenu(editor as never, { type } as never);
@@ -394,6 +516,7 @@ export default function BlockEditor({
       {/* Links de verdade no texto abrem no navegador do sistema, nunca dentro do app. */}
       <div
         className="block-editor"
+        onPaste={detectLanguageAfterPaste}
         onClick={(event) => {
           const href = (event.target as HTMLElement).closest?.("a[href]")?.getAttribute("href");
           if (href && /^https?:\/\//i.test(href)) {
@@ -406,8 +529,11 @@ export default function BlockEditor({
           editor={editor as never}
           theme={scheme}
           slashMenu={false}
+          sideMenu={false}
           onChange={emitChange}
+          onSelectionChange={scheduleCleanup}
         >
+          <SideMenuController sideMenu={CustomSideMenu} />
           <SuggestionMenuController
             triggerCharacter="/"
             getItems={async (query) =>
