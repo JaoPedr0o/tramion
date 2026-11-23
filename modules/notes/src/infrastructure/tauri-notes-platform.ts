@@ -5,6 +5,7 @@ import {
   requestPermission,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
+import type { ScheduledNotification } from "../application/scheduled-reminders.ts";
 import type {
   NotesPlatform,
   PairedDevice,
@@ -13,6 +14,25 @@ import type {
 } from "../application/notes-platform.ts";
 import { NotesError } from "../domain/errors.ts";
 import { toNotesError } from "./notes-error.ts";
+
+const isMobile = () => /Android|iPhone|iPad/i.test(globalThis.navigator?.userAgent ?? "");
+
+/** Canal de notificação (Android) dos lembretes: importância alta para aparecer na tela e tocar. */
+const REMINDER_CHANNEL = "tramion-lembretes";
+
+/** O que o plugin recebe para agendar uma notificação num instante (o `schedule` segue o formato do plugin). */
+function schedulePayload(item: ScheduledNotification) {
+  return {
+    id: item.id,
+    channelId: REMINDER_CHANNEL,
+    title: item.title,
+    body: item.body,
+    extra: { taskId: item.taskId },
+    schedule: {
+      at: { date: new Date(item.at).toISOString(), repeating: false, allowWhileIdle: true },
+    },
+  };
+}
 
 /** Cumpre o contrato chamando o plugin Rust do módulo. */
 export function createTauriNotesPlatform(): NotesPlatform {
@@ -129,6 +149,84 @@ export function createTauriNotesPlatform(): NotesPlatform {
       } catch {
         // Sem notificações do sistema (ou sem permissão), o aviso continua dentro do app.
       }
+    },
+
+    canScheduleNotifications: isMobile(),
+
+    async scheduleNotifications(items) {
+      // No computador o plugin ignora o horário e mostraria tudo na hora: só o celular agenda.
+      if (!isMobile()) return;
+      try {
+        const plugin = await import("@tauri-apps/plugin-notification");
+        if (items.length > 0 && !(await plugin.isPermissionGranted())) {
+          if ((await plugin.requestPermission()) !== "granted") return;
+        }
+        await plugin.createChannel({
+          id: REMINDER_CHANNEL,
+          name: "Lembretes de tarefas",
+          description: "Avisos na hora das tarefas com horário",
+          importance: plugin.Importance.High,
+          vibration: true,
+        });
+        const pending = new Map((await plugin.pending()).map((entry) => [entry.id, entry]));
+        const wanted = new Set(items.map((item) => item.id));
+        const stale = [...pending.keys()].filter((id) => !wanted.has(id));
+        if (stale.length > 0) await plugin.cancel(stale);
+
+        const changed = items.filter((item) => {
+          const entry = pending.get(item.id);
+          const date = entry?.schedule?.at?.date as Date | string | undefined;
+          return (
+            entry === undefined ||
+            entry.title !== item.title ||
+            entry.body !== item.body ||
+            date === undefined ||
+            new Date(date).getTime() !== item.at
+          );
+        });
+        if (changed.length === 0) return;
+        try {
+          // `batch` (do plugin no celular) também guarda os avisos para voltarem depois de reiniciar o aparelho.
+          await invoke("plugin:notification|batch", {
+            notifications: changed.map(schedulePayload),
+          });
+        } catch {
+          for (const item of changed) {
+            plugin.sendNotification({
+              id: item.id,
+              channelId: REMINDER_CHANNEL,
+              title: item.title,
+              body: item.body,
+              extra: { taskId: item.taskId },
+              schedule: plugin.Schedule.at(new Date(item.at), false, true),
+            });
+          }
+        }
+      } catch {
+        // Sem plugin, sem permissão ou sem resposta agora: o plano é refeito na próxima abertura ou edição.
+      }
+    },
+
+    onNotificationOpened(handler) {
+      if (!isMobile()) return () => {};
+      let cancelled = false;
+      let stop: (() => void) | null = null;
+      void import("@tauri-apps/plugin-notification")
+        .then((plugin) =>
+          plugin.onAction((event) => {
+            const taskId = event.notification?.extra?.taskId;
+            if (typeof taskId === "string") handler(taskId);
+          }),
+        )
+        .then((listener) => {
+          if (cancelled) void listener.unregister();
+          else stop = () => void listener.unregister();
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+        stop?.();
+      };
     },
 
     async saveMarkdown(title, content) {

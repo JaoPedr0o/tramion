@@ -2980,40 +2980,10 @@
   min-width: 0;
 }
 
-/* Botões do campo de hora: alvo de toque de 44 px e texto firme (peso 600). */
-.time-btn {
-  box-sizing: border-box;
+/* O botão da hora usa o padrão .dlg-btn (44 px, peso 600); aqui só a largura mínima ao lado do campo de data. */
+.date-cell__time {
+  flex: none;
   min-width: 44px;
-  min-height: 44px;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.time-btn:hover {
-  background: var(--color-hover);
-}
-
-.time-btn--primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.time-btn--primary:hover {
-  background: var(--color-accent);
-  filter: brightness(1.08);
-}
-
-.time-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 .time-form {
@@ -3049,7 +3019,7 @@
   gap: var(--space-2);
 }
 
-.time-form__actions .time-btn {
+.time-form__actions .dlg-btn {
   flex: 1;
 }
 
@@ -3057,4 +3027,17 @@
   margin-left: var(--space-1);
   font-weight: 600;
   opacity: 0.8;
+}
+
+.due__option select {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
 }

@@ -1,17 +1,26 @@
 import { CHANGE_EVENTS } from "../application/change-events.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { longDate, todayIso } from "../application/calendar.ts";
+import { timePart } from "../application/date-time.ts";
 import {
   readReminderSettings,
   saveReminderSettings,
   type ReminderSettings,
 } from "../application/reminder-settings.ts";
 import { digestMessage, isDigestDue, isValidTime, splitDue } from "../application/reminders.ts";
+import { LEAD_OPTIONS } from "../application/scheduled-reminders.ts";
 import type { DueTask } from "../domain/database.ts";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { PageGlyph } from "./PageGlyph.tsx";
 import { Popover } from "./Popover.tsx";
+
+/** O texto de cada antecedência na lista de opções. */
+function leadLabel(minutes: number): string {
+  if (minutes === 0) return "na hora";
+  if (minutes === 60) return "1 hora";
+  return `${minutes} minutos`;
+}
 
 /** De quanto em quanto tempo se confere as tarefas (o dia pode virar com o app aberto). */
 const CHECK_EVERY_MS = 60_000;
@@ -100,6 +109,7 @@ export function DueTasksButton({
                   <span className="due__title">{task.title}</span>
                   <span className="due__meta">
                     {task.databaseTitle} · {longDate(task.date)}
+                    {timePart(task.date) ? ` às ${timePart(task.date)}` : ""}
                   </span>
                 </span>
               </button>
@@ -170,6 +180,43 @@ export function DueTasksButton({
                 />
               </label>
               <p className="popover__note">O aviso aparece enquanto o Tramion está aberto.</p>
+              {platform.canScheduleNotifications ? (
+                <>
+                  <label className="due__option due__option--check">
+                    <input
+                      type="checkbox"
+                      checked={settings.timedNotifications}
+                      onChange={(event) =>
+                        update({ ...settings, timedNotifications: event.target.checked })
+                      }
+                    />
+                    Avisar na hora das tarefas com horário
+                  </label>
+                  <label className="due__option">
+                    Avisar com antecedência de
+                    <select
+                      value={settings.leadMinutes}
+                      disabled={!settings.timedNotifications}
+                      onChange={(event) =>
+                        update({ ...settings, leadMinutes: Number(event.target.value) })
+                      }
+                    >
+                      {LEAD_OPTIONS.map((minutes) => (
+                        <option key={minutes} value={minutes}>
+                          {leadLabel(minutes)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="popover__note">
+                    Esses avisos ficam agendados no celular e tocam mesmo com o Tramion fechado.
+                  </p>
+                </>
+              ) : (
+                <p className="popover__note">
+                  Avisos na hora de cada tarefa com horário são agendados no celular.
+                </p>
+              )}
             </div>
           </div>
           <button type="button" className="dlg-btn due__close" onClick={() => setOpen(false)}>

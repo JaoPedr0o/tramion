@@ -4,6 +4,7 @@ import type { NotesUiDeps } from "./deps.ts";
 import { GraphView } from "./GraphView.tsx";
 import { AutoSync } from "./AutoSync.tsx";
 import { PairingDialog } from "./PairingDialog.tsx";
+import { ReminderScheduler } from "./ReminderScheduler.tsx";
 import { QuickCaptureDialog } from "./QuickCaptureDialog.tsx";
 import { VersionsDialog } from "./VersionsDialog.tsx";
 import { NotePanel } from "./NotePanel.tsx";
@@ -62,6 +63,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         <QuickCaptureDialog deps={deps} />
         <PairingDialog deps={deps} />
         <AutoSync deps={deps} />
+        <ReminderScheduler deps={deps} />
         {nav.notice && (
           <p role="status" className="notes-main__notice">
             <span>{nav.notice}</span>

@@ -58,13 +58,13 @@ function TimePopover({
           />
         </label>
         <div className="time-form__actions">
-          <button type="submit" className="time-btn time-btn--primary">
+          <button type="submit" className="dlg-btn dlg-btn--primary">
             Definir hora
           </button>
           {time !== null && (
             <button
               type="button"
-              className="time-btn"
+              className="dlg-btn"
               onClick={() => {
                 onPick(date);
                 onClose();
@@ -106,7 +106,7 @@ export function DateCell({ property, rowTitle, value, onChange }: Props) {
       {date !== "" && (
         <button
           type="button"
-          className="time-btn"
+          className="dlg-btn date-cell__time"
           aria-label={time ? `Hora de ${name}: ${time}` : `Escolher a hora de ${name}`}
           aria-haspopup="dialog"
           aria-expanded={open}

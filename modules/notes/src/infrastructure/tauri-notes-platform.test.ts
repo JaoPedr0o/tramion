@@ -78,3 +78,154 @@ describe("plataforma do Tauri", () => {
     expect(error).toHaveProperty("code", "notes.url-invalid");
   });
 });
+
+const plugin = vi.hoisted(() => ({
+  isPermissionGranted: vi.fn(),
+  requestPermission: vi.fn(),
+  createChannel: vi.fn(),
+  pending: vi.fn(),
+  cancel: vi.fn(),
+  sendNotification: vi.fn(),
+  onAction: vi.fn(),
+  Importance: { High: 4 },
+  Schedule: { at: vi.fn((date: Date) => ({ at: { date } })) },
+}));
+vi.mock("@tauri-apps/plugin-notification", () => plugin);
+
+describe("avisos agendados", () => {
+  const item = (id: number, at: number, title = `T${id}`) => ({
+    id,
+    at,
+    title,
+    body: "corpo",
+    taskId: `tarefa-${id}`,
+  });
+  const WHEN = Date.UTC(2030, 0, 1, 12, 0);
+
+  beforeEach(() => {
+    invokeMock.mockReset();
+    plugin.isPermissionGranted.mockReset().mockResolvedValue(true);
+    plugin.requestPermission.mockReset();
+    plugin.createChannel.mockReset();
+    plugin.pending.mockReset().mockResolvedValue([]);
+    plugin.cancel.mockReset();
+    plugin.sendNotification.mockReset();
+    plugin.onAction.mockReset();
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 14)" });
+  });
+
+  it("no computador não agenda nada (o plugin mostraria tudo na hora)", async () => {
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (X11; Linux x86_64)" });
+    const platform = createTauriNotesPlatform();
+
+    await platform.scheduleNotifications([item(1, WHEN)]);
+
+    expect(platform.canScheduleNotifications).toBe(false);
+    expect(invokeMock).not.toHaveBeenCalled();
+    expect(plugin.sendNotification).not.toHaveBeenCalled();
+    expect(plugin.pending).not.toHaveBeenCalled();
+  });
+
+  it("agenda o que é novo em lote, com canal, horário e o id da tarefa", async () => {
+    invokeMock.mockResolvedValue([1]);
+    const platform = createTauriNotesPlatform();
+
+    await platform.scheduleNotifications([item(1, WHEN)]);
+
+    expect(platform.canScheduleNotifications).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith("plugin:notification|batch", {
+      notifications: [
+        {
+          id: 1,
+          channelId: "tramion-lembretes",
+          title: "T1",
+          body: "corpo",
+          extra: { taskId: "tarefa-1" },
+          schedule: {
+            at: { date: new Date(WHEN).toISOString(), repeating: false, allowWhileIdle: true },
+          },
+        },
+      ],
+    });
+  });
+
+  it("cancela o que sobrou e não reagenda o que não mudou", async () => {
+    plugin.pending.mockResolvedValue([
+      { id: 1, title: "T1", body: "corpo", schedule: { at: { date: new Date(WHEN) } } },
+      { id: 2, title: "velha", body: "corpo", schedule: { at: { date: new Date(WHEN) } } },
+      { id: 3, title: "T3", body: "corpo", schedule: { at: { date: new Date(WHEN) } } },
+    ]);
+    invokeMock.mockResolvedValue([3]);
+
+    await createTauriNotesPlatform().scheduleNotifications([item(1, WHEN), item(3, WHEN + 60_000)]);
+
+    expect(plugin.cancel).toHaveBeenCalledWith([2]);
+    const [, args] = invokeMock.mock.calls[0]!;
+    expect((args as { notifications: { id: number }[] }).notifications.map((n) => n.id)).toEqual([
+      3,
+    ]);
+  });
+
+  it("lista vazia só cancela, sem pedir permissão", async () => {
+    plugin.isPermissionGranted.mockResolvedValue(false);
+    plugin.pending.mockResolvedValue([
+      { id: 9, title: "x", body: "y", schedule: { at: { date: new Date(WHEN) } } },
+    ]);
+
+    await createTauriNotesPlatform().scheduleNotifications([]);
+
+    expect(plugin.requestPermission).not.toHaveBeenCalled();
+    expect(plugin.cancel).toHaveBeenCalledWith([9]);
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("sem permissão não agenda", async () => {
+    plugin.isPermissionGranted.mockResolvedValue(false);
+    plugin.requestPermission.mockResolvedValue("denied");
+
+    await createTauriNotesPlatform().scheduleNotifications([item(1, WHEN)]);
+
+    expect(invokeMock).not.toHaveBeenCalled();
+    expect(plugin.sendNotification).not.toHaveBeenCalled();
+  });
+
+  it("se o lote falhar, agenda uma a uma pela API do plugin", async () => {
+    invokeMock.mockRejectedValue(new Error("sem batch"));
+
+    await createTauriNotesPlatform().scheduleNotifications([item(1, WHEN)]);
+
+    expect(plugin.sendNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, extra: { taskId: "tarefa-1" } }),
+    );
+  });
+
+  it("falhas do plugin nunca viram erro", async () => {
+    plugin.pending.mockRejectedValue(new Error("quebrou"));
+
+    await expect(
+      createTauriNotesPlatform().scheduleNotifications([item(1, WHEN)]),
+    ).resolves.toBeUndefined();
+  });
+
+  it("tocar na notificação entrega o id da tarefa; outras notificações são ignoradas", async () => {
+    const unregister = vi.fn();
+    let callback: (event: unknown) => void = () => {};
+    plugin.onAction.mockImplementation(async (cb: (event: unknown) => void) => {
+      callback = cb;
+      return { unregister };
+    });
+    const heard = vi.fn();
+
+    const stop = createTauriNotesPlatform().onNotificationOpened(heard);
+    await vi.waitFor(() => expect(plugin.onAction).toHaveBeenCalled());
+    await Promise.resolve();
+    callback({ actionId: "tap", notification: { extra: { taskId: "abc" } } });
+    callback({ actionId: "tap", notification: { extra: {} } });
+    callback({ actionId: "tap", notification: null });
+    stop();
+
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(heard).toHaveBeenCalledWith("abc");
+    await vi.waitFor(() => expect(unregister).toHaveBeenCalled());
+  });
+});

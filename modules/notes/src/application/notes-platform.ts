@@ -3,6 +3,8 @@
  * navegador. Fica fora do `NotesGateway` porque não é persistência de notas, e é um contrato à parte para
  * que a interface e os testes não dependam do Tauri.
  */
+import type { ScheduledNotification } from "./scheduled-reminders.ts";
+
 /** O QR de pareamento. */
 export interface PairingOffer {
   readonly code: string;
@@ -65,6 +67,15 @@ export interface NotesPlatform {
   onQuickCapture(handler: () => void): () => void;
   /** Mostra uma notificação do sistema (pede a permissão na primeira vez; sem permissão, não faz nada). */
   notify(title: string, body: string): Promise<void>;
+  /** Este aparelho agenda avisos no sistema que tocam mesmo com o app fechado (celular). */
+  readonly canScheduleNotifications: boolean;
+  /**
+   * Faz o que está agendado no sistema ser exatamente esta lista: agenda o que é novo ou mudou e cancela o que sobrou.
+   * Sem suporte (computador) ou sem permissão, não faz nada.
+   */
+  scheduleNotifications(items: readonly ScheduledNotification[]): Promise<void>;
+  /** Avisa (com o id da tarefa) quando a pessoa toca numa notificação agendada; devolve como cancelar o aviso. */
+  onNotificationOpened(handler: (taskId: string) => void): () => void;
   /** Registra no terminal do app um erro da interface (para não sumir quando a tela quebra). */
   reportError(message: string): Promise<void>;
 }

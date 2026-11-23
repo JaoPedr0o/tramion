@@ -32,7 +32,13 @@ function Frame({ view }: { view: ViewContribution }) {
   );
 }
 
-function setup(options: { syncsAutomatically?: boolean; synced?: SyncReport[] } = {}) {
+function setup(
+  options: {
+    syncsAutomatically?: boolean;
+    synced?: SyncReport[];
+    canScheduleNotifications?: boolean;
+  } = {},
+) {
   const fake = createFakeGateway();
   const events = createEventBus<AppEvents>();
   const views = createViewRegistry();
@@ -66,6 +72,9 @@ function setup(options: { syncsAutomatically?: boolean; synced?: SyncReport[] } 
     syncNow: vi.fn<NotesPlatform["syncNow"]>(async () => options.synced ?? []),
     onQuickCapture: vi.fn<NotesPlatform["onQuickCapture"]>(() => () => {}),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
+    canScheduleNotifications: options.canScheduleNotifications ?? false,
+    scheduleNotifications: vi.fn<NotesPlatform["scheduleNotifications"]>(async () => {}),
+    onNotificationOpened: vi.fn<NotesPlatform["onNotificationOpened"]>(() => () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
     saveMarkdown: vi.fn<(title: string, content: string) => Promise<string>>(
       async (title) => `/home/u/Downloads/${title}.md`,
@@ -2379,6 +2388,107 @@ describe("módulo de notas (a tela inteira)", () => {
       await refresh();
 
       expect(bell()).toBeTruthy();
+    });
+
+    describe("avisos na hora da tarefa (celular)", () => {
+      const lastPlan = (platform: ReturnType<typeof setup>["platform"]) =>
+        platform.scheduleNotifications.mock.calls.at(-1)?.[0];
+      /** A sincronização (ou uma edição) refaz o plano depois de uma pequena pausa. */
+      const afterChange = async (events: ReturnType<typeof setup>["events"]) => {
+        await act(async () => {
+          events.emit("notes.synced", {});
+          await vi.advanceTimersByTimeAsync(2000);
+        });
+      };
+
+      it("agenda as tarefas com hora, 10 minutos antes, e refaz o plano ao sincronizar", async () => {
+        const { fake, platform, events } = setup({ canScheduleNotifications: true });
+        at(8);
+        await seedTasks(fake, [
+          ["Reunião", "2026-11-15T14:30"],
+          ["Só data", "2026-11-15"],
+          ["Amanhã cedo", "2026-11-16T07:00"],
+        ]);
+
+        await afterChange(events);
+
+        const plan = lastPlan(platform)!;
+        expect(plan.map((i) => i.title)).toEqual(["Reunião", "Amanhã cedo"]);
+        expect(plan[0]!.at).toBe(new Date(2026, 10, 15, 14, 20).getTime());
+        expect(plan[0]!.body).toBe("Daqui a 10 minutos, às 14:30 · Tarefas");
+
+        await seedTasks(fake, [["Nova", "2026-11-15T20:00"]]);
+        await afterChange(events);
+
+        expect(lastPlan(platform)!.map((i) => i.at)).toContain(
+          new Date(2026, 10, 15, 19, 50).getTime(),
+        );
+      });
+
+      it("no computador não agenda nada", async () => {
+        const { fake, platform, events } = setup();
+        at(8);
+        await seedTasks(fake, [["Reunião", "2026-11-15T14:30"]]);
+
+        await afterChange(events);
+
+        expect(platform.scheduleNotifications).not.toHaveBeenCalled();
+      });
+
+      it("a janela de lembretes liga/desliga os avisos por hora e troca a antecedência", async () => {
+        const { user, fake, platform } = setup({ canScheduleNotifications: true });
+        at(8);
+        await seedTasks(fake, [["Reunião", "2026-11-15T14:30"]]);
+        await user.click(bell());
+        const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+
+        fireEvent.change(panel.getByLabelText("Avisar com antecedência de"), {
+          target: { value: "30" },
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(50);
+        });
+        expect(lastPlan(platform)![0]!.at).toBe(new Date(2026, 10, 15, 14, 0).getTime());
+
+        await user.click(panel.getByLabelText("Avisar na hora das tarefas com horário"));
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(50);
+        });
+        expect(lastPlan(platform)).toEqual([]);
+        expect(panel.getByLabelText("Avisar com antecedência de")).toHaveProperty("disabled", true);
+        expect(JSON.parse(localStorage.getItem("tramion.reminders")!)).toMatchObject({
+          timedNotifications: false,
+          leadMinutes: 30,
+        });
+      });
+
+      it("no computador a janela explica que esses avisos são do celular", async () => {
+        const { user } = setup();
+        at(8);
+        await user.click(bell());
+        const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+
+        expect(panel.queryByLabelText("Avisar com antecedência de")).toBeNull();
+        expect(panel.getByText(/são agendados no celular/)).toBeTruthy();
+      });
+
+      it("tocar na notificação abre a página da tarefa", async () => {
+        const { fake, platform } = setup({ canScheduleNotifications: true });
+        at(8);
+        await seedTasks(fake, [["Reunião", "2026-11-15T14:30"]]);
+        const [task] = await fake.gateway.dueTasks("2026-11-15");
+        const open = platform.onNotificationOpened.mock.calls[0]![0];
+
+        await act(async () => {
+          open(task!.id);
+          await vi.advanceTimersByTimeAsync(50);
+        });
+
+        expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+          "value",
+          "Reunião",
+        );
+      });
     });
 
     async function openSeededBase(
