@@ -9,6 +9,7 @@ links = "tauri-plugin-notes"
 
 [dependencies]
 tramion-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
+tramion-sync = { version = "0.1.0", path = "../../../packages/sync" }
 open = "5"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"

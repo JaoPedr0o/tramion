@@ -17,6 +17,7 @@ pub mod repository;
 pub mod samples;
 pub mod search;
 pub mod service;
+pub mod sync_io;
 pub mod templates;
 pub mod versions;
 
@@ -76,6 +77,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
         Migration {
             version: 12,
             sql: include_str!("../migrations/0012_user_templates.sql"),
+        },
+        Migration {
+            version: 13,
+            sql: include_str!("../migrations/0013_sync_state.sql"),
         },
     ],
 };

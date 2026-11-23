@@ -4357,6 +4357,7 @@ dependencies = [
  "tauri-plugin",
  "tempfile",
  "tramion-infra-sqlite",
+ "tramion-sync",
 ]
 
 [[package]]
