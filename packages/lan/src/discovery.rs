@@ -7,7 +7,38 @@
 use crate::LanError;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 use std::net::{IpAddr, Ipv4Addr};
+use std::sync::Once;
 use std::time::{Duration, Instant};
+
+/// Encaminha o registro interno da biblioteca de mDNS para a saída de erro (no Android, o `logcat`). A descoberta é a
+/// parte da sincronização mais difícil de diagnosticar sem isso: sem registro, uma busca que falha não deixa rastro.
+struct StderrLog;
+
+impl log::Log for StderrLog {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.target().starts_with("mdns_sd") && metadata.level() <= log::Level::Warn
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            eprintln!("[mdns] {} {}", record.level(), record.args());
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+static LOGGER: StderrLog = StderrLog;
+
+fn init_logging() {
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        // Se o aplicativo já instalou um registro próprio, respeita o dele.
+        if log::set_logger(&LOGGER).is_ok() {
+            log::set_max_level(log::LevelFilter::Warn);
+        }
+    });
+}
 
 pub const SERVICE_TYPE: &str = "_tramion._tcp.local.";
 /// Máximo de endereços devolvidos por uma descoberta.
@@ -74,18 +105,28 @@ impl Drop for Advertiser {
 
 /// Procura `device` na rede por até `timeout` e devolve os endereços (`ip:porta`) onde ele atende. Vazio se não achar.
 pub fn resolve(device: &str, timeout: Duration) -> Vec<String> {
-    let Ok(daemon) = ServiceDaemon::new() else {
-        return Vec::new();
+    init_logging();
+    let daemon = match ServiceDaemon::new() {
+        Ok(daemon) => daemon,
+        Err(error) => {
+            eprintln!("[mdns] não foi possível iniciar a busca: {error}");
+            return Vec::new();
+        }
     };
     let found = browse(&daemon, device, timeout);
+    eprintln!("[mdns] busca por {device}: {found:?}");
     let _ = daemon.stop_browse(SERVICE_TYPE);
     let _ = daemon.shutdown();
     found
 }
 
 fn browse(daemon: &ServiceDaemon, device: &str, timeout: Duration) -> Vec<String> {
-    let Ok(events) = daemon.browse(SERVICE_TYPE) else {
-        return Vec::new();
+    let events = match daemon.browse(SERVICE_TYPE) {
+        Ok(events) => events,
+        Err(error) => {
+            eprintln!("[mdns] não foi possível procurar {SERVICE_TYPE}: {error}");
+            return Vec::new();
+        }
     };
     let deadline = Instant::now() + timeout;
     while let Some(left) = deadline.checked_duration_since(Instant::now()) {
@@ -103,5 +144,6 @@ fn browse(daemon: &ServiceDaemon, device: &str, timeout: Duration) -> Vec<String
             Err(_) => break,
         }
     }
+    eprintln!("[mdns] nada encontrado para {device} em {timeout:?}");
     Vec::new()
 }
