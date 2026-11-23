@@ -159,6 +159,11 @@
     padding: 0 var(--space-2);
   }
 
+  /* Com linhas de 44 px, o espaço de 12 px entre elas deixava a gaveta enorme e as páginas fora da vista. */
+  .shell__sidebar .notes-sidebar {
+    gap: var(--space-1);
+  }
+
   /* Dedos pedem alvos maiores que o ponteiro do mouse. */
   .shell__view,
   .shell__sidebar .sidebar-row,
