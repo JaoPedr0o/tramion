@@ -10,7 +10,8 @@
   "dependencies": {
     "@aun/contracts": "workspace:*",
     "@tauri-apps/api": "^2",
-    "react": "^19.1.0"
+    "react": "^19.1.0",
+    "@aun/ui": "workspace:*"
   },
   "devDependencies": {
     "@aun/core": "workspace:*",

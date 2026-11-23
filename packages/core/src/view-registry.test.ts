@@ -4,7 +4,7 @@ import { AppError } from "./errors.ts";
 import { createViewRegistry } from "./view-registry.ts";
 
 function view(id: string): ViewContribution {
-  return { id, title: id.toUpperCase(), component: () => null };
+  return { id, title: id.toUpperCase(), main: () => null };
 }
 
 describe("createViewRegistry", () => {

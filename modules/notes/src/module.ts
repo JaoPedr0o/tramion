@@ -1,8 +1,14 @@
 import type { ModuleManifest } from "@aun/contracts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
+import { createNavigationStore } from "./application/navigation-store.ts";
 import { createNotesService } from "./application/notes-service.ts";
 import { createTauriNotesGateway } from "./infrastructure/tauri-notes-gateway.ts";
-import { createNotesView } from "./ui/NotesView.tsx";
+import { createPageActions } from "./ui/actions.ts";
+import { createMain } from "./ui/createMain.tsx";
+import { createSidebar } from "./ui/createSidebar.tsx";
+import { createSidebarActions } from "./ui/createSidebarActions.tsx";
+import { createTopbar } from "./ui/createTopbar.tsx";
+import "./ui/notes.css";
 
 /** Monta o módulo. O gateway é injetável para que os testes não precisem do Tauri. */
 export function createNotesModule(
@@ -13,10 +19,17 @@ export function createNotesModule(
     version: "0.1.0",
     register({ events, views }) {
       const service = createNotesService({ gateway, events });
+      // O estado de navegação é compartilhado pelos quatro espaços da tela, que o app monta em lugares diferentes.
+      const store = createNavigationStore();
+      const deps = { service, events, store, actions: createPageActions(service, store) };
+
       views.register({
         id: "notes",
         title: "Páginas",
-        component: createNotesView({ service, events }),
+        sidebarActions: createSidebarActions(deps),
+        sidebar: createSidebar(deps),
+        topbar: createTopbar(deps),
+        main: createMain(deps),
       });
     },
   };

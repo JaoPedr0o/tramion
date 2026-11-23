@@ -16,21 +16,42 @@ const page = (id: string, parentId: string | null = null, position = 0) =>
 // D
 const pages = [page("a", null, 0), page("d", null, 1), page("b", "a", 0), page("c", "a", 1)];
 
-function renderTree(expanded: string[] = ["a"], selectedId: string | null = null) {
+function renderTree(
+  expanded: string[] = ["a"],
+  selectedId: string | null = null,
+  treePages = pages,
+) {
   const onToggle = vi.fn();
   const onSelect = vi.fn();
+  const onNewSubpage = vi.fn();
+  const onMove = vi.fn();
+  const onToggleFavorite = vi.fn();
+  const onDelete = vi.fn();
   render(
     <PageTree
-      pages={pages}
+      pages={treePages}
       selectedId={selectedId}
       expanded={new Set(expanded)}
       onToggle={onToggle}
       onSelect={onSelect}
+      onNewSubpage={onNewSubpage}
+      onMove={onMove}
+      onToggleFavorite={onToggleFavorite}
+      onDelete={onDelete}
       label="Páginas"
     />,
   );
   const item = (name: string) => screen.getByRole("treeitem", { name });
-  return { onToggle, onSelect, item, user: userEvent.setup() };
+  return {
+    onToggle,
+    onSelect,
+    onNewSubpage,
+    onMove,
+    onToggleFavorite,
+    onDelete,
+    item,
+    user: userEvent.setup(),
+  };
 }
 
 describe("árvore de páginas (teclado e acessibilidade)", () => {
@@ -58,7 +79,7 @@ describe("árvore de páginas (teclado e acessibilidade)", () => {
     renderTree();
 
     const tabbable = screen.getAllByRole("treeitem").filter((el) => el.tabIndex === 0);
-    expect(tabbable.map((el) => el.textContent)).toEqual(["▾A"]);
+    expect(tabbable.map((el) => el.textContent)).toEqual(["A"]);
   });
 
   it("setas para baixo e para cima percorrem os itens visíveis", async () => {
@@ -137,5 +158,89 @@ describe("árvore de páginas (teclado e acessibilidade)", () => {
     expect(ctrlN).toHaveBeenCalled();
     expect(document.activeElement).toBe(item("A")); // Ctrl+seta não moveu o foco
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  describe("ações da linha (⋯ e +)", () => {
+    it("o nome de cada item é só o título, sem os rótulos dos botões da linha", () => {
+      const { item } = renderTree();
+
+      expect(item("A").getAttribute("aria-label")).toBe("A");
+      expect(screen.getAllByRole("treeitem").map((el) => el.getAttribute("aria-label"))).toEqual([
+        "A",
+        "B",
+        "C",
+        "D",
+      ]);
+    });
+
+    it("os botões da linha ficam fora da ordem do Tab (as ações existem na barra superior)", () => {
+      renderTree();
+
+      expect(screen.getByRole("button", { name: "Mais ações de A" }).tabIndex).toBe(-1);
+      expect(screen.getByRole("button", { name: "Nova subpágina em A" }).tabIndex).toBe(-1);
+    });
+
+    it("'+' cria a subpágina sem abrir a linha", async () => {
+      const { user, onNewSubpage, onSelect } = renderTree();
+
+      await user.click(screen.getByRole("button", { name: "Nova subpágina em A" }));
+
+      expect(onNewSubpage).toHaveBeenCalledWith(expect.objectContaining({ id: "a" }));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("escolher um item do menu da linha age sobre aquela página e não a abre", async () => {
+      const { user, onMove, onSelect } = renderTree();
+
+      await user.click(screen.getByRole("button", { name: "Mais ações de B" }));
+      await user.click(screen.getByRole("menuitem", { name: "Mover para…" }));
+
+      expect(onMove).toHaveBeenCalledWith(expect.objectContaining({ id: "b" }));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("o menu oferece nova subpágina, mover, favoritar e lixeira", async () => {
+      const { user, onNewSubpage, onToggleFavorite, onDelete } = renderTree();
+      const open = () => user.click(screen.getByRole("button", { name: "Mais ações de D" }));
+
+      await open();
+      expect(screen.getAllByRole("menuitem").map((el) => el.textContent)).toEqual([
+        "Nova subpágina",
+        "Mover para…",
+        "Adicionar aos favoritos",
+        "Mover para a lixeira",
+      ]);
+
+      await user.click(screen.getByRole("menuitem", { name: "Nova subpágina" }));
+      await open();
+      await user.click(screen.getByRole("menuitem", { name: "Adicionar aos favoritos" }));
+      await open();
+      await user.click(screen.getByRole("menuitem", { name: "Mover para a lixeira" }));
+
+      expect(onNewSubpage).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
+      expect(onToggleFavorite).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
+      expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
+    });
+
+    it("para uma página favoritada, o menu oferece remover dos favoritos", async () => {
+      const favorite = pages.map((p) => (p.id === "d" ? { ...p, pinned: true } : p));
+      const { user } = renderTree(["a"], null, favorite);
+
+      await user.click(screen.getByRole("button", { name: "Mais ações de D" }));
+
+      expect(screen.getByRole("menuitem", { name: "Remover dos favoritos" })).toBeTruthy();
+    });
+
+    it("teclas dentro dos botões da linha não navegam nem abrem a árvore", async () => {
+      const { item, user, onNewSubpage, onSelect } = renderTree();
+      act(() => screen.getByRole("button", { name: "Nova subpágina em D" }).focus());
+
+      await user.keyboard("{Enter}"); // ativa o botão, não a linha
+      await user.keyboard("{ArrowUp}"); // não pode mover o foco da árvore
+
+      expect(onNewSubpage).toHaveBeenCalledOnce();
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(item("C"));
+    });
   });
 });

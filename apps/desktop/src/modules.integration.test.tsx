@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { AppEvents } from "@aun/contracts";
+import type { AppEvents, ViewContribution } from "@aun/contracts";
 import { createEventBus, createModuleRegistry, createViewRegistry } from "@aun/core";
 import { createNotesModule, NotesError, type Note, type NotesGateway } from "@aun/notes";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -53,6 +53,23 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
   };
 }
 
+/** Monta os quatro espaços da tela como a moldura do app faz. */
+function Frame({ view }: { view: ViewContribution }) {
+  const { sidebarActions: Actions, sidebar: Sidebar, topbar: Topbar, main: Main } = view;
+  return (
+    <>
+      <aside>
+        {Actions && <Actions />}
+        {Sidebar && <Sidebar />}
+      </aside>
+      <header>{Topbar && <Topbar />}</header>
+      <main>
+        <Main />
+      </main>
+    </>
+  );
+}
+
 /** Monta núcleo + módulos como o `bootstrap` do app faz. */
 function compose(options: {
   gateway?: NotesGateway;
@@ -70,14 +87,16 @@ function compose(options: {
   registry.add(notes);
   if (options.probe && !options.probeFirst) registry.add(options.probe);
   const order = registry.start();
-  const NotesView = views.list().find((v) => v.id === "notes")!.component;
+  const view = views.list().find((v) => v.id === "notes")!;
+  const NotesView = () => <Frame view={view} />;
   return { order, NotesView };
 }
 
 async function createAndDeleteANote() {
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Nova página" }));
-  await user.click(await screen.findByRole("button", { name: "Excluir" }));
+  await user.click(await screen.findByRole("button", { name: "Mais ações da página" }));
+  await user.click(await screen.findByRole("menuitem", { name: "Mover para a lixeira" }));
 }
 
 describe("dois módulos no mesmo app", () => {

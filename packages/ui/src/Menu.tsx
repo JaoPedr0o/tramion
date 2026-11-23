@@ -22,6 +22,8 @@ interface Props {
   /** De que lado o menu se alinha ao botão (padrão: pela direita). */
   align?: "start" | "end";
   className?: string;
+  /** `-1` tira o botão da ordem do Tab (útil quando o menu repete ações disponíveis em outro lugar). */
+  tabIndex?: number;
 }
 
 interface Position {
@@ -41,7 +43,7 @@ const ITEMS = '[role="menuitem"]:not(:disabled)';
  * áreas com rolagem (a barra lateral). Como eventos de portais "sobem" pela árvore do React, cliques e
  * teclas do menu são contidos aqui: não podem selecionar a linha da árvore que está por baixo.
  */
-export function Menu({ label, icon, items, align = "end", className }: Props) {
+export function Menu({ label, icon, items, align = "end", className, tabIndex }: Props) {
   const [position, setPosition] = useState<Position | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -117,6 +119,7 @@ export function Menu({ label, icon, items, align = "end", className }: Props) {
         ref={trigger}
         label={label}
         className={className}
+        {...(tabIndex === undefined ? {} : { tabIndex })}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={(event) => {

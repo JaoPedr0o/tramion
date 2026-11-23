@@ -23,13 +23,23 @@ export interface EventBus<E extends object> {
   emit<K extends keyof E & string>(name: K, payload: E[K]): void;
 }
 
-/** Uma tela que um módulo oferece. O app a lista na barra lateral, sem conhecer o módulo. */
+/**
+ * Uma tela que um módulo oferece. O app monta a MOLDURA (barra lateral, barra superior e área principal)
+ * e cada módulo preenche os espaços, sem que o app conheça o módulo.
+ */
 export interface ViewContribution {
   /** Identificador único da tela, por exemplo "notes". */
   readonly id: string;
-  /** Texto exibido na barra lateral. */
+  /** Nome da tela; aparece na barra lateral quando há mais de uma tela. */
   readonly title: string;
-  readonly component: ComponentType;
+  /** Ícones de ação ao lado do nome do espaço de trabalho (por exemplo, "nova página"). */
+  readonly sidebarActions?: ComponentType;
+  /** Conteúdo da barra lateral (por exemplo, a árvore de páginas). */
+  readonly sidebar?: ComponentType;
+  /** Conteúdo da barra superior (por exemplo, caminho e ações da página). */
+  readonly topbar?: ComponentType;
+  /** Conteúdo da área principal. */
+  readonly main: ComponentType;
 }
 
 /** Onde os módulos registram suas telas. A implementação vive em @aun/core. */

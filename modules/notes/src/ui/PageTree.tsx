@@ -1,8 +1,10 @@
+import { ChevronIcon, IconButton, Menu, MoreIcon, PageIcon, PlusIcon } from "@aun/ui";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { buildTree, visibleRows } from "../application/page-tree.ts";
 import type { NoteSummary } from "../domain/note.ts";
+import { pageMenuItems, type PageMenuHandlers } from "./pageMenu.tsx";
 
-interface Props {
+interface Props extends PageMenuHandlers {
   pages: readonly NoteSummary[];
   selectedId: string | null;
   expanded: ReadonlySet<string>;
@@ -15,8 +17,19 @@ interface Props {
  * Árvore de páginas (padrão ARIA "tree"): um único item fica na ordem do Tab (foco "itinerante") e as
  * setas percorrem os demais. Setas: ↑ ↓ andam; → expande (ou entra na primeira filha); ← recolhe (ou
  * volta para a mãe); Home e End vão ao primeiro e ao último; Enter e Espaço abrem a página.
+ *
+ * Ao passar o mouse (ou focar) numa linha aparecem "⋯" (menu) e "+" (nova subpágina). Esses botões ficam
+ * fora da ordem do Tab: as mesmas ações existem no menu da barra superior para quem usa o teclado.
  */
-export function PageTree({ pages, selectedId, expanded, onToggle, onSelect, label }: Props) {
+export function PageTree({
+  pages,
+  selectedId,
+  expanded,
+  onToggle,
+  onSelect,
+  label,
+  ...handlers
+}: Props) {
   const rows = visibleRows(buildTree(pages), expanded);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const items = useRef(new Map<string, HTMLLIElement>());
@@ -77,10 +90,13 @@ export function PageTree({ pages, selectedId, expanded, onToggle, onSelect, labe
     <ul role="tree" aria-label={label} className="page-tree">
       {rows.map((row, index) => {
         const id = row.page.id;
+        const title = row.page.title;
         return (
           <li
             key={id}
             role="treeitem"
+            // O nome é só o título: sem isto, o nome incluiria os rótulos dos botões da linha.
+            aria-label={title}
             aria-level={row.depth + 1}
             aria-posinset={row.position}
             aria-setsize={row.siblings}
@@ -105,9 +121,32 @@ export function PageTree({ pages, selectedId, expanded, onToggle, onSelect, labe
                 if (row.hasChildren) onToggle(id);
               }}
             >
-              {row.hasChildren ? (row.expanded ? "▾" : "▸") : ""}
+              {row.hasChildren && <ChevronIcon size={12} />}
             </span>
-            <span className="page-tree__title">{row.page.title}</span>
+            <span className="page-tree__icon" aria-hidden="true">
+              <PageIcon />
+            </span>
+            <span className="page-tree__title">{title}</span>
+            {/* As teclas e cliques destes botões não podem chegar à linha (abririam a página). */}
+            <span
+              className="page-tree__actions"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <Menu
+                label={`Mais ações de ${title}`}
+                icon={<MoreIcon />}
+                tabIndex={-1}
+                items={pageMenuItems(row.page, handlers)}
+              />
+              <IconButton
+                label={`Nova subpágina em ${title}`}
+                tabIndex={-1}
+                onClick={() => handlers.onNewSubpage(row.page)}
+              >
+                <PlusIcon />
+              </IconButton>
+            </span>
           </li>
         );
       })}
