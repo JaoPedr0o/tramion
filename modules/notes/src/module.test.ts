@@ -11,6 +11,6 @@ describe("módulo de notas", () => {
 
     expect(registry.start()).toEqual(["notes"]);
 
-    expect(views.list().map((v) => [v.id, v.title])).toEqual([["notes", "Páginas"]]);
+    expect(views.list().map((v) => [v.id, v.title])).toEqual([["notes", "Notas"]]);
   });
 });

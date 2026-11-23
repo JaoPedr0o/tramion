@@ -41,8 +41,8 @@
       "icons/icon.ico"
     ],
     "category": "Productivity",
-    "shortDescription": "Notas e bases de dados, bonitas e só suas.",
-    "longDescription": "Tramion é um aplicativo de notas e bases de dados que guarda tudo no seu computador.",
+    "shortDescription": "Notas, bases de dados e foco, bonitos e só seus.",
+    "longDescription": "Tramion é um aplicativo de notas, bases de dados e foco (pomodoro e hábitos) que guarda tudo no seu aparelho e sincroniza o computador com o celular sem servidor.",
     "linux": {
       "deb": {
         "preInstallScript": "scripts/deb-stop-running.sh",

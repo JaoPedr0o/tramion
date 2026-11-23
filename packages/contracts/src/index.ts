@@ -30,8 +30,10 @@ export interface EventBus<E extends object> {
 export interface ViewContribution {
   /** Identificador único da tela, por exemplo "notes". */
   readonly id: string;
-  /** Nome da tela; aparece na barra lateral quando há mais de uma tela. */
+  /** Nome da tela; aparece no seletor de telas quando há mais de uma. */
   readonly title: string;
+  /** Ícone da tela no seletor (sem ele, aparece a inicial do nome). */
+  readonly icon?: ComponentType<{ size?: number }>;
   /** Ícones de ação ao lado do nome do espaço de trabalho (por exemplo, "nova página"). */
   readonly sidebarActions?: ComponentType;
   /** Conteúdo da barra lateral (por exemplo, a árvore de páginas). */

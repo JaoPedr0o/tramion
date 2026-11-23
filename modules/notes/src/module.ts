@@ -1,4 +1,5 @@
 import type { ModuleManifest } from "@tramion/contracts";
+import { PageIcon } from "@tramion/ui";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { createNavigationStore } from "./application/navigation-store.ts";
 import { createSearchStore } from "./application/search-store.ts";
@@ -49,7 +50,8 @@ export function createNotesModule(
 
       views.register({
         id: "notes",
-        title: "Páginas",
+        title: "Notas",
+        icon: PageIcon,
         sidebarActions: createSidebarActions(deps),
         sidebar: createSidebar(deps),
         topbar: createTopbar(deps),

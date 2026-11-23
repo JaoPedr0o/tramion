@@ -11,6 +11,7 @@ import {
 } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { isNarrowScreen, useDrawerGestures, useNarrowScreen } from "./drawer";
+import { ViewSwitcher } from "./ViewSwitcher";
 import { installSafeArea, setSystemBarsLight } from "./safe-area";
 import { applyTheme, isLightTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
 
@@ -104,6 +105,11 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
   );
 
   const view = available.find((candidate) => candidate.id === selectedId) ?? available[0];
+  // Trocar de tela; no celular a gaveta fecha, para mostrá-la.
+  const selectView = (id: string) => {
+    setSelectedId(id);
+    if (narrow) closeSidebar();
+  };
   const SidebarActions = view?.sidebarActions;
   const Sidebar = view?.sidebar;
   const Topbar = view?.topbar;
@@ -123,24 +129,13 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
             <SidebarToggleButton />
           </div>
 
-          {available.length > 1 && (
-            <nav className="shell__views" aria-label="Telas">
-              {available.map((candidate) => (
-                <button
-                  key={candidate.id}
-                  type="button"
-                  className="shell__view"
-                  aria-current={candidate.id === view?.id ? "page" : undefined}
-                  onClick={() => {
-                    setSelectedId(candidate.id);
-                    // No celular a gaveta fecha ao escolher a tela, para mostrá-la.
-                    if (narrow) closeSidebar();
-                  }}
-                >
-                  {candidate.title}
-                </button>
-              ))}
-            </nav>
+          {available.length > 1 && !narrow && (
+            <ViewSwitcher
+              variant="segmented"
+              views={available}
+              selectedId={view?.id}
+              onSelect={selectView}
+            />
           )}
 
           <div
@@ -186,6 +181,15 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
           <main className="shell__main">
             {Main ? <Main /> : <p className="shell__empty">Nenhum módulo carregado.</p>}
           </main>
+          {/* No celular, as telas (Notas, Foco...) ficam numa barra de abas embaixo, sempre à mão. */}
+          {available.length > 1 && narrow && (
+            <ViewSwitcher
+              variant="tabbar"
+              views={available}
+              selectedId={view?.id}
+              onSelect={selectView}
+            />
+          )}
         </div>
       </div>
     </ShellProvider>

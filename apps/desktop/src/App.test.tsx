@@ -70,6 +70,53 @@ describe("moldura do app", () => {
     expect(screen.queryByText("conteúdo principal")).toBeNull();
   });
 
+  describe("seletor de telas (navegação entre Notas, Foco...)", () => {
+    const withIcon: ViewContribution = {
+      id: "dois",
+      title: "Segunda tela",
+      icon: ({ size }) => <svg data-testid="icone" width={size} height={size} />,
+      main: () => <p>tela dois</p>,
+    };
+    const narrowScreen = (matches: boolean) =>
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches, media: query }));
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("no computador, fica no menu lateral, com ícone quando a tela tem e a inicial quando não tem", () => {
+      narrowScreen(false);
+      render(<App views={registry(full, withIcon)} />);
+
+      const nav = screen.getByRole("navigation", { name: "Telas" });
+      expect(screen.getByRole("complementary", { name: "Barra lateral" }).contains(nav)).toBe(true);
+      expect(within(nav).getByTestId("icone")).toBeTruthy(); // a que tem ícone
+      expect(within(nav).getByText("P")).toBeTruthy(); // a que não tem: inicial de "Primeira tela"
+    });
+
+    it("no celular, vira uma barra de abas fora do menu lateral (a gaveta fica só com as páginas)", () => {
+      narrowScreen(true);
+      render(<App views={registry(full, withIcon)} />);
+
+      const nav = screen.getByRole("navigation", { name: "Telas" });
+      expect(screen.getByRole("complementary", { name: "Barra lateral" }).contains(nav)).toBe(
+        false,
+      );
+      expect(nav.className).toContain("shell__tabbar");
+      expect(screen.getAllByRole("navigation", { name: "Telas" })).toHaveLength(1);
+    });
+
+    it("trocar de aba no celular mostra a outra tela, mesmo com a gaveta fechada", async () => {
+      narrowScreen(true);
+      render(<App views={registry(full, withIcon)} />);
+
+      await userEvent.setup().click(
+        within(screen.getByRole("navigation", { name: "Telas" })).getByRole("button", {
+          name: "Segunda tela",
+        }),
+      );
+
+      expect(screen.getByText("tela dois")).toBeTruthy();
+    });
+  });
+
   it("com uma só tela, o seletor não aparece", () => {
     render(<App views={registry(full)} />);
 

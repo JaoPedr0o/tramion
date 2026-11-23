@@ -4,9 +4,10 @@
 
 # Tramion
 
-**Notas e bases de dados que moram no seu computador.**
-Um aplicativo desktop _local-first_ no estilo do Notion: páginas com editor de blocos, subpáginas, bases de dados
-com cinco formas de exibição, e nenhum servidor, cadastro ou internet.
+**Notas, bases de dados e foco que moram nos seus aparelhos.**
+Um aplicativo _local-first_ para computador e celular: páginas com editor de blocos (inclusive em colunas), bases de
+dados com várias formas de exibição, um espaço de **foco** com pomodoro e hábitos, e sincronização entre o computador
+e o celular **sem servidor, cadastro ou internet**.
 
 ![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
@@ -29,7 +30,7 @@ com cinco formas de exibição, e nenhum servidor, cadastro ou internet.
 
 ## Por que o Tramion
 
-O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotações e organização pessoal que seja
+O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotações, organização e foco pessoal que seja
 **bonito, rápido e seu**:
 
 - **Local-first.** Tudo fica em um banco SQLite na pasta do seu usuário. Funciona 100% offline, sem conta e sem
@@ -41,6 +42,17 @@ O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotaç
   fácil de evoluir.
 
 ## Funcionalidades
+
+### Foco
+
+- **Pomodoro** com sessões registradas, aviso ao terminar e continuidade com o app fechado no celular.
+- **Hábitos** com sequência de dias, frequência (todos os dias, dias úteis, vezes por semana) e mapa de calor.
+- Discreto: nada pergunta nem avisa sozinho ao abrir o app.
+
+### Entre aparelhos
+
+- **Sincronização** do computador com o celular pela rede local (pareamento por QR, canal criptografado), automática
+  enquanto o app está aberto, sem servidor e sem conta.
 
 ### Páginas e editor
 
@@ -143,6 +155,9 @@ packages/core           barramento de eventos tipado e registro de módulos
 packages/ui             sistema de design (tokens, ícones, menu, janelas)
 packages/infra-sqlite   SQLite com migrações versionadas, backup e verificação
 modules/notes           módulo de notas e bases de dados (TypeScript + crate Rust)
+modules/focus           módulo de foco: pomodoro e hábitos (TypeScript + crate Rust)
+packages/sync           motor de sincronização entre aparelhos (mescla por registro)
+packages/lan            pareamento, canal seguro e descoberta pela rede local
 docs/                   produto, arquitetura, convenções e decisões (ADRs)
 ```
 
