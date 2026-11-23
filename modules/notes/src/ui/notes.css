@@ -658,3 +658,225 @@
   height: 100%;
   border: 0;
 }
+
+/* ───────── Ícone e capa da página ───────── */
+.note-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.page-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* A capa é uma faixa em toda a largura, no topo; os botões só aparecem ao passar o mouse. */
+.page-cover {
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: 30vh;
+  min-height: 140px;
+  max-height: 280px;
+  background-color: var(--color-hover);
+}
+
+.page-cover__actions {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.page-cover:hover .page-cover__actions,
+.page-cover__actions:focus-within {
+  opacity: 1;
+}
+
+.page-cover__actions button {
+  padding: var(--space-0) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-menu);
+}
+
+.page-cover + .note-page {
+  padding-top: 0;
+}
+
+/* Cabeçalho: o símbolo e, ao passar o mouse, os botões de adicionar. Os seletores abrem abaixo dele. */
+.page-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+  min-height: 40px;
+  margin-bottom: var(--space-2);
+}
+
+.page-icon {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 72px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.page-icon:hover {
+  background: var(--color-hover);
+}
+
+.page-icon--over-cover {
+  margin-top: -36px;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.page-header:hover .page-header__actions,
+.page-header__actions:focus-within {
+  opacity: 1;
+}
+
+.page-header__actions button {
+  padding: var(--space-0) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.page-header__actions button:hover {
+  background: var(--color-hover);
+}
+
+.popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  box-sizing: border-box;
+  width: min(440px, 100%);
+  max-height: 380px;
+  padding: var(--space-2);
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+}
+
+.popover__heading {
+  margin: var(--space-2) 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.popover__note {
+  margin: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.popover button,
+.popover input {
+  font: inherit;
+}
+
+.emoji-picker__bar,
+.cover-picker__bar {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emoji-picker__bar input,
+.cover-picker__link input {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.emoji-picker__bar button,
+.cover-picker__bar button,
+.cover-picker__link button {
+  padding: var(--space-0) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.emoji-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: var(--space-0);
+}
+
+.emoji-picker__emoji {
+  padding: var(--space-0);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 22px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.emoji-picker__emoji:hover {
+  background: var(--color-hover);
+}
+
+.cover-picker__tabs {
+  display: flex;
+  gap: var(--space-0);
+}
+
+.cover-picker__tabs button[aria-selected="true"] {
+  background: var(--color-selected);
+}
+
+.cover-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: var(--space-2);
+}
+
+.cover-picker__swatch {
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.cover-picker__link,
+.cover-picker__upload {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-1);
+}

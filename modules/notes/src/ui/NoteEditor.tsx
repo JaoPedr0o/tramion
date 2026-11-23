@@ -11,6 +11,7 @@ import type { Note } from "../domain/note.ts";
 import type { BlockEditorHandle } from "./block-editor-types.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { messageFor } from "./messages.ts";
+import { PageCover, PageHeader, type Picker } from "./PageAppearance.tsx";
 import { usePages } from "./useNoteList.ts";
 
 interface Props {
@@ -32,7 +33,7 @@ const STATUS_TEXT: Record<SaveStatus, string> = {
  * automático. As subpáginas aparecem no texto como blocos de link. Use `key={note.id}` para trocar de página.
  */
 export function NoteEditor({ deps, note }: Props) {
-  const { service, events, store, actions, platform, BlockEditor } = deps;
+  const { service, events, store, actions, platform, loadEmojiData, BlockEditor } = deps;
   const [initial] = useState(note);
   const [title, setTitle] = useState(note.title);
   const [editor, setEditor] = useState(() => ({
@@ -62,6 +63,11 @@ export function NoteEditor({ deps, note }: Props) {
     [allPages],
   );
 
+  const iconOf = useCallback(
+    (pageId: string) => allPages?.find((p) => p.id === pageId)?.icon ?? null,
+    [allPages],
+  );
+
   useEffect(() => {
     const instance = createNoteAutosaver({
       initialUpdatedAt: initial.updatedAt,
@@ -84,6 +90,19 @@ export function NoteEditor({ deps, note }: Props) {
   }, [service, store, initial]);
 
   const fail = (error: unknown) => store.fail(messageFor(error));
+
+  // Símbolo e capa: gravados na hora (não passam pelo salvamento automático do texto) e sem mudar a versão.
+  const [appearance, setAppearance] = useState({ icon: note.icon, cover: note.cover });
+  const [picker, setPicker] = useState<Picker>(null);
+  const saveAppearance = async (next: { icon: string | null; cover: string | null }) => {
+    try {
+      const updated = await service.setAppearance({ id: note.id, ...next });
+      setAppearance({ icon: updated.icon, cover: updated.cover });
+      setPicker(null);
+    } catch (error) {
+      fail(error);
+    }
+  };
 
   const keepMine = async () => {
     try {
@@ -111,92 +130,110 @@ export function NoteEditor({ deps, note }: Props) {
   };
 
   return (
-    <article className="note-page" aria-label="Página">
-      <p role="status" className="note-page__status">
-        {STATUS_TEXT[status]}
-        {message && status !== "conflict" ? ` ${message}` : ""}
-      </p>
-
-      {status === "conflict" && (
-        <div role="alert" className="note-page__conflict">
-          <p>
-            Esta página foi alterada em outro lugar. O seu texto foi mantido aqui, mas ainda não foi
-            salvo.
-          </p>
-          <button type="button" onClick={keepMine}>
-            Manter o meu texto
-          </button>
-          <button type="button" onClick={loadSaved}>
-            Carregar a versão salva
-          </button>
-        </div>
-      )}
-
-      <label htmlFor={titleId} className="visually-hidden">
-        Título
-      </label>
-      <input
-        id={titleId}
-        className="note-page__title"
-        value={title}
-        placeholder="Sem título"
-        autoFocus
-        onChange={(event) => {
-          setTitle(event.target.value);
-          draft.current = { ...draft.current, title: event.target.value };
-          autosaver.current?.change(draft.current);
-        }}
-        onKeyDown={(event) => {
-          // Enter no título passa para o texto, como no Notion.
-          if (event.key === "Enter") {
-            event.preventDefault();
-            handle.current?.focus();
-          }
-        }}
+    <div className="note-view">
+      <PageCover
+        cover={appearance.cover}
+        onChange={() => setPicker("cover")}
+        onRemove={() => void saveAppearance({ ...appearance, cover: null })}
       />
+      <article className="note-page" aria-label="Página">
+        <PageHeader
+          icon={appearance.icon}
+          hasCover={appearance.cover !== null}
+          picker={picker}
+          setPicker={setPicker}
+          platform={platform}
+          loadEmojiData={loadEmojiData}
+          onSetIcon={(icon) => void saveAppearance({ ...appearance, icon })}
+          onSetCover={(cover) => void saveAppearance({ ...appearance, cover })}
+        />
+        <p role="status" className="note-page__status">
+          {STATUS_TEXT[status]}
+          {message && status !== "conflict" ? ` ${message}` : ""}
+        </p>
 
-      <div className="note-page__editor">
-        <Suspense fallback={<p className="note-page__loading">Carregando o editor…</p>}>
-          <BlockEditor
-            key={editor.key}
-            initialBlocks={editor.blocks}
-            childPages={childPages}
-            titleOf={titleOf}
-            pages={allPages ?? []}
-            handleRef={handle}
-            onUploadFile={async (file) => {
-              try {
-                return await platform.uploadAsset(file);
-              } catch (error) {
-                fail(error);
-                throw error;
-              }
-            }}
-            onOpenExternal={(url) => void platform.openExternal(url).catch(fail)}
-            onChange={({ blocks, plainText }) => {
-              draft.current = {
-                ...draft.current,
-                body: plainText,
-                content: JSON.stringify(blocks),
-              };
-              autosaver.current?.change(draft.current);
-            }}
-            // Apagar o bloco de uma subpágina a manda para a lixeira (reversível), como no Notion.
-            onChildPageRemoved={(pageId) => {
-              if (childPages?.has(pageId)) void actions.deletePage(pageId);
-            }}
-            onCreateSubpage={() => actions.createSubpage(note.id)}
-            // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
-            // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
-            onOpenPage={(pageId) =>
-              store.open(pageId, [
-                note.id,
-                ...ancestorsOf(allPages ?? [], note.id).map((ancestor) => ancestor.id),
-              ])
+        {status === "conflict" && (
+          <div role="alert" className="note-page__conflict">
+            <p>
+              Esta página foi alterada em outro lugar. O seu texto foi mantido aqui, mas ainda não
+              foi salvo.
+            </p>
+            <button type="button" onClick={keepMine}>
+              Manter o meu texto
+            </button>
+            <button type="button" onClick={loadSaved}>
+              Carregar a versão salva
+            </button>
+          </div>
+        )}
+
+        <label htmlFor={titleId} className="visually-hidden">
+          Título
+        </label>
+        <input
+          id={titleId}
+          className="note-page__title"
+          value={title}
+          placeholder="Sem título"
+          autoFocus
+          onChange={(event) => {
+            setTitle(event.target.value);
+            draft.current = { ...draft.current, title: event.target.value };
+            autosaver.current?.change(draft.current);
+          }}
+          onKeyDown={(event) => {
+            // Enter no título passa para o texto, como no Notion.
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handle.current?.focus();
             }
-          />
-        </Suspense>
-      </div>
-    </article>
+          }}
+        />
+
+        <div className="note-page__editor">
+          <Suspense fallback={<p className="note-page__loading">Carregando o editor…</p>}>
+            <BlockEditor
+              key={editor.key}
+              initialBlocks={editor.blocks}
+              childPages={childPages}
+              titleOf={titleOf}
+              iconOf={iconOf}
+              pages={allPages ?? []}
+              handleRef={handle}
+              onUploadFile={async (file) => {
+                try {
+                  return await platform.uploadAsset(file);
+                } catch (error) {
+                  fail(error);
+                  throw error;
+                }
+              }}
+              onOpenExternal={(url) => void platform.openExternal(url).catch(fail)}
+              onChange={({ blocks, plainText }) => {
+                draft.current = {
+                  ...draft.current,
+                  body: plainText,
+                  content: JSON.stringify(blocks),
+                };
+                autosaver.current?.change(draft.current);
+              }}
+              // Apagar o bloco de uma subpágina a manda para a lixeira (reversível), como no Notion.
+              onChildPageRemoved={(pageId) => {
+                if (childPages?.has(pageId)) void actions.deletePage(pageId);
+              }}
+              onCreateSubpage={() => actions.createSubpage(note.id)}
+              // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
+              // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
+              onOpenPage={(pageId) =>
+                store.open(pageId, [
+                  note.id,
+                  ...ancestorsOf(allPages ?? [], note.id).map((ancestor) => ancestor.id),
+                ])
+              }
+            />
+          </Suspense>
+        </div>
+      </article>
+    </div>
   );
 }

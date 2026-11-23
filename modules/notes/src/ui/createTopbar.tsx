@@ -1,10 +1,11 @@
-import { IconButton, Menu, MoreIcon, PageIcon, StarFilledIcon, StarIcon, TrashIcon } from "@aun/ui";
+import { IconButton, Menu, MoreIcon, StarFilledIcon, StarIcon, TrashIcon } from "@aun/ui";
 import { Fragment, useState, type ComponentType } from "react";
 import { ancestorsOf } from "../application/page-tree.ts";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { editedAgo } from "./format.ts";
 import { MoveDialog } from "./MoveDialog.tsx";
+import { PageGlyph } from "./PageGlyph.tsx";
 import { pageMenuItems } from "./pageMenu.tsx";
 import { useNavigation } from "./useNavigation.ts";
 import { usePages } from "./useNoteList.ts";
@@ -54,7 +55,7 @@ export function createTopbar({ service, events, store, actions }: NotesUiDeps): 
               </Fragment>
             ))}
             <li aria-current="page" className="notes-breadcrumb__current">
-              <PageIcon />
+              <PageGlyph icon={page.icon} />
               <span>{page.title}</span>
             </li>
           </ol>

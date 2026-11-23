@@ -15,6 +15,77 @@ use std::collections::HashMap;
 /// Máximo de caracteres do título (o `CHECK` da migração 1 impõe o mesmo limite).
 pub const MAX_TITLE_CHARS: usize = 200;
 
+/// Máximo de caracteres do símbolo (um emoji pode juntar vários, como bandeiras e famílias).
+pub const MAX_ICON_CHARS: usize = 16;
+
+/// Máximo de caracteres do endereço de uma capa em imagem.
+pub const MAX_COVER_URL_CHARS: usize = 2000;
+
+/// O símbolo da página: sem espaços nas pontas, não vazio, curto e sem caracteres de controle.
+pub fn validate_icon(icon: &str) -> Result<&str, NotesError> {
+    let icon = icon.trim();
+    if icon.is_empty()
+        || icon.chars().count() > MAX_ICON_CHARS
+        || icon.chars().any(char::is_control)
+    {
+        return Err(NotesError::IconInvalid);
+    }
+    Ok(icon)
+}
+
+/// A capa só aceita três formatos, para que o que vai parar num estilo da tela seja sempre seguro:
+/// `color:#rrggbb`, `gradient:<nome da galeria>` e `image:<endereço>` (http, https ou um arquivo do app).
+pub fn validate_cover(cover: &str) -> Result<&str, NotesError> {
+    let valid = if let Some(hex) = cover.strip_prefix("color:#") {
+        hex.len() == 6 && hex.chars().all(|c| c.is_ascii_hexdigit())
+    } else if let Some(name) = cover.strip_prefix("gradient:") {
+        (1..=32).contains(&name.len())
+            && name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    } else if let Some(url) = cover.strip_prefix("image:") {
+        let lower = url.to_ascii_lowercase();
+        let scheme_ok = [
+            "https://",
+            "http://",
+            "asset://localhost/",
+            "http://asset.localhost/",
+        ]
+        .iter()
+        .any(|scheme| lower.starts_with(scheme));
+        scheme_ok
+            && url.chars().count() <= MAX_COVER_URL_CHARS
+            && !url
+                .chars()
+                .any(|c| c.is_control() || c.is_whitespace() || "\"'\\<>()".contains(c))
+    } else {
+        false
+    };
+    if valid {
+        Ok(cover)
+    } else {
+        Err(NotesError::CoverInvalid)
+    }
+}
+
+/// Define (ou limpa, com `None`) o símbolo e a capa de uma página ativa. Não altera `updated_at`.
+pub fn set_appearance(
+    conn: &Connection,
+    id: &str,
+    icon: Option<&str>,
+    cover: Option<&str>,
+) -> Result<Note, NotesError> {
+    let icon = icon.map(validate_icon).transpose()?;
+    let cover = cover.map(validate_cover).transpose()?;
+    match repository::set_appearance(conn, id, icon, cover)? {
+        Some(note) => Ok(note),
+        None => Err(match repository::state_of(conn, id)? {
+            None => NotesError::NotFound,
+            Some(_) => NotesError::InTrash,
+        }),
+    }
+}
+
 /// Tamanho máximo do conteúdo (os blocos em JSON), em bytes.
 pub const MAX_CONTENT_BYTES: usize = 5_000_000;
 

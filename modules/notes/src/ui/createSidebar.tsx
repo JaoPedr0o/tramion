@@ -1,8 +1,9 @@
-import { IconButton, PageIcon, PlusIcon, TrashIcon } from "@aun/ui";
+import { IconButton, PlusIcon, TrashIcon } from "@aun/ui";
 import { useEffect, useState, type ComponentType } from "react";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { MoveDialog } from "./MoveDialog.tsx";
+import { PageGlyph } from "./PageGlyph.tsx";
 import { PageTree } from "./PageTree.tsx";
 import { useNavigation } from "./useNavigation.ts";
 import { usePages } from "./useNoteList.ts";
@@ -53,7 +54,7 @@ export function createSidebar({ service, events, store, actions }: NotesUiDeps):
                     onClick={() => actions.openPage(page.id, list)}
                   >
                     <span className="sidebar-row__icon" aria-hidden="true">
-                      <PageIcon />
+                      <PageGlyph icon={page.icon} />
                     </span>
                     <span className="sidebar-row__title">{page.title}</span>
                   </button>

@@ -4,6 +4,8 @@ const KNOWN_CODES: ReadonlySet<string> = new Set<NotesErrorCode>([
   "notes.title-empty",
   "notes.title-too-long",
   "notes.url-invalid",
+  "notes.icon-invalid",
+  "notes.cover-invalid",
   "notes.asset-too-large",
   "notes.asset-type-not-allowed",
   "notes.asset-invalid",

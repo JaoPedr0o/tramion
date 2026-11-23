@@ -4,6 +4,7 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  SetAppearance,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -18,6 +19,7 @@ export interface NotesService {
   update(input: UpdateNote): Promise<Note>;
   setPinned(id: string, pinned: boolean): Promise<Note>;
   move(input: MoveNote): Promise<Note>;
+  setAppearance(input: SetAppearance): Promise<Note>;
   /** Devolvem os ids de todas as páginas afetadas (a página e as subpáginas). */
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
@@ -54,6 +56,12 @@ export function createNotesService(deps: {
 
     async setPinned(id, pinned) {
       const note = await gateway.setPinned(id, pinned);
+      events.emit("note.updated", { id: note.id });
+      return note;
+    },
+
+    async setAppearance(input) {
+      const note = await gateway.setAppearance(input);
       events.emit("note.updated", { id: note.id });
       return note;
     },

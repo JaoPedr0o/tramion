@@ -224,6 +224,8 @@ fn editar_nota_inexistente_ou_na_lixeira_da_o_erro_certo() {
         parent_id: None,
         position: 0,
         content: "[]".into(),
+        icon: None,
+        cover: None,
     };
     assert!(matches!(
         edit(&db, &ghost, "y", ""),

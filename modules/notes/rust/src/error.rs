@@ -18,6 +18,10 @@ pub enum NotesError {
     },
     /// O endereço não é um link http(s) válido.
     UrlInvalid,
+    /// O símbolo da página não é válido (vazio, longo demais ou com caracteres de controle).
+    IconInvalid,
+    /// A capa da página não está num formato aceito.
+    CoverInvalid,
     /// O arquivo enviado é grande demais.
     AssetTooLarge {
         max: usize,
@@ -51,6 +55,8 @@ impl NotesError {
             NotesError::TitleEmpty => "notes.title-empty",
             NotesError::TitleTooLong { .. } => "notes.title-too-long",
             NotesError::UrlInvalid => "notes.url-invalid",
+            NotesError::IconInvalid => "notes.icon-invalid",
+            NotesError::CoverInvalid => "notes.cover-invalid",
             NotesError::AssetTooLarge { .. } => "notes.asset-too-large",
             NotesError::AssetTypeNotAllowed => "notes.asset-type-not-allowed",
             NotesError::AssetInvalid => "notes.asset-invalid",
@@ -76,6 +82,8 @@ impl fmt::Display for NotesError {
                 write!(f, "o título excede o máximo de {max} caracteres")
             }
             NotesError::UrlInvalid => write!(f, "o endereço não é um link http ou https válido"),
+            NotesError::IconInvalid => write!(f, "o símbolo da página não é válido"),
+            NotesError::CoverInvalid => write!(f, "a capa da página não está num formato aceito"),
             NotesError::AssetTooLarge { max } => {
                 write!(f, "o arquivo excede o máximo de {max} bytes")
             }

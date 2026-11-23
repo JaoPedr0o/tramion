@@ -8,8 +8,7 @@ use aun_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, par
 /// Instante atual em milissegundos, calculado pelo próprio SQLite.
 const NOW_MS: &str = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
 
-const NOTE_COLUMNS: &str =
-    "id, title, body, pinned, created_at, updated_at, deleted_at, parent_id, position, content";
+const NOTE_COLUMNS: &str = "id, title, body, pinned, created_at, updated_at, deleted_at, parent_id, position, content, icon, cover";
 
 /// Todas as descendentes (filhas, netas...) de `?1`, sem incluir `?1`. Usa `UNION` (e não `UNION ALL`)
 /// para terminar mesmo que, por algum defeito, existisse um ciclo nos dados.
@@ -31,6 +30,8 @@ fn note_from_row(row: &Row<'_>) -> Result<Note> {
         parent_id: row.get(7)?,
         position: row.get(8)?,
         content: row.get(9)?,
+        icon: row.get(10)?,
+        cover: row.get(11)?,
     })
 }
 
@@ -43,6 +44,7 @@ fn summary_from_row(row: &Row<'_>) -> Result<NoteSummary> {
         deleted_at: row.get(4)?,
         parent_id: row.get(5)?,
         position: row.get(6)?,
+        icon: row.get(7)?,
     })
 }
 
@@ -74,7 +76,7 @@ pub fn find(conn: &Connection, id: &str) -> Result<Option<Note>> {
 /// Notas ativas, PLANAS, agrupadas por pai e ordenadas por posição. A árvore é montada pelo cliente.
 pub fn list_active(conn: &Connection) -> Result<Vec<NoteSummary>> {
     let mut stmt = conn.prepare(
-        "SELECT id, title, pinned, updated_at, deleted_at, parent_id, position
+        "SELECT id, title, pinned, updated_at, deleted_at, parent_id, position, icon
            FROM notes_note
           WHERE deleted_at IS NULL
           ORDER BY parent_id IS NOT NULL, parent_id, position, created_at, id",
@@ -257,4 +259,24 @@ pub fn purge_subtree(conn: &Connection, id: &str) -> Result<Vec<String>> {
       RETURNING id",
     )?;
     stmt.query_map([id], |row| row.get(0))?.collect()
+}
+
+/// Define o símbolo e a capa de uma página ativa. Não mexe em `updated_at`: a aparência não é o conteúdo
+/// (e não deve causar conflito em quem está com a página aberta).
+pub fn set_appearance(
+    conn: &Connection,
+    id: &str,
+    icon: Option<&str>,
+    cover: Option<&str>,
+) -> Result<Option<Note>> {
+    conn.query_row(
+        &format!(
+            "UPDATE notes_note SET icon = ?2, cover = ?3
+              WHERE id = ?1 AND deleted_at IS NULL
+          RETURNING {NOTE_COLUMNS}"
+        ),
+        params![id, icon, cover],
+        note_from_row,
+    )
+    .optional()
 }

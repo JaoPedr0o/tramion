@@ -1,6 +1,7 @@
 import type { ModuleManifest } from "@aun/contracts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { createNavigationStore } from "./application/navigation-store.ts";
+import type { EmojiData } from "./application/emoji.ts";
 import type { NotesPlatform } from "./application/notes-platform.ts";
 import { createNotesService } from "./application/notes-service.ts";
 import { createTauriNotesGateway } from "./infrastructure/tauri-notes-gateway.ts";
@@ -13,12 +14,17 @@ import { createSidebar } from "./ui/createSidebar.tsx";
 import { createSidebarActions } from "./ui/createSidebarActions.tsx";
 import { createTopbar } from "./ui/createTopbar.tsx";
 import { LazyBlockEditor } from "./ui/LazyBlockEditor.ts";
+import { loadEmojiData } from "./ui/loadEmojiData.ts";
 import "./ui/notes.css";
 
 /** Monta o módulo. O gateway é injetável para que os testes não precisem do Tauri. */
 export function createNotesModule(
   gateway: NotesGateway = createTauriNotesGateway(),
-  options: { BlockEditor?: ComponentType<BlockEditorProps>; platform?: NotesPlatform } = {},
+  options: {
+    BlockEditor?: ComponentType<BlockEditorProps>;
+    platform?: NotesPlatform;
+    loadEmojiData?: () => Promise<EmojiData>;
+  } = {},
 ): ModuleManifest {
   return {
     id: "notes",
@@ -34,6 +40,7 @@ export function createNotesModule(
         actions: createPageActions(service, store),
         BlockEditor: options.BlockEditor ?? LazyBlockEditor,
         platform: options.platform ?? createTauriNotesPlatform(),
+        loadEmojiData: options.loadEmojiData ?? loadEmojiData,
       };
 
       views.register({

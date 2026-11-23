@@ -42,6 +42,7 @@ import {
 } from "../application/page-content.ts";
 import { isCurrentOption, TURN_INTO_OPTIONS, TURNABLE_TYPES } from "../application/turn-into.ts";
 import type { BlockEditorProps } from "./block-editor-types.ts";
+import { PageGlyph } from "./PageGlyph.tsx";
 import { useColorScheme } from "./useColorScheme.ts";
 
 /**
@@ -67,14 +68,15 @@ interface EditorApi {
 // O que os blocos e as menções precisam da página que os contém.
 const EditorContext = createContext<{
   titleOf(pageId: string): string | null;
+  iconOf(pageId: string): string | null;
   open(pageId: string): void;
   openExternal(url: string): void;
-}>({ titleOf: () => null, open: () => {}, openExternal: () => {} });
+}>({ titleOf: () => null, iconOf: () => null, open: () => {}, openExternal: () => {} });
 
 // ───────── Bloco de subpágina ─────────
 
 function ChildPageLink({ pageId }: { pageId: string }) {
-  const { titleOf, open } = useContext(EditorContext);
+  const { titleOf, iconOf, open } = useContext(EditorContext);
   const title = titleOf(pageId);
 
   return (
@@ -86,7 +88,7 @@ function ChildPageLink({ pageId }: { pageId: string }) {
       onClick={() => open(pageId)}
     >
       <span className="child-page__icon" aria-hidden="true">
-        <PageIcon />
+        <PageGlyph icon={iconOf(pageId)} />
       </span>
       <span className="child-page__title">{title ?? "Página indisponível"}</span>
     </button>
@@ -102,7 +104,7 @@ const ChildPageBlock = createReactBlockSpec(
 // ───────── Menção (@página) ─────────
 
 function MentionChip({ pageId }: { pageId: string }) {
-  const { titleOf, open } = useContext(EditorContext);
+  const { titleOf, iconOf, open } = useContext(EditorContext);
   const title = titleOf(pageId);
 
   return (
@@ -113,7 +115,7 @@ function MentionChip({ pageId }: { pageId: string }) {
       disabled={title === null}
       onClick={() => open(pageId)}
     >
-      <PageIcon size={14} />
+      <PageGlyph icon={iconOf(pageId)} size={14} />
       <span>{title ?? "Página indisponível"}</span>
     </button>
   );
@@ -363,6 +365,7 @@ export default function BlockEditor({
   initialBlocks,
   childPages,
   titleOf,
+  iconOf,
   pages,
   onChange,
   onChildPageRemoved,
@@ -512,7 +515,9 @@ export default function BlockEditor({
   ];
 
   return (
-    <EditorContext.Provider value={{ titleOf, open: onOpenPage, openExternal: onOpenExternal }}>
+    <EditorContext.Provider
+      value={{ titleOf, iconOf, open: onOpenPage, openExternal: onOpenExternal }}
+    >
       {/* Links de verdade no texto abrem no navegador do sistema, nunca dentro do app. */}
       <div
         className="block-editor"
@@ -552,7 +557,7 @@ export default function BlockEditor({
               filterSuggestionItems(
                 pages.map((page) => ({
                   title: page.title,
-                  icon: <PageIcon />,
+                  icon: <PageGlyph icon={page.icon} />,
                   onItemClick: () =>
                     api.insertInlineContent([{ type: "mention", props: { pageId: page.id } }, " "]),
                 })),

@@ -4,6 +4,8 @@ import { NotesError, type NotesErrorCode } from "../domain/errors.ts";
 const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.title-empty": "O título não pode ficar vazio.",
   "notes.title-too-long": "O título é longo demais (máximo de 200 caracteres).",
+  "notes.icon-invalid": "Este símbolo não é válido.",
+  "notes.cover-invalid": "Esta capa não está num formato aceito.",
   "notes.url-invalid": "Este endereço não é um link http ou https válido.",
   "notes.asset-too-large": "O arquivo é grande demais (máximo de 50 MB).",
   "notes.asset-type-not-allowed":

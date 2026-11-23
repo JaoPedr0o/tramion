@@ -20,6 +20,10 @@ pub struct Note {
     pub position: i64,
     /// Os blocos da página, em JSON (uma lista). `[]` = vazia ou ainda não convertida.
     pub content: String,
+    /// Símbolo da página (um emoji); `None` = sem símbolo.
+    pub icon: Option<String>,
+    /// Capa da página: `color:#rrggbb`, `gradient:<nome>` ou `image:<endereço>`; `None` = sem capa.
+    pub cover: Option<String>,
 }
 
 /// Resumo para listagens: não carrega o corpo, que pode ser grande.
@@ -33,6 +37,7 @@ pub struct NoteSummary {
     pub deleted_at: Option<i64>,
     pub parent_id: Option<String>,
     pub position: i64,
+    pub icon: Option<String>,
 }
 
 /// Item da lixeira: só aparecem as RAÍZES de cada exclusão. As subpáginas excluídas junto não são

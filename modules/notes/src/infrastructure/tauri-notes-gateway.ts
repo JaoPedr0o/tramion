@@ -26,6 +26,7 @@ export function createTauriNotesGateway(): NotesGateway {
     update: ({ id, title, body, content, expectedUpdatedAt }) =>
       call<Note>("update", { id, title, body, content, expectedUpdatedAt }),
     setPinned: (id, pinned) => call<Note>("set_pinned", { id, pinned }),
+    setAppearance: ({ id, icon, cover }) => call<Note>("set_appearance", { id, icon, cover }),
     move: ({ id, newParentId, index }) => call<Note>("move_note", { id, newParentId, index }),
     delete: (id) => call<string[]>("delete", { id }),
     restore: (id) => call<string[]>("restore", { id }),

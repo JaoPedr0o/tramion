@@ -12,6 +12,7 @@ const COMMANDS: &[&str] = &[
     "restore",
     "purge",
     "save_asset",
+    "set_appearance",
     "open_external",
 ];
 

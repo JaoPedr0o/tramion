@@ -11,6 +11,8 @@ export function aNote(overrides: Partial<Note> = {}): Note {
     body: "",
     content: "[]",
     pinned: false,
+    icon: null,
+    cover: null,
     createdAt: 1,
     updatedAt: 1,
     deletedAt: null,
@@ -29,6 +31,7 @@ export function aSummary(overrides: Partial<NoteSummary> = {}): NoteSummary {
     deletedAt: null,
     parentId: null,
     position: 0,
+    icon: null,
     ...overrides,
   };
 }
@@ -43,6 +46,7 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     update: vi.fn(async () => aNote()),
     setPinned: vi.fn(async () => aNote()),
     move: vi.fn(async () => aNote()),
+    setAppearance: vi.fn(async () => aNote()),
     delete: vi.fn(async () => []),
     restore: vi.fn(async () => []),
     purge: vi.fn(async () => []),
@@ -70,6 +74,7 @@ export function createFakeGateway() {
     deletedAt: n.deletedAt,
     parentId: n.parentId,
     position: n.position,
+    icon: n.icon,
   });
   const must = (id: string): Note => {
     const note = notes.get(id);
@@ -168,6 +173,8 @@ export function createFakeGateway() {
         body,
         content: "[]",
         pinned: false,
+        icon: null,
+        cover: null,
         createdAt: at,
         updatedAt: at,
         deletedAt: null,
@@ -192,6 +199,19 @@ export function createFakeGateway() {
       const note = must(id);
       if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
       const next = { ...note, pinned };
+      notes.set(id, next);
+      return next;
+    },
+
+    async setAppearance({ id, icon, cover }) {
+      const note = must(id);
+      if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+      if (icon !== null && icon.trim() === "") throw new NotesError("notes.icon-invalid", "ícone");
+      const coverOk =
+        /^(color:#[0-9a-fA-F]{6}|gradient:[a-z0-9-]{1,32}|image:(https?|asset):\/\/\S+)$/;
+      if (cover !== null && !coverOk.test(cover))
+        throw new NotesError("notes.cover-invalid", "capa");
+      const next = { ...note, icon: icon === null ? null : icon.trim(), cover };
       notes.set(id, next);
       return next;
     },

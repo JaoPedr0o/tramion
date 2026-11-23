@@ -21,6 +21,8 @@ export interface BlockEditorProps {
   childPages: ReadonlyMap<string, NoteSummary> | null;
   /** Título atual de uma página (para o texto do bloco de subpágina); `null` = indisponível. */
   titleOf(pageId: string): string | null;
+  /** Símbolo atual de uma página (para as menções e os links); `null` = sem símbolo. */
+  iconOf(pageId: string): string | null;
   /** O conteúdo mudou. */
   onChange(change: { blocks: readonly Block[]; plainText: string }): void;
   /** O usuário apagou do texto o bloco de uma subpágina. */

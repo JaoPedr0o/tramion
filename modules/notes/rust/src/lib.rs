@@ -31,6 +31,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 3,
             sql: include_str!("../migrations/0003_page_content.sql"),
         },
+        Migration {
+            version: 4,
+            sql: include_str!("../migrations/0004_page_appearance.sql"),
+        },
     ],
 };
 
@@ -49,6 +53,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::restore,
             commands::purge,
             commands::save_asset,
+            commands::set_appearance,
             commands::open_external,
         ])
         .build()

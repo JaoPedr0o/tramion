@@ -1,7 +1,8 @@
-import { ChevronIcon, IconButton, Menu, MoreIcon, PageIcon, PlusIcon } from "@aun/ui";
+import { ChevronIcon, IconButton, Menu, MoreIcon, PlusIcon } from "@aun/ui";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { buildTree, visibleRows } from "../application/page-tree.ts";
 import type { NoteSummary } from "../domain/note.ts";
+import { PageGlyph } from "./PageGlyph.tsx";
 import { pageMenuItems, type PageMenuHandlers } from "./pageMenu.tsx";
 
 interface Props extends PageMenuHandlers {
@@ -124,7 +125,7 @@ export function PageTree({
               {row.hasChildren && <ChevronIcon size={12} />}
             </span>
             <span className="page-tree__icon" aria-hidden="true">
-              <PageIcon />
+              <PageGlyph icon={row.page.icon} />
             </span>
             <span className="page-tree__title">{title}</span>
             {/* As teclas e cliques destes botões não podem chegar à linha (abririam a página). */}

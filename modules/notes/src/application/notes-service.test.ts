@@ -30,6 +30,7 @@ describe("serviço de notas: eventos", () => {
       update: vi.fn(async () => aNote({ id: "edit" })),
       setPinned: vi.fn(async () => aNote({ id: "fixa" })),
       move: vi.fn(async () => aNote({ id: "mov" })),
+      setAppearance: vi.fn(async () => aNote({ id: "ap" })),
       delete: vi.fn(async () => ["d"]),
       restore: vi.fn(async () => ["r"]),
       purge: vi.fn(async () => ["p"]),
@@ -39,6 +40,7 @@ describe("serviço de notas: eventos", () => {
     await service.update({ id: "edit", title: "a", body: "", content: "[]", expectedUpdatedAt: 1 });
     await service.setPinned("fixa", true);
     await service.move({ id: "mov", newParentId: null, index: 0 });
+    await service.setAppearance({ id: "ap", icon: "🚀", cover: null });
     await service.delete("d");
     await service.restore("r");
     await service.purge("p");
@@ -48,6 +50,7 @@ describe("serviço de notas: eventos", () => {
       ["note.updated", { id: "edit" }],
       ["note.updated", { id: "fixa" }],
       ["note.moved", { id: "mov" }],
+      ["note.updated", { id: "ap" }],
       ["note.deleted", { id: "d" }],
       ["note.restored", { id: "r" }],
       ["note.purged", { id: "p" }],
@@ -61,6 +64,7 @@ describe("serviço de notas: eventos", () => {
       update: vi.fn(async () => Promise.reject(conflict)),
       setPinned: vi.fn(async () => Promise.reject(conflict)),
       move: vi.fn(async () => Promise.reject(conflict)),
+      setAppearance: vi.fn(async () => Promise.reject(conflict)),
       delete: vi.fn(async () => Promise.reject(conflict)),
       restore: vi.fn(async () => Promise.reject(conflict)),
       purge: vi.fn(async () => Promise.reject(conflict)),
@@ -71,6 +75,7 @@ describe("serviço de notas: eventos", () => {
       service.update({ id: "x", title: "a", body: "", content: "[]", expectedUpdatedAt: 1 }),
       service.setPinned("x", true),
       service.move({ id: "x", newParentId: null, index: 0 }),
+      service.setAppearance({ id: "x", icon: null, cover: null }),
       service.delete("x"),
       service.restore("x"),
       service.purge("x"),

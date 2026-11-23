@@ -144,3 +144,34 @@ fn migracao_3_preserva_paginas_existentes_com_conteudo_vazio_e_o_texto_intacto()
         "ainda não convertida: a interface converte ao abrir"
     );
 }
+
+/// O módulo como era antes da migração 4 (as três primeiras).
+fn v3_only() -> ModuleMigrations {
+    ModuleMigrations {
+        module: MIGRATIONS.module,
+        depends_on: MIGRATIONS.depends_on,
+        migrations: &MIGRATIONS.migrations[..3],
+    }
+}
+
+#[test]
+fn migracao_4_preserva_paginas_existentes_sem_simbolo_nem_capa() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("app.db");
+    let options = OpenOptions {
+        backup_dir: Some(dir.path().join("backups")),
+        backups_to_keep: 5,
+    };
+    {
+        let db = Database::open(&path, &[v3_only()], &options).unwrap();
+        db.connection()
+            .execute("INSERT INTO notes_note (id, title, body, content) VALUES ('a', 'antiga', 'texto', '[]')", [])
+            .unwrap();
+    }
+
+    let db = Database::open(&path, &[MIGRATIONS], &options).unwrap();
+
+    let note = service::get(db.connection(), "a").unwrap();
+    assert_eq!((note.icon, note.cover), (None, None));
+    assert_eq!(note.body, "texto", "o conteúdo não foi tocado");
+}

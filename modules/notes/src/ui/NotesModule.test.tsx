@@ -35,10 +35,26 @@ function setup() {
   const fake = createFakeGateway();
   const events = createEventBus<AppEvents>();
   const views = createViewRegistry();
-  createNotesModule(fake.gateway, { BlockEditor: StubBlockEditor }).register({ events, views });
+  // A "plataforma" (guardar arquivos, abrir links) e a base de emojis são falsas e pequenas nos testes.
+  const platform = {
+    uploadAsset: vi.fn<(file: File) => Promise<string>>(async () => "asset://localhost/abc.png"),
+    openExternal: vi.fn<(url: string) => Promise<void>>(async () => {}),
+  };
+  const emojis = {
+    emojis: [
+      { emoji: "🚀", label: "foguete", tags: ["espaço"], category: 0 },
+      { emoji: "❤️", label: "coração", tags: [], category: 0 },
+    ],
+    categories: [{ index: 0, label: "Símbolos" }],
+  };
+  createNotesModule(fake.gateway, {
+    BlockEditor: StubBlockEditor,
+    platform,
+    loadEmojiData: async () => emojis,
+  }).register({ events, views });
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
   render(<Frame view={views.list()[0]!} />);
-  return { fake, events, user };
+  return { fake, events, user, platform };
 }
 
 /** Deixa passar a pausa do salvamento automático (500 ms) e as promessas pendentes. */
@@ -587,6 +603,176 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(fake.notes.get("n2")?.parentId).toBe("n1");
       expect(((await main().findByLabelText("Título")) as HTMLInputElement).value).toBe(
         "Sem título",
+      );
+    });
+  });
+
+  describe("ícone e capa da página", () => {
+    const dialog = (name: string) => within(screen.getByRole("dialog", { name }));
+
+    async function addIcon(user: User, search = "foguete", emoji = "foguete") {
+      await user.click(main().getByRole("button", { name: "Adicionar ícone" }));
+      const picker = dialog("Escolher ícone");
+      await user.type(await picker.findByRole("searchbox", { name: "Buscar emoji" }), search);
+      await user.click(picker.getByRole("button", { name: emoji }));
+    }
+
+    it("adiciona um ícone pela busca; ele aparece na página, na árvore e nos favoritos, sem mudar a versão", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Projetos");
+      const versionBefore = fake.notes.get("n1")!.updatedAt;
+
+      await addIcon(user);
+
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.icon).toBe("🚀"));
+      expect(main().getByRole("button", { name: "Alterar ícone" }).textContent).toBe("🚀");
+      expect(treeitem("Projetos").textContent).toContain("🚀");
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(fake.notes.get("n1")!.updatedAt).toBe(versionBefore); // aparência não é conteúdo
+
+      await user.click(topbar().getByRole("button", { name: "Adicionar aos favoritos" }));
+      const favorites = await sidebar().findByRole("list", { name: "Favoritos" });
+      expect(favorites.textContent).toContain("🚀");
+    });
+
+    it("a busca de emojis não diferencia acentos", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Amor");
+
+      await addIcon(user, "CORACAO", "coração");
+
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.icon).toBe("❤️"));
+    });
+
+    it("sem busca, mostra os emojis por categoria; busca sem resultado avisa", async () => {
+      const { user } = setup();
+      await newPageTitled(user, "A");
+
+      await user.click(main().getByRole("button", { name: "Adicionar ícone" }));
+      const picker = dialog("Escolher ícone");
+      expect(await picker.findByRole("heading", { name: "Símbolos" })).toBeTruthy();
+      expect(picker.getAllByRole("button", { name: /foguete|coração/ })).toHaveLength(2);
+
+      await user.type(picker.getByRole("searchbox", { name: "Buscar emoji" }), "zzzz");
+      expect(picker.getByText("Nenhum emoji encontrado.")).toBeTruthy();
+    });
+
+    it("remove o ícone", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "A");
+      await addIcon(user);
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.icon).toBe("🚀"));
+
+      await user.click(main().getByRole("button", { name: "Alterar ícone" }));
+      await user.click(dialog("Escolher ícone").getByRole("button", { name: "Remover ícone" }));
+
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.icon).toBeNull());
+      expect(main().getByRole("button", { name: "Adicionar ícone" })).toBeTruthy();
+    });
+
+    it("Esc fecha o seletor sem mudar nada", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "A");
+      await user.click(main().getByRole("button", { name: "Adicionar ícone" }));
+      expect(screen.getByRole("dialog", { name: "Escolher ícone" })).toBeTruthy();
+
+      await user.keyboard("{Escape}");
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(fake.notes.get("n1")?.icon).toBeNull();
+    });
+
+    it("escolhe a capa da galeria, mostra a faixa e permite trocar e remover", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "A");
+
+      await user.click(main().getByRole("button", { name: "Adicionar capa" }));
+      await user.click(dialog("Escolher capa").getByRole("button", { name: "Aurora" }));
+
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.cover).toBe("gradient:aurora"));
+      const banner = document.querySelector<HTMLElement>(".page-cover")!;
+      expect(banner.style.backgroundImage).toContain("linear-gradient");
+      expect(main().queryByRole("button", { name: "Adicionar capa" })).toBeNull();
+
+      await user.click(main().getByRole("button", { name: "Alterar capa" }));
+      await user.click(dialog("Escolher capa").getByRole("button", { name: "Azul" }));
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.cover).toBe("color:#0b6e99"));
+
+      await user.click(main().getByRole("button", { name: "Remover capa" }));
+      await vi.waitFor(() => expect(fake.notes.get("n1")?.cover).toBeNull());
+      expect(document.querySelector(".page-cover")).toBeNull();
+    });
+
+    it("capa por link: recusa endereço inválido e aceita https", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "A");
+      await user.click(main().getByRole("button", { name: "Adicionar capa" }));
+      const picker = dialog("Escolher capa");
+      await user.click(picker.getByRole("tab", { name: "Link" }));
+      const input = picker.getByRole("textbox", { name: "Endereço da imagem" });
+
+      await user.type(input, "javascript:alert(1)");
+      await user.click(picker.getByRole("button", { name: "Usar como capa" }));
+      expect((await picker.findByRole("alert")).textContent).toContain(
+        "não é um link http ou https válido",
+      );
+      expect(fake.notes.get("n1")?.cover).toBeNull();
+
+      await user.clear(input);
+      await user.type(input, "https://exemplo.com/foto.png");
+      await user.click(picker.getByRole("button", { name: "Usar como capa" }));
+      await vi.waitFor(() =>
+        expect(fake.notes.get("n1")?.cover).toBe("image:https://exemplo.com/foto.png"),
+      );
+    });
+
+    it("capa por envio de arquivo: guarda pelo sistema e usa o endereço devolvido", async () => {
+      const { user, fake, platform } = setup();
+      await newPageTitled(user, "A");
+      await user.click(main().getByRole("button", { name: "Adicionar capa" }));
+      const picker = dialog("Escolher capa");
+      await user.click(picker.getByRole("tab", { name: "Enviar" }));
+      const file = new File([new Uint8Array([1, 2, 3])], "foto.png", { type: "image/png" });
+
+      await user.upload(picker.getByLabelText("Escolher imagem"), file);
+
+      await vi.waitFor(() =>
+        expect(fake.notes.get("n1")?.cover).toBe("image:asset://localhost/abc.png"),
+      );
+      expect(platform.uploadAsset).toHaveBeenCalledWith(file);
+    });
+
+    it("falha no envio mostra o motivo na própria janela e não muda a capa", async () => {
+      const { user, fake, platform } = setup();
+      platform.uploadAsset.mockRejectedValue(
+        new NotesError("notes.asset-type-not-allowed", "tipo"),
+      );
+      await newPageTitled(user, "A");
+      await user.click(main().getByRole("button", { name: "Adicionar capa" }));
+      const picker = dialog("Escolher capa");
+      await user.click(picker.getByRole("tab", { name: "Enviar" }));
+
+      await user.upload(
+        picker.getByLabelText("Escolher imagem"),
+        new File([new Uint8Array([1])], "x.png", { type: "image/png" }),
+      );
+
+      expect((await picker.findByRole("alert")).textContent).toContain("não é aceito");
+      expect(fake.notes.get("n1")?.cover).toBeNull();
+    });
+
+    it("falha ao gravar a aparência mostra um aviso na página", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "A");
+      vi.spyOn(fake.gateway, "setAppearance").mockRejectedValue(
+        new NotesError("notes.cover-invalid", "x"),
+      );
+      await user.click(main().getByRole("button", { name: "Adicionar capa" }));
+
+      await user.click(dialog("Escolher capa").getByRole("button", { name: "Aurora" }));
+
+      expect((await main().findByRole("alert")).textContent).toContain(
+        "Esta capa não está num formato aceito",
       );
     });
   });

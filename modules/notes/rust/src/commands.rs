@@ -204,3 +204,16 @@ fn percent_decode(raw: &str) -> String {
     }
     String::from_utf8_lossy(&out).into_owned()
 }
+
+/// Define o símbolo e a capa de uma página (`null` limpa). Os dois são enviados juntos.
+#[tauri::command]
+pub async fn set_appearance(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    icon: Option<String>,
+    cover: Option<String>,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        service::set_appearance(conn, &id, icon.as_deref(), cover.as_deref())
+    })
+}

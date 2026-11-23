@@ -11,6 +11,8 @@ export interface NoteSummary {
   readonly parentId: string | null;
   /** Posição entre as irmãs, a partir de 0. */
   readonly position: number;
+  /** Símbolo da página (um emoji); `null` = sem símbolo. */
+  readonly icon: string | null;
 }
 
 /** Nota completa. */
@@ -19,6 +21,8 @@ export interface Note extends NoteSummary {
   readonly body: string;
   /** Os blocos da página, em JSON (uma lista). `[]` = vazia ou ainda não convertida. */
   readonly content: string;
+  /** Capa: `color:#rrggbb`, `gradient:<nome>` ou `image:<endereço>`; `null` = sem capa. */
+  readonly cover: string | null;
   readonly createdAt: number;
 }
 
@@ -35,6 +39,13 @@ export interface NewNote {
   readonly body: string;
   /** Página-mãe; ausente ou `null` cria na raiz. */
   readonly parentId?: string | null;
+}
+
+/** Símbolo e capa de uma página. `null` limpa. Os dois são enviados juntos. */
+export interface SetAppearance {
+  readonly id: string;
+  readonly icon: string | null;
+  readonly cover: string | null;
 }
 
 export interface MoveNote {

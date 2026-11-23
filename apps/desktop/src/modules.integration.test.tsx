@@ -32,6 +32,8 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
         body,
         content: "[]",
         pinned: false,
+        icon: null,
+        cover: null,
         createdAt: 1,
         updatedAt: 1,
         deletedAt: null,
@@ -44,6 +46,7 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     update: unused,
     setPinned: unused,
     move: unused,
+    setAppearance: unused,
     delete: async (id) => {
       notes.set(id, { ...notes.get(id)!, deletedAt: 2 });
       return [id];

@@ -3,6 +3,7 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  SetAppearance,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -23,6 +24,8 @@ export interface NotesGateway {
   update(input: UpdateNote): Promise<Note>;
   setPinned(id: string, pinned: boolean): Promise<Note>;
   move(input: MoveNote): Promise<Note>;
+  /** Símbolo e capa da página. Não altera a versão (`updatedAt`): aparência não é conteúdo. */
+  setAppearance(input: SetAppearance): Promise<Note>;
   /** `delete`, `restore` e `purge` devolvem os ids de TODAS as páginas afetadas (a página e as subpáginas). */
   delete(id: string): Promise<readonly string[]>;
   restore(id: string): Promise<readonly string[]>;
