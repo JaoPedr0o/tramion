@@ -2,6 +2,7 @@ import { Logo } from "@tramion/ui";
 import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { GraphView } from "./GraphView.tsx";
+import { VersionsDialog } from "./VersionsDialog.tsx";
 import { NotePanel } from "./NotePanel.tsx";
 import { SearchDialog } from "./SearchDialog.tsx";
 import { TodayView } from "./TodayView.tsx";
@@ -38,6 +39,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
     return (
       <div className="notes-main">
         <SearchDialog deps={deps} />
+        <VersionsDialog deps={deps} />
         {nav.notice && (
           <p role="status" className="notes-main__notice">
             <span>{nav.notice}</span>
@@ -58,7 +60,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         ) : nav.mode === "graph" ? (
           <GraphView deps={deps} />
         ) : nav.selectedId ? (
-          <NotePanel key={nav.selectedId} deps={deps} id={nav.selectedId} />
+          <NotePanel key={`${nav.selectedId}:${nav.reloadToken}`} deps={deps} id={nav.selectedId} />
         ) : (
           <div className="notes-empty">
             <Logo size={72} />

@@ -106,3 +106,21 @@ export interface PageGraph {
   readonly nodes: readonly PageRef[];
   readonly edges: readonly GraphEdge[];
 }
+
+/** Uma versão antiga de uma página, na lista do histórico. */
+export interface VersionSummary {
+  readonly id: string;
+  readonly title: string;
+  /** Começo do texto, em uma linha. */
+  readonly preview: string;
+  /** Quando esse estado foi salvo pela última vez (ms). */
+  readonly savedAt: number;
+}
+
+/** Uma versão inteira (texto simples), para ver antes de restaurar. */
+export interface VersionDetail {
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+  readonly savedAt: number;
+}

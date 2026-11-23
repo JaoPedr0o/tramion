@@ -2676,4 +2676,137 @@ describe("módulo de notas (a tela inteira)", () => {
       );
     });
   });
+
+  describe("histórico de versões", () => {
+    type Fake = ReturnType<typeof setup>["fake"];
+    const history = () => within(screen.getByRole("dialog", { name: "Histórico de versões" }));
+
+    /** Página com duas edições: sobra uma versão antiga ("primeiro texto"), e o estado atual é "segundo texto". */
+    async function pageWithHistory(fake: Fake, events: ReturnType<typeof setup>["events"]) {
+      const note = await fake.gateway.create({ title: "Receita", body: "" });
+      const first = await fake.gateway.update({
+        id: note.id,
+        title: "Receita",
+        body: "primeiro texto",
+        content: '[{"type":"paragraph"}]',
+        expectedUpdatedAt: note.updatedAt,
+      });
+      await fake.gateway.update({
+        id: note.id,
+        title: "Receita nova",
+        body: "segundo texto",
+        content: '[{"type":"paragraph","n":2}]',
+        expectedUpdatedAt: first.updatedAt,
+      });
+      act(() => events.emit("note.created", { id: note.id }));
+      return note;
+    }
+
+    async function openHistory(user: User, title: string) {
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: title }));
+      await main().findByRole("textbox", { name: "Título" });
+      await openPageMenu(user, "Histórico de versões");
+      return await screen.findByRole("dialog", { name: "Histórico de versões" });
+    }
+
+    it("lista as versões antigas com data e começo do texto", async () => {
+      const { user, fake, events } = setup();
+      await pageWithHistory(fake, events);
+
+      await openHistory(user, "Receita nova");
+
+      const list = history().getByRole("list", { name: "Versões" });
+      const items = within(list).getAllByRole("button");
+      expect(items).toHaveLength(1);
+      expect(items[0]!.textContent).toContain("primeiro texto");
+      expect(history().getByText("Escolha uma versão para ver o texto dela.")).toBeTruthy();
+    });
+
+    it("escolher uma versão mostra o texto dela; restaurar volta a página e avisa", async () => {
+      const { user, fake, events } = setup();
+      const note = await pageWithHistory(fake, events);
+      await openHistory(user, "Receita nova");
+
+      await user.click(
+        within(history().getByRole("list", { name: "Versões" })).getByRole("button"),
+      );
+      expect(history().getByText("primeiro texto", { selector: "pre" })).toBeTruthy();
+      await user.click(history().getByRole("button", { name: "Restaurar esta versão" }));
+
+      await vi.waitFor(() => expect(fake.notes.get(note.id)?.title).toBe("Receita"));
+      expect(fake.notes.get(note.id)?.body).toBe("primeiro texto");
+      expect(screen.queryByRole("dialog", { name: "Histórico de versões" })).toBeNull();
+      expect(await main().findByText(/Versão de .* restaurada/)).toBeTruthy();
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Receita",
+      );
+    });
+
+    it("restaurar guarda o estado atual: ele aparece no histórico e dá para desfazer", async () => {
+      const { user, fake, events } = setup();
+      const note = await pageWithHistory(fake, events);
+      await openHistory(user, "Receita nova");
+      await user.click(
+        within(history().getByRole("list", { name: "Versões" })).getByRole("button"),
+      );
+      await user.click(history().getByRole("button", { name: "Restaurar esta versão" }));
+      await vi.waitFor(() => expect(fake.notes.get(note.id)?.title).toBe("Receita"));
+
+      await openPageMenu(user, "Histórico de versões");
+
+      const items = within(await screen.findByRole("list", { name: "Versões" })).getAllByRole(
+        "button",
+      );
+      expect(items[0]!.textContent).toContain("segundo texto");
+    });
+
+    it("sem versões antigas explica; fechar pelo × e pelo Esc", async () => {
+      const { user, fake, events } = setup();
+      const note = await fake.gateway.create({ title: "Nova", body: "" });
+      act(() => events.emit("note.created", { id: note.id }));
+      await openHistory(user, "Nova");
+      expect(history().getByText(/Ainda não há versões antigas/)).toBeTruthy();
+
+      await user.click(history().getByRole("button", { name: "Fechar o histórico" }));
+      expect(screen.queryByRole("dialog", { name: "Histórico de versões" })).toBeNull();
+
+      await openPageMenu(user, "Histórico de versões");
+      await screen.findByRole("dialog", { name: "Histórico de versões" });
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog", { name: "Histórico de versões" })).toBeNull();
+    });
+
+    it("falha ao restaurar mostra o motivo e mantém a janela aberta", async () => {
+      const { user, fake, events } = setup();
+      await pageWithHistory(fake, events);
+      await openHistory(user, "Receita nova");
+      vi.spyOn(fake.gateway, "restoreVersion").mockRejectedValue(
+        new NotesError("notes.conflict", "x"),
+      );
+
+      await user.click(
+        within(history().getByRole("list", { name: "Versões" })).getByRole("button"),
+      );
+      await user.click(history().getByRole("button", { name: "Restaurar esta versão" }));
+
+      expect((await history().findByRole("alert")).textContent).toContain(
+        "alterada em outro lugar",
+      );
+      expect(screen.getByRole("dialog", { name: "Histórico de versões" })).toBeTruthy();
+    });
+
+    it("falha ao carregar o histórico mostra um aviso", async () => {
+      const { user, fake, events } = setup();
+      await pageWithHistory(fake, events);
+      vi.spyOn(fake.gateway, "listVersions").mockRejectedValue(
+        new NotesError("notes.internal", "x"),
+      );
+
+      await openHistory(user, "Receita nova");
+
+      expect(await history().findByText("Não foi possível carregar o histórico.")).toBeTruthy();
+    });
+  });
 });

@@ -9,6 +9,8 @@ import type {
   SearchHit,
   TemplateInfo,
   TrashSummary,
+  VersionDetail,
+  VersionSummary,
 } from "../domain/note.ts";
 import { toNotesError } from "./notes-error.ts";
 
@@ -41,6 +43,10 @@ export function createTauriNotesGateway(): NotesGateway {
     restore: (id) => call<string[]>("restore", { id }),
     purge: (id) => call<string[]>("purge", { id }),
     emptyTrash: () => call<string[]>("empty_trash"),
+    listVersions: (noteId) => call<VersionSummary[]>("list_versions", { noteId }),
+    getVersion: (versionId) => call<VersionDetail>("get_version", { versionId }),
+    restoreVersion: ({ noteId, versionId, expectedUpdatedAt }) =>
+      call<Note>("restore_version", { noteId, versionId, expectedUpdatedAt }),
     backlinks: (id) => call<PageRef[]>("backlinks", { id }),
     graph: () => call<PageGraph>("graph"),
     duplicate: (id) => call<string[]>("duplicate_note", { id }),

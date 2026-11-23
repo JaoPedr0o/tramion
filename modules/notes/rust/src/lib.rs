@@ -18,6 +18,7 @@ pub mod samples;
 pub mod search;
 pub mod service;
 pub mod templates;
+pub mod versions;
 
 use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
@@ -68,6 +69,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 10,
             sql: include_str!("../migrations/0010_reminders.sql"),
         },
+        Migration {
+            version: 11,
+            sql: include_str!("../migrations/0011_versions.sql"),
+        },
     ],
 };
 
@@ -99,6 +104,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::upcoming_tasks,
             commands::backlinks,
             commands::graph,
+            commands::list_versions,
+            commands::get_version,
+            commands::restore_version,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

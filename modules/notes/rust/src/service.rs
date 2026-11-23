@@ -195,8 +195,25 @@ fn build_trash(rows: &[repository::TrashedRow]) -> Vec<TrashSummary> {
 }
 
 pub fn update(conn: &Connection, input: UpdateNote) -> Result<Note, NotesError> {
+    update_inner(conn, input, false)
+}
+
+/// Como [`update`], mas guarda SEMPRE o estado anterior no histórico (usado ao restaurar uma versão).
+pub(crate) fn update_forcing_snapshot(
+    conn: &Connection,
+    input: UpdateNote,
+) -> Result<Note, NotesError> {
+    update_inner(conn, input, true)
+}
+
+fn update_inner(
+    conn: &Connection,
+    input: UpdateNote,
+    force_snapshot: bool,
+) -> Result<Note, NotesError> {
     let title = validate_title(&input.title)?;
     validate_content(&input.content)?;
+    let previous = repository::find(conn, &input.id)?;
     match repository::update_if_current(
         conn,
         &input.id,
@@ -205,7 +222,12 @@ pub fn update(conn: &Connection, input: UpdateNote) -> Result<Note, NotesError> 
         &input.content,
         input.expected_updated_at,
     )? {
-        Some(note) => Ok(note),
+        Some(note) => {
+            if let Some(previous) = &previous {
+                crate::versions::after_update(conn, previous, &note, force_snapshot);
+            }
+            Ok(note)
+        }
         // Nenhuma linha atingida: descobre o motivo para devolver o erro certo.
         None => Err(match repository::state_of(conn, &input.id)? {
             None => NotesError::NotFound,

@@ -19,6 +19,8 @@ import type {
   SearchHit,
   SetAppearance,
   TemplateInfo,
+  VersionDetail,
+  VersionSummary,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -51,6 +53,16 @@ export interface NotesGateway {
   backlinks(id: string): Promise<readonly PageRef[]>;
   /** O grafo de conexões entre as páginas ativas. */
   graph(): Promise<PageGraph>;
+  /** O histórico de versões de uma página, da mais recente para a mais antiga. */
+  listVersions(noteId: string): Promise<readonly VersionSummary[]>;
+  /** Uma versão inteira (texto simples). */
+  getVersion(versionId: string): Promise<VersionDetail>;
+  /** Restaura uma versão (guardando antes o estado atual no histórico). Respeita a versão esperada. */
+  restoreVersion(input: {
+    noteId: string;
+    versionId: string;
+    expectedUpdatedAt: number;
+  }): Promise<Note>;
   /** Duplica a página e toda a subárvore ativa; devolve os ids criados, com a cópia da página escolhida primeiro. */
   duplicate(id: string): Promise<readonly string[]>;
   /** Os modelos de página embutidos. */

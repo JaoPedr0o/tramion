@@ -63,6 +63,11 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     purge: vi.fn(async () => []),
     emptyTrash: vi.fn(async () => []),
     search: vi.fn(async () => []),
+    listVersions: vi.fn(async () => []),
+    getVersion: vi.fn(async () => {
+      throw new Error("getVersion não configurado no stub");
+    }),
+    restoreVersion: vi.fn(async () => aNote()),
     backlinks: vi.fn(async () => []),
     graph: vi.fn(async () => ({ nodes: [], edges: [] })),
     duplicate: vi.fn(async () => []),
@@ -111,6 +116,7 @@ export function createFakeGateway() {
   let seq = 0;
   let clock = 1_000;
   const notes = new Map<string, Note>();
+  const versions = new Map<string, Array<{ id: string; noteId: string; note: Note; at: number }>>();
   const databases = new Set<string>();
   const properties = new Map<string, Property>();
   const cells = new Map<string, CellValue>(); // chave: `${linha}|${coluna}`
@@ -255,6 +261,17 @@ export function createFakeGateway() {
 
     async update({ id, title, body, content, expectedUpdatedAt }) {
       const note = must(id);
+      const changed = note.title !== title.trim() || note.content !== content;
+      if (
+        changed &&
+        note.deletedAt === null &&
+        note.updatedAt === expectedUpdatedAt &&
+        (note.content !== "[]" || note.body !== "")
+      ) {
+        const list = versions.get(id) ?? [];
+        list.unshift({ id: `ver${++seq}`, noteId: id, note, at: note.updatedAt });
+        versions.set(id, list);
+      }
       const clean = cleanTitle(title);
       if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
       if (note.updatedAt !== expectedUpdatedAt) throw new NotesError("notes.conflict", "mudou");
@@ -343,6 +360,42 @@ export function createFakeGateway() {
         }
       }
       return affected;
+    },
+
+    async listVersions(noteId) {
+      must(noteId);
+      return (versions.get(noteId) ?? []).map(({ id, note, at }) => ({
+        id,
+        title: note.title,
+        preview: note.body.split(/\s+/).join(" ").slice(0, 160),
+        savedAt: at,
+      }));
+    },
+
+    async getVersion(versionId) {
+      for (const list of versions.values()) {
+        const found = list.find((v) => v.id === versionId);
+        if (found)
+          return {
+            id: found.id,
+            title: found.note.title,
+            body: found.note.body,
+            savedAt: found.at,
+          };
+      }
+      throw new NotesError("notes.not-found", "versão");
+    },
+
+    async restoreVersion({ noteId, versionId, expectedUpdatedAt }) {
+      const found = (versions.get(noteId) ?? []).find((v) => v.id === versionId);
+      if (!found) throw new NotesError("notes.not-found", "versão");
+      return gateway.update({
+        id: noteId,
+        title: found.note.title,
+        body: found.note.body,
+        content: found.note.content,
+        expectedUpdatedAt,
+      });
     },
 
     async backlinks(id) {

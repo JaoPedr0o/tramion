@@ -5,6 +5,7 @@ export interface PageMenuHandlers {
   onNewSubpage(page: NoteSummary): void;
   onDuplicate(page: NoteSummary): void;
   onExport(page: NoteSummary): void;
+  onHistory(page: NoteSummary): void;
   onMove(page: NoteSummary): void;
   onToggleFavorite(page: NoteSummary): void;
   onDelete(page: NoteSummary): void;
@@ -25,6 +26,7 @@ export function pageMenuItems(page: NoteSummary, handlers: PageMenuHandlers): Me
       label: "Exportar como Markdown",
       onSelect: () => handlers.onExport(page),
     },
+    { id: "history", label: "Histórico de versões", onSelect: () => handlers.onHistory(page) },
     { id: "move", label: "Mover para…", onSelect: () => handlers.onMove(page) },
     {
       id: "favorite",

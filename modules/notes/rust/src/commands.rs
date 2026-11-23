@@ -16,6 +16,7 @@ use crate::model::{
 use crate::search::{self, SearchHit};
 use crate::service;
 use crate::templates::{self, TemplateInfo};
+use crate::versions::{self, VersionDetail, VersionSummary};
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager, Runtime, State};
@@ -445,4 +446,35 @@ pub async fn backlinks(
 #[tauri::command]
 pub async fn graph(db: State<'_, SharedDatabase>) -> Result<Graph, CommandError> {
     with_db(&db, links::graph)
+}
+
+/// O histórico de versões de uma página, da mais recente para a mais antiga.
+#[tauri::command]
+pub async fn list_versions(
+    db: State<'_, SharedDatabase>,
+    note_id: String,
+) -> Result<Vec<VersionSummary>, CommandError> {
+    with_db(&db, |conn| versions::list_versions(conn, &note_id))
+}
+
+/// Uma versão inteira (texto simples), para ver antes de restaurar.
+#[tauri::command]
+pub async fn get_version(
+    db: State<'_, SharedDatabase>,
+    version_id: String,
+) -> Result<VersionDetail, CommandError> {
+    with_db(&db, |conn| versions::get_version(conn, &version_id))
+}
+
+/// Restaura uma versão da página (guardando antes o estado atual).
+#[tauri::command]
+pub async fn restore_version(
+    db: State<'_, SharedDatabase>,
+    note_id: String,
+    version_id: String,
+    expected_updated_at: i64,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        versions::restore_version(conn, &note_id, &version_id, expected_updated_at)
+    })
 }

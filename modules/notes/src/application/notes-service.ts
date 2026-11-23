@@ -20,6 +20,8 @@ import type {
   SearchHit,
   SetAppearance,
   TemplateInfo,
+  VersionDetail,
+  VersionSummary,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -43,6 +45,13 @@ export interface NotesService {
   emptyTrash(): Promise<readonly string[]>;
   backlinks(id: string): Promise<readonly PageRef[]>;
   graph(): Promise<PageGraph>;
+  listVersions(noteId: string): Promise<readonly VersionSummary[]>;
+  getVersion(versionId: string): Promise<VersionDetail>;
+  restoreVersion(input: {
+    noteId: string;
+    versionId: string;
+    expectedUpdatedAt: number;
+  }): Promise<Note>;
   /** Duplica a página e a subárvore; devolve os ids criados (a cópia da página escolhida primeiro). */
   duplicate(id: string): Promise<readonly string[]>;
   listTemplates(): Promise<readonly TemplateInfo[]>;
@@ -128,6 +137,15 @@ export function createNotesService(deps: {
       const affected = await gateway.restore(id);
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
       return affected;
+    },
+
+    listVersions: (noteId) => gateway.listVersions(noteId),
+    getVersion: (versionId) => gateway.getVersion(versionId),
+
+    async restoreVersion(input) {
+      const note = await gateway.restoreVersion(input);
+      events.emit("note.updated", { id: note.id });
+      return note;
     },
 
     backlinks: (id) => gateway.backlinks(id),

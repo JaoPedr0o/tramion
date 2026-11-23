@@ -17,6 +17,10 @@ export interface NavigationState {
   readonly actionError: string | null;
   /** Aviso de sucesso de uma ação (por exemplo, "Salvo em ..."), mostrado na área principal até ser fechado. */
   readonly notice: string | null;
+  /** Página cujo histórico de versões está aberto; `null` = nenhum. */
+  readonly historyFor: string | null;
+  /** Muda quando o conteúdo da página aberta foi trocado por fora (restaurar uma versão): remonta o editor. */
+  readonly reloadToken: number;
 }
 
 export interface NavigationStore {
@@ -38,6 +42,10 @@ export interface NavigationStore {
   fail(message: string): void;
   clearError(): void;
   notify(message: string): void;
+  showHistory(id: string): void;
+  closeHistory(): void;
+  /** Remonta a página aberta (depois de restaurar uma versão). */
+  reload(): void;
   clearNotice(): void;
   /** O editor aberto registra como salvar o que estiver pendente; devolve como desregistrar. */
   registerFlush(flush: () => Promise<void>): () => void;
@@ -55,6 +63,8 @@ export function createNavigationStore(): NavigationStore {
     expanded: new Set(),
     actionError: null,
     notice: null,
+    historyFor: null,
+    reloadToken: 0,
   };
   const listeners = new Set<() => void>();
   let pendingFlush: (() => Promise<void>) | null = null;
@@ -111,6 +121,18 @@ export function createNavigationStore(): NavigationStore {
 
     fail(message) {
       update({ actionError: message });
+    },
+
+    showHistory(id) {
+      update({ historyFor: id });
+    },
+
+    closeHistory() {
+      if (state.historyFor !== null) update({ historyFor: null });
+    },
+
+    reload() {
+      update({ reloadToken: state.reloadToken + 1 });
     },
 
     notify(message) {
