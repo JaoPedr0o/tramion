@@ -4,6 +4,10 @@ import App from "./App";
 import { bootstrap } from "./bootstrap";
 import "@aun/ui/tokens.css";
 import "./App.css";
+import { applyTheme, readTheme } from "./theme";
+
+// O tema é aplicado ANTES de desenhar a tela, para não piscar no tema errado.
+applyTheme(readTheme());
 
 const { views } = bootstrap();
 

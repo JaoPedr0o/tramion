@@ -247,15 +247,10 @@
   flex-direction: column;
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(var(--page-width) + 2 * 96px);
+  max-width: calc(var(--page-width) + 2 * 120px);
   margin: 0 auto;
-  padding: 80px 96px 96px;
-}
-
-@media (max-width: 800px) {
-  .note-page {
-    padding-inline: var(--space-3);
-  }
+  /* Margem lateral generosa e sempre com folga para os botões "+" e de arrastar ao lado dos blocos. */
+  padding: 80px clamp(56px, 10vw, 120px) 96px;
 }
 
 .note-page__status {
@@ -369,9 +364,9 @@
 .trash-view {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(var(--page-width) + 2 * 96px);
+  max-width: calc(var(--page-width) + 2 * 120px);
   margin: 0 auto;
-  padding: 40px 96px;
+  padding: 40px clamp(56px, 10vw, 120px);
 }
 
 .trash-view__title {

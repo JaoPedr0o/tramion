@@ -164,4 +164,64 @@ describe("Menu", () => {
     expect(parentClick).not.toHaveBeenCalled();
     expect(parentKey).not.toHaveBeenCalled();
   });
+
+  it("itens de escolha única viram 'menuitemradio' e mostram qual está marcado", async () => {
+    const user = userEvent.setup();
+    render(
+      <Menu
+        label="Tema"
+        icon={<MoreIcon />}
+        items={[
+          { id: "a", label: "Claro", checked: false, onSelect: () => {} },
+          { id: "b", label: "Escuro", checked: true, onSelect: () => {} },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Tema" }));
+
+    expect(screen.getByRole("menuitemradio", { name: "Escuro" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("menuitemradio", { name: "Claro" }).getAttribute("aria-checked")).toBe(
+      "false",
+    );
+    expect(document.activeElement).toBe(screen.getByRole("menuitemradio", { name: "Claro" }));
+    await user.keyboard("{ArrowDown}");
+    expect(document.activeElement).toBe(screen.getByRole("menuitemradio", { name: "Escuro" }));
+  });
+
+  it("abre para CIMA quando o botão está no rodapé e não cabe embaixo", async () => {
+    const user = userEvent.setup();
+    render(<Menu label="Mais ações" icon={<MoreIcon />} items={items()} />);
+    const trigger = screen.getByRole("button", { name: "Mais ações" });
+    const rect = {
+      top: window.innerHeight - 30,
+      bottom: window.innerHeight - 6,
+      left: 10,
+      right: 34,
+      width: 24,
+      height: 24,
+      x: 10,
+      y: window.innerHeight - 30,
+      toJSON: () => ({}),
+    };
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(rect as DOMRect);
+
+    await user.click(trigger);
+
+    const style = screen.getByRole("menu").style;
+    expect(style.bottom).not.toBe("");
+    expect(style.top).toBe("");
+  });
+
+  it("abre para baixo quando há espaço", async () => {
+    const { open } = setup();
+
+    await open();
+
+    const style = screen.getByRole("menu").style;
+    expect(style.top).not.toBe("");
+    expect(style.bottom).toBe("");
+  });
 });

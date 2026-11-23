@@ -1,6 +1,15 @@
 import type { ViewRegistry } from "@aun/contracts";
-import { ShellProvider, SidebarToggleButton } from "@aun/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Menu,
+  MonitorIcon,
+  MoonIcon,
+  ShellProvider,
+  SidebarToggleButton,
+  SunIcon,
+  type MenuItem,
+} from "@aun/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import { applyTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
 
 const STORAGE_KEY = "aun.sidebarCollapsed";
 
@@ -22,6 +31,12 @@ function saveCollapsed(collapsed: boolean) {
   }
 }
 
+const THEMES: ReadonlyArray<{ id: ThemePreference; label: string; icon: ReactElement }> = [
+  { id: "light", label: "Claro", icon: <SunIcon /> },
+  { id: "dark", label: "Escuro", icon: <MoonIcon /> },
+  { id: "system", label: "Automático (do sistema)", icon: <MonitorIcon /> },
+];
+
 interface Props {
   views: ViewRegistry;
   workspaceName?: string;
@@ -35,9 +50,14 @@ export default function App({ views, workspaceName = "Aesthetic Ugly Notes" }: P
   const available = views.list();
   const [selectedId, setSelectedId] = useState(available[0]?.id);
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [theme, setTheme] = useState(readTheme);
 
   const toggleSidebar = useCallback(() => setCollapsed((previous) => !previous), []);
   useEffect(() => saveCollapsed(collapsed), [collapsed]);
+  useEffect(() => {
+    applyTheme(theme);
+    saveTheme(theme);
+  }, [theme]);
 
   // Ctrl+\ recolhe e abre a barra lateral, como no Notion.
   useEffect(() => {
@@ -93,6 +113,21 @@ export default function App({ views, workspaceName = "Aesthetic Ugly Notes" }: P
           )}
 
           <div className="shell__sidebar-body">{Sidebar && <Sidebar />}</div>
+
+          <div className="shell__footer">
+            <Menu
+              label="Aparência"
+              icon={THEMES.find((option) => option.id === theme)?.icon}
+              align="start"
+              items={THEMES.map((option): MenuItem => ({
+                id: option.id,
+                label: option.label,
+                icon: option.icon,
+                checked: option.id === theme,
+                onSelect: () => setTheme(option.id),
+              }))}
+            />
+          </div>
         </aside>
 
         <div className="shell__page">

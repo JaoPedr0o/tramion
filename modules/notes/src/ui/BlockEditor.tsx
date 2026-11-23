@@ -62,24 +62,40 @@ const ChildPageBlock = createReactBlockSpec(
   { render: ({ block }) => <ChildPageLink pageId={block.props.pageId} /> },
 );
 
-// Imagem, vídeo, áudio e arquivo exigem enviar arquivos: ficam de fora por enquanto.
-// (As variáveis com "_" só existem para tirá-las do restante, que vira o esquema.)
-/* eslint-disable @typescript-eslint/no-unused-vars */
-const {
-  image: _image,
-  video: _video,
-  audio: _audio,
-  file: _file,
-  ...supportedSpecs
-} = defaultBlockSpecs;
-/* eslint-enable @typescript-eslint/no-unused-vars */
-const UNSUPPORTED_SLASH_KEYS = ["image", "video", "audio", "file"];
+/**
+ * Apelidos em português para o menu "/" (os que a biblioteca traz são de outros idiomas): "/codigo", "/checklist",
+ * "/titulo", "/imagem"... Sem acento também, porque é assim que se digita rápido.
+ */
+const EXTRA_ALIASES: Record<string, string[]> = {
+  heading: ["titulo", "título", "cabecalho"],
+  heading_2: ["titulo", "título", "subtitulo"],
+  heading_3: ["titulo", "título", "subtitulo"],
+  quote: ["citacao", "citação"],
+  bullet_list: ["lista", "marcadores", "topicos"],
+  numbered_list: ["lista", "numerada", "numeros"],
+  check_list: ["checklist", "tarefa", "tarefas", "todo", "caixa"],
+  toggle_list: ["alternar", "sanfona", "recolher"],
+  code_block: ["codigo", "código", "code", "programacao"],
+  table: ["tabela"],
+  image: ["imagem", "foto", "figura"],
+  video: ["video", "vídeo", "filme"],
+  audio: ["audio", "áudio", "som", "musica"],
+  file: ["arquivo", "anexo", "documento"],
+  divider: ["divisor", "linha", "separador"],
+};
+
+const withAliases = <T extends { aliases?: string[] }>(item: T): T => {
+  const extra = EXTRA_ALIASES[(item as { key?: string }).key ?? ""];
+  return extra ? { ...item, aliases: [...(item.aliases ?? []), ...extra] } : item;
+};
+
+const schemaSpecs = defaultBlockSpecs;
 
 // Os tipos do BlockNote não são compatíveis com `exactOptionalPropertyTypes` (regra do projeto, que
 // não vamos afrouxar por causa de uma biblioteca). Por isso os tipos dela ficam isolados AQUI: o esquema
 // é criado com uma conversão e o editor é usado por esta interface mínima, só com o que usamos.
 const schema = BlockNoteSchema.create({
-  blockSpecs: { ...supportedSpecs, childPage: ChildPageBlock() } as never,
+  blockSpecs: { ...schemaSpecs, childPage: ChildPageBlock() } as never,
 });
 
 interface EditorApi {
@@ -178,12 +194,7 @@ export default function BlockEditor({
           triggerCharacter="/"
           getItems={async (query) =>
             filterSuggestionItems(
-              [
-                ...getDefaultReactSlashMenuItems(editor as never).filter(
-                  (item) => !UNSUPPORTED_SLASH_KEYS.includes((item as { key?: string }).key ?? ""),
-                ),
-                pageItem,
-              ],
+              [...getDefaultReactSlashMenuItems(editor as never).map(withAliases), pageItem],
               query,
             )
           }

@@ -137,4 +137,46 @@ describe("moldura do app", () => {
       }
     });
   });
+
+  describe("aparência (tema)", () => {
+    const html = () => document.documentElement;
+    const chooseTheme = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+      await user.click(screen.getByRole("button", { name: "Aparência" }));
+      await user.click(screen.getByRole("menuitemradio", { name }));
+    };
+
+    beforeEach(() => {
+      delete html().dataset.theme;
+    });
+
+    it("o botão troca entre claro, escuro e automático, e o menu mostra o escolhido", async () => {
+      const user = userEvent.setup();
+      render(<App views={registry(full)} />);
+
+      await chooseTheme(user, "Escuro");
+      expect(html().dataset.theme).toBe("dark");
+
+      await user.click(screen.getByRole("button", { name: "Aparência" }));
+      expect(
+        screen.getByRole("menuitemradio", { name: "Escuro" }).getAttribute("aria-checked"),
+      ).toBe("true");
+      await user.click(screen.getByRole("menuitemradio", { name: "Claro" }));
+      expect(html().dataset.theme).toBe("light");
+
+      await chooseTheme(user, "Automático (do sistema)");
+      expect(html().hasAttribute("data-theme")).toBe(false);
+    });
+
+    it("lembra a escolha entre sessões", async () => {
+      const user = userEvent.setup();
+      const first = render(<App views={registry(full)} />);
+      await chooseTheme(user, "Escuro");
+      first.unmount();
+      delete html().dataset.theme;
+
+      render(<App views={registry(full)} />);
+
+      expect(html().dataset.theme).toBe("dark");
+    });
+  });
 });

@@ -93,3 +93,24 @@ export const SidebarIcon = (props: IconProps) => (
     <path d="M6 2.5v11" />
   </Svg>
 );
+
+export const SunIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <circle cx="8" cy="8" r="2.8" />
+    <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1" />
+  </Svg>
+);
+
+export const MoonIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M13.5 9.6A5.7 5.7 0 0 1 6.4 2.5a5.7 5.7 0 1 0 7.1 7.1z" />
+  </Svg>
+);
+
+/** Tela: "seguir o tema do sistema". */
+export const MonitorIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <rect x="2" y="2.5" width="12" height="8" rx="1.2" />
+    <path d="M6 13.5h4M8 10.5v3" />
+  </Svg>
+);

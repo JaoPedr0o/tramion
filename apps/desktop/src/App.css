@@ -121,3 +121,9 @@
   padding: var(--space-4);
   color: var(--color-text-muted);
 }
+
+.shell__footer {
+  display: flex;
+  flex: none;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+}

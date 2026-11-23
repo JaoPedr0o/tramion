@@ -10,6 +10,8 @@ export interface MenuItem {
   /** Ação destrutiva: aparece em vermelho. */
   readonly danger?: boolean;
   readonly disabled?: boolean;
+  /** Item de escolha única (por exemplo, o tema): `true` marca o selecionado. */
+  readonly checked?: boolean;
   onSelect(): void;
 }
 
@@ -27,12 +29,13 @@ interface Props {
 }
 
 interface Position {
-  top: number;
+  top?: number;
+  bottom?: number;
   left?: number;
   right?: number;
 }
 
-const ITEMS = '[role="menuitem"]:not(:disabled)';
+const ITEMS = '[role^="menuitem"]:not(:disabled)';
 
 /**
  * Menu "⋯" acessível. O botão tem `aria-haspopup` e `aria-expanded`; o menu abre com o foco no
@@ -72,8 +75,15 @@ export function Menu({ label, icon, items, align = "end", className, tabIndex }:
 
   const openMenu = () => {
     const rect = trigger.current!.getBoundingClientRect();
+    // Sem espaço embaixo (por exemplo, um botão no rodapé), o menu abre PARA CIMA.
+    const estimatedHeight = items.length * 28 + 20;
+    const below = window.innerHeight - rect.bottom;
+    const vertical =
+      below < estimatedHeight && rect.top > below
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 };
     setPosition({
-      top: rect.bottom + 4,
+      ...vertical,
       ...(align === "end" ? { right: window.innerWidth - rect.right } : { left: rect.left }),
     });
   };
@@ -146,7 +156,8 @@ export function Menu({ label, icon, items, align = "end", className, tabIndex }:
               <button
                 key={item.id}
                 type="button"
-                role="menuitem"
+                role={item.checked === undefined ? "menuitem" : "menuitemradio"}
+                aria-checked={item.checked}
                 disabled={item.disabled}
                 className={item.danger ? "ui-menu__item ui-menu__item--danger" : "ui-menu__item"}
                 onClick={() => {

@@ -15,11 +15,20 @@ export function useColorScheme(): Scheme {
   const [scheme, setScheme] = useState(currentScheme);
 
   useEffect(() => {
-    if (typeof matchMedia !== "function") return;
-    const query = matchMedia("(prefers-color-scheme: dark)");
     const update = () => setScheme(currentScheme());
+    // O tema pode mudar de duas formas: o sistema (preferência) ou o botão de aparência (`data-theme`).
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    if (typeof matchMedia !== "function") return () => observer.disconnect();
+    const query = matchMedia("(prefers-color-scheme: dark)");
     query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
+    return () => {
+      observer.disconnect();
+      query.removeEventListener("change", update);
+    };
   }, []);
 
   return scheme;

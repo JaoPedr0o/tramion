@@ -10,6 +10,9 @@ import {
   SidebarIcon,
   StarFilledIcon,
   StarIcon,
+  SunIcon,
+  MoonIcon,
+  MonitorIcon,
   TrashIcon,
 } from "./index.ts";
 
@@ -25,6 +28,9 @@ const icons = {
   TrashIcon,
   ComposeIcon,
   SidebarIcon,
+  SunIcon,
+  MoonIcon,
+  MonitorIcon,
 };
 
 describe("ícones", () => {

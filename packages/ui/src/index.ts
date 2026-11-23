@@ -2,12 +2,15 @@
 export {
   ChevronIcon,
   ComposeIcon,
+  MonitorIcon,
+  MoonIcon,
   MoreIcon,
   PageIcon,
   PlusIcon,
   SidebarIcon,
   StarFilledIcon,
   StarIcon,
+  SunIcon,
   TrashIcon,
   type IconProps,
 } from "./icons.tsx";
