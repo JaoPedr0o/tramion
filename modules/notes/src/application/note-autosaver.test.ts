@@ -3,7 +3,7 @@ import { NotesError } from "../domain/errors.ts";
 import { aNote } from "../test-support.ts";
 import { createNoteAutosaver, type Draft, type SaveStatus } from "./note-autosaver.ts";
 
-const draft = (title: string, body = ""): Draft => ({ title, body });
+const draft = (title: string, body = ""): Draft => ({ title, body, content: "[]" });
 
 /** Salvador falso que registra cada chamada e devolve versões crescentes (como o Rust). */
 function setup(saveImpl?: (d: Draft, expected: number) => Promise<ReturnType<typeof aNote>>) {

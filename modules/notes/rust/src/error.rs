@@ -11,6 +11,11 @@ pub enum NotesError {
     TitleTooLong {
         max: usize,
     },
+    /// O conteúdo não é uma lista de blocos em JSON válido.
+    ContentInvalid,
+    ContentTooLarge {
+        max: usize,
+    },
     NotFound,
     /// A nota está na lixeira e a operação só vale para notas ativas.
     InTrash,
@@ -35,6 +40,8 @@ impl NotesError {
         match self {
             NotesError::TitleEmpty => "notes.title-empty",
             NotesError::TitleTooLong { .. } => "notes.title-too-long",
+            NotesError::ContentInvalid => "notes.content-invalid",
+            NotesError::ContentTooLarge { .. } => "notes.content-too-large",
             NotesError::NotFound => "notes.not-found",
             NotesError::InTrash => "notes.in-trash",
             NotesError::NotInTrash => "notes.not-in-trash",
@@ -53,6 +60,10 @@ impl fmt::Display for NotesError {
             NotesError::TitleEmpty => write!(f, "o título não pode ser vazio"),
             NotesError::TitleTooLong { max } => {
                 write!(f, "o título excede o máximo de {max} caracteres")
+            }
+            NotesError::ContentInvalid => write!(f, "o conteúdo não é uma lista de blocos válida"),
+            NotesError::ContentTooLarge { max } => {
+                write!(f, "o conteúdo excede o máximo de {max} bytes")
             }
             NotesError::NotFound => write!(f, "nota não encontrada"),
             NotesError::InTrash => write!(f, "a nota está na lixeira"),

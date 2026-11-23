@@ -4,7 +4,10 @@ import type { Note } from "../domain/note.ts";
 /** Rascunho: o que está na tela do editor. */
 export interface Draft {
   readonly title: string;
+  /** Texto simples (espelho do conteúdo). */
   readonly body: string;
+  /** Os blocos, em JSON. */
+  readonly content: string;
 }
 
 /**

@@ -16,3 +16,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0009](0009-desenho-do-modulo-de-notas.md)                 | Desenho do módulo de notas (fatia vertical)                       | Aceita |
 | [0010](0010-extensibilidade-provada-com-segundo-modulo.md) | Extensibilidade provada com um segundo módulo                     | Aceita |
 | [0011](0011-hierarquia-de-paginas.md)                      | Hierarquia de páginas (páginas dentro de páginas)                 | Aceita |
+| [0012](0012-editor-de-blocos-e-subpaginas-como-link.md)    | Editor de blocos (BlockNote) e subpáginas como link               | Aceita |

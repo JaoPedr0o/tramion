@@ -79,6 +79,7 @@ pub async fn update(
     id: String,
     title: String,
     body: String,
+    content: String,
     expected_updated_at: i64,
 ) -> Result<Note, CommandError> {
     with_db(&db, |conn| {
@@ -88,6 +89,7 @@ pub async fn update(
                 id,
                 title,
                 body,
+                content,
                 expected_updated_at,
             },
         )

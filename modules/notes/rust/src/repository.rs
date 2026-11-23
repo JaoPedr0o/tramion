@@ -9,7 +9,7 @@ use aun_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, par
 const NOW_MS: &str = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
 
 const NOTE_COLUMNS: &str =
-    "id, title, body, pinned, created_at, updated_at, deleted_at, parent_id, position";
+    "id, title, body, pinned, created_at, updated_at, deleted_at, parent_id, position, content";
 
 /// Todas as descendentes (filhas, netas...) de `?1`, sem incluir `?1`. Usa `UNION` (e não `UNION ALL`)
 /// para terminar mesmo que, por algum defeito, existisse um ciclo nos dados.
@@ -30,6 +30,7 @@ fn note_from_row(row: &Row<'_>) -> Result<Note> {
         deleted_at: row.get(6)?,
         parent_id: row.get(7)?,
         position: row.get(8)?,
+        content: row.get(9)?,
     })
 }
 
@@ -154,16 +155,17 @@ pub fn update_if_current(
     id: &str,
     title: &str,
     body: &str,
+    content: &str,
     expected_updated_at: i64,
 ) -> Result<Option<Note>> {
     conn.query_row(
         &format!(
             "UPDATE notes_note
-                SET title = ?2, body = ?3, updated_at = max({NOW_MS}, updated_at + 1)
-              WHERE id = ?1 AND updated_at = ?4 AND deleted_at IS NULL
+                SET title = ?2, body = ?3, content = ?4, updated_at = max({NOW_MS}, updated_at + 1)
+              WHERE id = ?1 AND updated_at = ?5 AND deleted_at IS NULL
           RETURNING {NOTE_COLUMNS}"
         ),
-        params![id, title, body, expected_updated_at],
+        params![id, title, body, content, expected_updated_at],
         note_from_row,
     )
     .optional()

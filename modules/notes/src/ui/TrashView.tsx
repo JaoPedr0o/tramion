@@ -9,7 +9,11 @@ import { useTrash } from "./useNoteList.ts";
  * Lixeira como tela própria: só as RAÍZES de cada exclusão, com a contagem de subpáginas. Restaurar traz de
  * volta a página e o que foi excluído junto; apagar de vez pede confirmação e avisa o que leva junto.
  */
-export function TrashView({ service, events, store }: Omit<NotesUiDeps, "actions">) {
+export function TrashView({
+  service,
+  events,
+  store,
+}: Pick<NotesUiDeps, "service" | "events" | "store">) {
   const trash = useTrash(service, events);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 

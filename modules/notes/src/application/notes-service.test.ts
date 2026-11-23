@@ -36,7 +36,7 @@ describe("serviço de notas: eventos", () => {
     });
 
     await service.create({ title: "a", body: "" });
-    await service.update({ id: "edit", title: "a", body: "", expectedUpdatedAt: 1 });
+    await service.update({ id: "edit", title: "a", body: "", content: "[]", expectedUpdatedAt: 1 });
     await service.setPinned("fixa", true);
     await service.move({ id: "mov", newParentId: null, index: 0 });
     await service.delete("d");
@@ -68,7 +68,7 @@ describe("serviço de notas: eventos", () => {
 
     const attempts = [
       service.create({ title: "a", body: "" }),
-      service.update({ id: "x", title: "a", body: "", expectedUpdatedAt: 1 }),
+      service.update({ id: "x", title: "a", body: "", content: "[]", expectedUpdatedAt: 1 }),
       service.setPinned("x", true),
       service.move({ id: "x", newParentId: null, index: 0 }),
       service.delete("x"),
@@ -189,7 +189,7 @@ describe("serviço de notas: leituras e repasse", () => {
 
   it("repassa ao gateway exatamente o que a interface pediu", async () => {
     const { service, gateway } = setup();
-    const input = { id: "x", title: "T", body: "B", expectedUpdatedAt: 42 };
+    const input = { id: "x", title: "T", body: "B", content: "[]", expectedUpdatedAt: 42 };
 
     await service.update(input);
     await service.setPinned("x", true);

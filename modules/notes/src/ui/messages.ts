@@ -4,6 +4,8 @@ import { NotesError, type NotesErrorCode } from "../domain/errors.ts";
 const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.title-empty": "O título não pode ficar vazio.",
   "notes.title-too-long": "O título é longo demais (máximo de 200 caracteres).",
+  "notes.content-invalid": "O conteúdo da página não pôde ser salvo (formato inválido).",
+  "notes.content-too-large": "A página é grande demais para ser salva.",
   "notes.not-found": "Esta página não existe mais.",
   "notes.in-trash": "Esta página está na lixeira.",
   "notes.not-in-trash": "Esta página não está na lixeira.",

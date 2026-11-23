@@ -104,3 +104,43 @@ fn migracao_2_troca_o_indice_e_impoe_as_defesas() {
     );
     assert!(index_exists("notes_note_tree_idx"));
 }
+
+/// O módulo como era antes da migração 3 (as duas primeiras).
+fn v2_only() -> ModuleMigrations {
+    ModuleMigrations {
+        module: MIGRATIONS.module,
+        depends_on: MIGRATIONS.depends_on,
+        migrations: &MIGRATIONS.migrations[..2],
+    }
+}
+
+#[test]
+fn migracao_3_preserva_paginas_existentes_com_conteudo_vazio_e_o_texto_intacto() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("app.db");
+    let options = OpenOptions {
+        backup_dir: Some(dir.path().join("backups")),
+        backups_to_keep: 5,
+    };
+    {
+        let db = Database::open(&path, &[v2_only()], &options).unwrap();
+        db.connection()
+            .execute(
+                "INSERT INTO notes_note (id, title, body) VALUES ('a', 'antiga', 'texto que já existia')",
+                [],
+            )
+            .unwrap();
+    }
+
+    let db = Database::open(&path, &[MIGRATIONS], &options).unwrap();
+
+    let note = service::get(db.connection(), "a").unwrap();
+    assert_eq!(
+        note.body, "texto que já existia",
+        "o texto simples não foi tocado"
+    );
+    assert_eq!(
+        note.content, "[]",
+        "ainda não convertida: a interface converte ao abrir"
+    );
+}

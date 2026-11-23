@@ -91,6 +91,7 @@ version = "0.1.0"
 dependencies = [
  "aun-infra-sqlite",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-plugin",
  "tempfile",

@@ -9,9 +9,14 @@
   },
   "dependencies": {
     "@aun/contracts": "workspace:*",
+    "@aun/ui": "workspace:*",
+    "@blocknote/core": "^0.57.0",
+    "@blocknote/mantine": "^0.57.0",
+    "@blocknote/react": "^0.57.0",
+    "@mantine/core": "^9.8.2",
+    "@mantine/hooks": "^9.8.2",
     "@tauri-apps/api": "^2",
-    "react": "^19.1.0",
-    "@aun/ui": "workspace:*"
+    "react": "^19.1.0"
   },
   "devDependencies": {
     "@aun/core": "workspace:*",

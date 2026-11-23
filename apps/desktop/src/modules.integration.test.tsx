@@ -30,6 +30,7 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
         id: `n${++seq}`,
         title,
         body,
+        content: "[]",
         pinned: false,
         createdAt: 1,
         updatedAt: 1,
@@ -82,7 +83,8 @@ function compose(options: {
   );
   const views = createViewRegistry();
   const registry = createModuleRegistry({ events, views });
-  const notes = createNotesModule(options.gateway ?? memoryGateway());
+  // Este teste não digita no editor: um componente vazio basta no lugar do editor de blocos.
+  const notes = createNotesModule(options.gateway ?? memoryGateway(), { BlockEditor: () => null });
   if (options.probe && options.probeFirst) registry.add(options.probe);
   registry.add(notes);
   if (options.probe && !options.probeFirst) registry.add(options.probe);

@@ -18,6 +18,8 @@ pub struct Note {
     pub parent_id: Option<String>,
     /// Posição entre as irmãs, a partir de 0.
     pub position: i64,
+    /// Os blocos da página, em JSON (uma lista). `[]` = vazia ou ainda não convertida.
+    pub content: String,
 }
 
 /// Resumo para listagens: não carrega o corpo, que pode ser grande.
@@ -58,7 +60,10 @@ pub struct NewNote {
 pub struct UpdateNote {
     pub id: String,
     pub title: String,
+    /// Texto simples da página (espelho do conteúdo, para a busca).
     pub body: String,
+    /// Os blocos da página, em JSON (uma lista).
+    pub content: String,
     /// O `updated_at` que quem edita viu ao abrir a nota. Se a nota já mudou, a edição é recusada.
     pub expected_updated_at: i64,
 }

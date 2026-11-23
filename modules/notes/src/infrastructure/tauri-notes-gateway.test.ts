@@ -45,9 +45,15 @@ describe("gateway do Tauri", () => {
     [
       "update",
       () =>
-        createTauriNotesGateway().update({ id: "a", title: "T", body: "B", expectedUpdatedAt: 7 }),
+        createTauriNotesGateway().update({
+          id: "a",
+          title: "T",
+          body: "B",
+          content: "[]",
+          expectedUpdatedAt: 7,
+        }),
       "plugin:notes|update",
-      { id: "a", title: "T", body: "B", expectedUpdatedAt: 7 },
+      { id: "a", title: "T", body: "B", content: "[]", expectedUpdatedAt: 7 },
     ],
     [
       "setPinned",

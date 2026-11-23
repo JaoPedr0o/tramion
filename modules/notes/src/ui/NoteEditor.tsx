@@ -1,17 +1,20 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   createNoteAutosaver,
+  type Draft,
   type NoteAutosaver,
   type SaveStatus,
 } from "../application/note-autosaver.ts";
-import type { NavigationStore } from "../application/navigation-store.ts";
-import type { NotesService } from "../application/notes-service.ts";
+import { parseContent } from "../application/page-content.ts";
+import { ancestorsOf } from "../application/page-tree.ts";
 import type { Note } from "../domain/note.ts";
+import type { BlockEditorHandle } from "./block-editor-types.ts";
+import type { NotesUiDeps } from "./deps.ts";
 import { messageFor } from "./messages.ts";
+import { usePages } from "./useNoteList.ts";
 
 interface Props {
-  service: NotesService;
-  store: NavigationStore;
+  deps: NotesUiDeps;
   note: Note;
 }
 
@@ -25,24 +28,45 @@ const STATUS_TEXT: Record<SaveStatus, string> = {
 };
 
 /**
- * A página aberta: título grande e texto, numa coluna centralizada, com salvamento automático.
- * Use `key={note.id}` para trocar de página.
+ * A página aberta: título grande e, abaixo, o editor de BLOCOS, numa coluna centralizada, com salvamento
+ * automático. As subpáginas aparecem no texto como blocos de link. Use `key={note.id}` para trocar de página.
  */
-export function NoteEditor({ service, store, note }: Props) {
+export function NoteEditor({ deps, note }: Props) {
+  const { service, events, store, actions, BlockEditor } = deps;
   const [initial] = useState(note);
   const [title, setTitle] = useState(note.title);
-  const [body, setBody] = useState(note.body);
+  const [editor, setEditor] = useState(() => ({
+    key: 0,
+    blocks: parseContent(note.content, note.body),
+  }));
   const [status, setStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState<string | null>(null);
   const autosaver = useRef<NoteAutosaver | null>(null);
+  const handle = useRef<BlockEditorHandle>(null);
+  // O que está na tela agora (título + texto + blocos): é o que o salvamento automático envia.
+  const draft = useRef<Draft>({ title: note.title, body: note.body, content: note.content });
   const titleId = useId();
-  const bodyId = useId();
+
+  // Subpáginas desta página, a partir da lista de páginas (sempre atualizada pelos eventos).
+  const pages = usePages(service, events);
+  const allPages = pages.status === "ready" ? pages.items : null;
+  const childPages = useMemo(
+    () =>
+      allPages
+        ? new Map(allPages.filter((p) => p.parentId === note.id).map((p) => [p.id, p] as const))
+        : null,
+    [allPages, note.id],
+  );
+  const titleOf = useCallback(
+    (pageId: string) => allPages?.find((p) => p.id === pageId)?.title ?? null,
+    [allPages],
+  );
 
   useEffect(() => {
     const instance = createNoteAutosaver({
       initialUpdatedAt: initial.updatedAt,
-      save: (draft, expectedUpdatedAt) =>
-        service.update({ id: initial.id, ...draft, expectedUpdatedAt }),
+      save: (next, expectedUpdatedAt) =>
+        service.update({ id: initial.id, ...next, expectedUpdatedAt }),
       onStatus: (next, error) => {
         setStatus(next);
         setMessage(error ? messageFor(error) : null);
@@ -73,8 +97,13 @@ export function NoteEditor({ service, store, note }: Props) {
   const loadSaved = async () => {
     try {
       const current = await service.get(note.id);
+      draft.current = { title: current.title, body: current.body, content: current.content };
       setTitle(current.title);
-      setBody(current.body);
+      // Novo `key`: o editor recomeça com os blocos da versão salva.
+      setEditor((previous) => ({
+        key: previous.key + 1,
+        blocks: parseContent(current.content, current.body),
+      }));
       autosaver.current?.reset(current.updatedAt);
     } catch (error) {
       fail(error);
@@ -114,23 +143,50 @@ export function NoteEditor({ service, store, note }: Props) {
         autoFocus
         onChange={(event) => {
           setTitle(event.target.value);
-          autosaver.current?.change({ title: event.target.value, body });
+          draft.current = { ...draft.current, title: event.target.value };
+          autosaver.current?.change(draft.current);
+        }}
+        onKeyDown={(event) => {
+          // Enter no título passa para o texto, como no Notion.
+          if (event.key === "Enter") {
+            event.preventDefault();
+            handle.current?.focus();
+          }
         }}
       />
 
-      <label htmlFor={bodyId} className="visually-hidden">
-        Texto da página
-      </label>
-      <textarea
-        id={bodyId}
-        className="note-page__body"
-        value={body}
-        placeholder="Escreva aqui…"
-        onChange={(event) => {
-          setBody(event.target.value);
-          autosaver.current?.change({ title, body: event.target.value });
-        }}
-      />
+      <div className="note-page__editor">
+        <Suspense fallback={<p className="note-page__loading">Carregando o editor…</p>}>
+          <BlockEditor
+            key={editor.key}
+            initialBlocks={editor.blocks}
+            childPages={childPages}
+            titleOf={titleOf}
+            handleRef={handle}
+            onChange={({ blocks, plainText }) => {
+              draft.current = {
+                ...draft.current,
+                body: plainText,
+                content: JSON.stringify(blocks),
+              };
+              autosaver.current?.change(draft.current);
+            }}
+            // Apagar o bloco de uma subpágina a manda para a lixeira (reversível), como no Notion.
+            onChildPageRemoved={(pageId) => {
+              if (childPages?.has(pageId)) void actions.deletePage(pageId);
+            }}
+            onCreateSubpage={() => actions.createSubpage(note.id)}
+            // Os blocos de subpágina apontam para filhas desta página. A filha recém-criada ainda pode não estar
+            // na lista, então o caminho é montado a partir desta página (que fica aberta na árvore).
+            onOpenPage={(pageId) =>
+              store.open(pageId, [
+                note.id,
+                ...ancestorsOf(allPages ?? [], note.id).map((ancestor) => ancestor.id),
+              ])
+            }
+          />
+        </Suspense>
+      </div>
     </article>
   );
 }

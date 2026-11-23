@@ -9,6 +9,7 @@ export function aNote(overrides: Partial<Note> = {}): Note {
     id: "n1",
     title: "Título",
     body: "",
+    content: "[]",
     pinned: false,
     createdAt: 1,
     updatedAt: 1,
@@ -165,6 +166,7 @@ export function createFakeGateway() {
         id: `n${++seq}`,
         title: clean,
         body,
+        content: "[]",
         pinned: false,
         createdAt: at,
         updatedAt: at,
@@ -176,12 +178,12 @@ export function createFakeGateway() {
       return note;
     },
 
-    async update({ id, title, body, expectedUpdatedAt }) {
+    async update({ id, title, body, content, expectedUpdatedAt }) {
       const note = must(id);
       const clean = cleanTitle(title);
       if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
       if (note.updatedAt !== expectedUpdatedAt) throw new NotesError("notes.conflict", "mudou");
-      const next = { ...note, title: clean, body, updatedAt: tick() };
+      const next = { ...note, title: clean, body, content, updatedAt: tick() };
       notes.set(id, next);
       return next;
     },

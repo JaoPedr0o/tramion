@@ -15,6 +15,23 @@ use std::collections::HashMap;
 /// Máximo de caracteres do título (o `CHECK` da migração 1 impõe o mesmo limite).
 pub const MAX_TITLE_CHARS: usize = 200;
 
+/// Tamanho máximo do conteúdo (os blocos em JSON), em bytes.
+pub const MAX_CONTENT_BYTES: usize = 5_000_000;
+
+/// O conteúdo precisa ser uma LISTA em JSON válido e caber no limite. O Rust não interpreta os blocos
+/// (quem sabe o que é cada bloco é o editor); só garante que o que vai para o banco é um JSON de lista.
+fn validate_content(content: &str) -> Result<(), NotesError> {
+    if content.len() > MAX_CONTENT_BYTES {
+        return Err(NotesError::ContentTooLarge {
+            max: MAX_CONTENT_BYTES,
+        });
+    }
+    match serde_json::from_str::<serde_json::Value>(content) {
+        Ok(serde_json::Value::Array(_)) => Ok(()),
+        _ => Err(NotesError::ContentInvalid),
+    }
+}
+
 /// Remove espaços das pontas e confere o tamanho. Conta CARACTERES, não bytes: "é" é 1 caractere.
 fn validate_title(raw: &str) -> Result<&str, NotesError> {
     let title = raw.trim();
@@ -105,11 +122,13 @@ fn build_trash(rows: &[repository::TrashedRow]) -> Vec<TrashSummary> {
 
 pub fn update(conn: &Connection, input: UpdateNote) -> Result<Note, NotesError> {
     let title = validate_title(&input.title)?;
+    validate_content(&input.content)?;
     match repository::update_if_current(
         conn,
         &input.id,
         title,
         &input.body,
+        &input.content,
         input.expected_updated_at,
     )? {
         Some(note) => Ok(note),

@@ -21,7 +21,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         {nav.mode === "trash" ? (
           <TrashView service={service} events={events} store={store} />
         ) : nav.selectedId ? (
-          <NotePanel key={nav.selectedId} service={service} store={store} id={nav.selectedId} />
+          <NotePanel key={nav.selectedId} deps={deps} id={nav.selectedId} />
         ) : (
           <p className="notes-main__placeholder">Selecione ou crie uma página.</p>
         )}

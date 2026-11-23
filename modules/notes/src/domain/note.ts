@@ -15,7 +15,10 @@ export interface NoteSummary {
 
 /** Nota completa. */
 export interface Note extends NoteSummary {
+  /** Texto simples da página (espelho do conteúdo, para a busca). */
   readonly body: string;
+  /** Os blocos da página, em JSON (uma lista). `[]` = vazia ou ainda não convertida. */
+  readonly content: string;
   readonly createdAt: number;
 }
 
@@ -46,6 +49,7 @@ export interface UpdateNote {
   readonly id: string;
   readonly title: string;
   readonly body: string;
+  readonly content: string;
   /** O `updatedAt` que quem edita viu ao abrir a nota. Se a nota já mudou, a edição é recusada. */
   readonly expectedUpdatedAt: number;
 }

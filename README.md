@@ -7,8 +7,8 @@ personalizados, construído sobre uma arquitetura **modular** e extensível.
 - Dados guardados localmente em SQLite.
 - Cada funcionalidade é um módulo independente, com limites verificados por ferramenta.
 
-> Status: **etapa 6a (páginas aninhadas)**: páginas dentro de páginas, árvore na barra lateral,
-> caminho de navegação, mover, lixeira com subpáginas. Próximos: editor de blocos, busca, bancos de dados.
+> Status: **blocos e subpáginas como link**: editor de blocos (BlockNote) com menu `/`, subpáginas no texto
+> como links, layout no estilo do Notion. Próximos: busca (`Ctrl+K`), ícone e capa, bancos de dados.
 
 ## Documentação
 

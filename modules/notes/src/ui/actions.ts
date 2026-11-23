@@ -28,6 +28,16 @@ export function createPageActions(service: NotesService, store: NavigationStore)
         store.open(note.id, parentId ? [parentId, ...ancestorIds(pages, parentId)] : []);
       }),
 
+    /** Cria uma subpágina SEM abrir (o editor insere o bloco antes de abri-la). Devolve o id, ou `null` se falhou. */
+    createSubpage: async (parentId: string): Promise<string | null> => {
+      try {
+        return (await service.create({ title: "Sem título", body: "", parentId })).id;
+      } catch (error) {
+        store.fail(messageFor(error));
+        return null;
+      }
+    },
+
     openPage: (id: string, pages: readonly NoteSummary[]) => store.open(id, ancestorIds(pages, id)),
 
     /**

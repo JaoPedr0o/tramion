@@ -3,6 +3,8 @@ import { NotesError, type NotesErrorCode } from "../domain/errors.ts";
 const KNOWN_CODES: ReadonlySet<string> = new Set<NotesErrorCode>([
   "notes.title-empty",
   "notes.title-too-long",
+  "notes.content-invalid",
+  "notes.content-too-large",
   "notes.not-found",
   "notes.in-trash",
   "notes.not-in-trash",

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import type { NavigationStore } from "../application/navigation-store.ts";
-import type { NotesService } from "../application/notes-service.ts";
 import type { Note } from "../domain/note.ts";
+import type { NotesUiDeps } from "./deps.ts";
 import { messageFor } from "./messages.ts";
 import { NoteEditor } from "./NoteEditor.tsx";
 
 interface Props {
-  service: NotesService;
-  store: NavigationStore;
+  deps: NotesUiDeps;
   id: string;
 }
 
@@ -15,7 +13,8 @@ type State =
   { status: "loading" } | { status: "ready"; note: Note } | { status: "error"; message: string };
 
 /** Carrega a página completa e mostra o editor. Use `key={id}` para recarregar ao trocar de página. */
-export function NotePanel({ service, store, id }: Props) {
+export function NotePanel({ deps, id }: Props) {
+  const { service } = deps;
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -41,5 +40,5 @@ export function NotePanel({ service, store, id }: Props) {
         {state.message}
       </p>
     );
-  return <NoteEditor service={service} store={store} note={state.note} />;
+  return <NoteEditor deps={deps} note={state.note} />;
 }

@@ -25,6 +25,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 2,
             sql: include_str!("../migrations/0002_page_hierarchy.sql"),
         },
+        Migration {
+            version: 3,
+            sql: include_str!("../migrations/0003_page_content.sql"),
+        },
     ],
 };
 

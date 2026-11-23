@@ -30,6 +30,7 @@ fn edit(db: &Database, note: &Note, title: &str, body: &str) -> Result<Note, Not
             title: title.into(),
             body: body.into(),
             expected_updated_at: note.updated_at,
+            content: note.content.clone(),
         },
     )
 }
@@ -222,6 +223,7 @@ fn editar_nota_inexistente_ou_na_lixeira_da_o_erro_certo() {
         deleted_at: None,
         parent_id: None,
         position: 0,
+        content: "[]".into(),
     };
     assert!(matches!(
         edit(&db, &ghost, "y", ""),

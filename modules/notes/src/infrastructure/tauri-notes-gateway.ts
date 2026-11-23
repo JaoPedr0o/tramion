@@ -23,8 +23,8 @@ export function createTauriNotesGateway(): NotesGateway {
     get: (id) => call<Note>("get", { id }),
     create: ({ title, body, parentId }) =>
       call<Note>("create", { title, body, parentId: parentId ?? null }),
-    update: ({ id, title, body, expectedUpdatedAt }) =>
-      call<Note>("update", { id, title, body, expectedUpdatedAt }),
+    update: ({ id, title, body, content, expectedUpdatedAt }) =>
+      call<Note>("update", { id, title, body, content, expectedUpdatedAt }),
     setPinned: (id, pinned) => call<Note>("set_pinned", { id, pinned }),
     move: ({ id, newParentId, index }) => call<Note>("move_note", { id, newParentId, index }),
     delete: (id) => call<string[]>("delete", { id }),

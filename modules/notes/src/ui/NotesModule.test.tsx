@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotesError } from "../domain/errors.ts";
 import { createNotesModule } from "../module.ts";
+import { StubBlockEditor } from "../test-block-editor.tsx";
 import { createFakeGateway } from "../test-support.ts";
 
 // Diz ao React que estamos num ambiente de teste (evita avisos sobre `act`).
@@ -34,7 +35,7 @@ function setup() {
   const fake = createFakeGateway();
   const events = createEventBus<AppEvents>();
   const views = createViewRegistry();
-  createNotesModule(fake.gateway).register({ events, views });
+  createNotesModule(fake.gateway, { BlockEditor: StubBlockEditor }).register({ events, views });
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
   render(<Frame view={views.list()[0]!} />);
   return { fake, events, user };
@@ -197,7 +198,9 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.click(await main().findByRole("button", { name: "Carregar a versão salva" }));
       await settle();
 
-      expect(body.value).toBe("texto vindo de outra janela");
+      // O editor recomeça com a versão salva (o campo é recriado: busca de novo).
+      const reloaded = main().getByLabelText("Texto da página") as HTMLTextAreaElement;
+      expect(reloaded.value).toBe("texto vindo de outra janela");
       expect(fake.notes.get("n1")?.body).toBe("texto vindo de outra janela");
       expect(main().queryByRole("alert")).toBeNull();
     });
@@ -526,6 +529,65 @@ describe("módulo de notas (a tela inteira)", () => {
       const note = fake.notes.get("n1")!;
       expect(note.deletedAt).not.toBeNull();
       expect(note.title).toBe("Digitado agora");
+    });
+  });
+
+  describe("blocos e subpáginas no texto", () => {
+    const textArea = () => main().getByLabelText("Texto da página") as HTMLTextAreaElement;
+
+    it("grava os blocos e o texto simples juntos", async () => {
+      const { user, fake } = setup();
+      await newPage(user);
+
+      await user.type(textArea(), "primeira linha");
+      await settle();
+
+      const note = fake.notes.get("n1")!;
+      expect(note.body).toBe("primeira linha");
+      const blocks = JSON.parse(note.content) as Array<{ type: string }>;
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]!.type).toBe("paragraph");
+    });
+
+    it("uma página antiga (só com texto) abre convertida em blocos", async () => {
+      const { user, fake, events } = setup();
+      const old = await fake.gateway.create({ title: "Antiga", body: "linha 1\nlinha 2" });
+      await act(async () => {
+        events.emit("note.created", { id: old.id });
+      });
+
+      await user.click(await sidebar().findByRole("treeitem", { name: "Antiga" }));
+
+      expect(
+        (await main().findByLabelText("Texto da página")) as HTMLTextAreaElement,
+      ).toHaveProperty("value", "linha 1\nlinha 2");
+    });
+
+    it("apagar do texto o bloco de uma subpágina a manda para a lixeira", async () => {
+      const { user, fake } = setup();
+      await parentWithChild(user);
+      await user.click(treeitem("Pai"));
+
+      await user.click(await main().findByRole("button", { name: "Apagar o bloco de Filha" }));
+
+      await vi.waitFor(() =>
+        expect(within(tree()).queryByRole("treeitem", { name: "Filha" })).toBeNull(),
+      );
+      expect(fake.notes.get("n2")?.deletedAt).not.toBeNull();
+    });
+
+    it("'/Página' cria a subpágina dentro da página atual e a abre", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Pai");
+
+      await user.click(await main().findByRole("button", { name: "Inserir /Página" }));
+
+      expect(await sidebar().findByRole("treeitem", { name: "Sem título" })).toBeTruthy();
+      expect(levelOf("Sem título")).toBe(2);
+      expect(fake.notes.get("n2")?.parentId).toBe("n1");
+      expect(((await main().findByLabelText("Título")) as HTMLInputElement).value).toBe(
+        "Sem título",
+      );
     });
   });
 });
