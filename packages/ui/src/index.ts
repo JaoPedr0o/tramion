@@ -2,6 +2,7 @@
 export {
   ChevronIcon,
   ComposeIcon,
+  LinkIcon,
   MonitorIcon,
   MoonIcon,
   MoreIcon,

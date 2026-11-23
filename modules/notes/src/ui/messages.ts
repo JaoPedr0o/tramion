@@ -4,6 +4,11 @@ import { NotesError, type NotesErrorCode } from "../domain/errors.ts";
 const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.title-empty": "O título não pode ficar vazio.",
   "notes.title-too-long": "O título é longo demais (máximo de 200 caracteres).",
+  "notes.url-invalid": "Este endereço não é um link http ou https válido.",
+  "notes.asset-too-large": "O arquivo é grande demais (máximo de 50 MB).",
+  "notes.asset-type-not-allowed":
+    "Este tipo de arquivo não é aceito (use imagem, vídeo mp4/webm ou áudio mp3/ogg/wav).",
+  "notes.asset-invalid": "O conteúdo do arquivo não corresponde ao tipo dele.",
   "notes.content-invalid": "O conteúdo da página não pôde ser salvo (formato inválido).",
   "notes.content-too-large": "A página é grande demais para ser salva.",
   "notes.not-found": "Esta página não existe mais.",

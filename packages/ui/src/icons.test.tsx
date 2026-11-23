@@ -13,6 +13,7 @@ import {
   SunIcon,
   MoonIcon,
   MonitorIcon,
+  LinkIcon,
   TrashIcon,
 } from "./index.ts";
 
@@ -31,6 +32,7 @@ const icons = {
   SunIcon,
   MoonIcon,
   MonitorIcon,
+  LinkIcon,
 };
 
 describe("ícones", () => {

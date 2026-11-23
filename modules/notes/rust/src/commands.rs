@@ -1,13 +1,16 @@
 //! Camada fina entre o Tauri e a lógica do módulo: recebe o pedido da interface, chama o serviço e
 //! devolve o resultado. Nenhuma regra de negócio mora aqui.
 
+use crate::assets;
 use crate::error::NotesError;
+use crate::external;
 use crate::model::{MoveNote, NewNote, Note, NoteSummary, TrashSummary, UpdateNote};
 use crate::service;
 use aun_infra_sqlite::SharedDatabase;
 use aun_infra_sqlite::rusqlite::Connection;
 use serde::Serialize;
-use tauri::State;
+use tauri::ipc::{InvokeBody, Request};
+use tauri::{AppHandle, Manager, Runtime, State};
 
 /// Erro enviado à interface: um código estável (para ela traduzir em mensagem) e um texto técnico.
 #[derive(Debug, Serialize)]
@@ -147,4 +150,57 @@ pub async fn restore(
 #[tauri::command]
 pub async fn purge(db: State<'_, SharedDatabase>, id: String) -> Result<Vec<String>, CommandError> {
     with_db(&db, |conn| service::purge(conn, &id))
+}
+
+/// Guarda um arquivo enviado (imagem, vídeo ou áudio) na pasta de dados do app e devolve o caminho.
+/// O conteúdo vem como corpo BRUTO da chamada (sem converter para JSON, que seria lento para arquivos
+/// grandes) e o nome original, no cabeçalho `x-file-name` (codificado em URL).
+#[tauri::command]
+pub async fn save_asset<R: Runtime>(
+    app: AppHandle<R>,
+    request: Request<'_>,
+) -> Result<String, CommandError> {
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err(NotesError::AssetInvalid.into());
+    };
+    let file_name = request
+        .headers()
+        .get("x-file-name")
+        .and_then(|value| value.to_str().ok())
+        .map(percent_decode)
+        .unwrap_or_default();
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| NotesError::Internal(e.to_string()))?
+        .join("assets");
+
+    let path = assets::store(&dir, &file_name, bytes)?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// Abre um link no navegador do sistema. Só `http` e `https`.
+#[tauri::command]
+pub async fn open_external(url: String) -> Result<(), CommandError> {
+    Ok(external::open_external(&url)?)
+}
+
+/// Decodifica `%XX` (o JavaScript envia o nome já codificado, porque cabeçalhos só aceitam ASCII).
+fn percent_decode(raw: &str) -> String {
+    let bytes = raw.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let Ok(byte) = u8::from_str_radix(&raw[i + 1..i + 3], 16)
+        {
+            out.push(byte);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }

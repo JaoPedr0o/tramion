@@ -32,7 +32,7 @@ const STATUS_TEXT: Record<SaveStatus, string> = {
  * automático. As subpáginas aparecem no texto como blocos de link. Use `key={note.id}` para trocar de página.
  */
 export function NoteEditor({ deps, note }: Props) {
-  const { service, events, store, actions, BlockEditor } = deps;
+  const { service, events, store, actions, platform, BlockEditor } = deps;
   const [initial] = useState(note);
   const [title, setTitle] = useState(note.title);
   const [editor, setEditor] = useState(() => ({
@@ -162,7 +162,17 @@ export function NoteEditor({ deps, note }: Props) {
             initialBlocks={editor.blocks}
             childPages={childPages}
             titleOf={titleOf}
+            pages={allPages ?? []}
             handleRef={handle}
+            onUploadFile={async (file) => {
+              try {
+                return await platform.uploadAsset(file);
+              } catch (error) {
+                fail(error);
+                throw error;
+              }
+            }}
+            onOpenExternal={(url) => void platform.openExternal(url).catch(fail)}
             onChange={({ blocks, plainText }) => {
               draft.current = {
                 ...draft.current,

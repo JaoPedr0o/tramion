@@ -16,6 +16,16 @@ pub enum NotesError {
     ContentTooLarge {
         max: usize,
     },
+    /// O endereço não é um link http(s) válido.
+    UrlInvalid,
+    /// O arquivo enviado é grande demais.
+    AssetTooLarge {
+        max: usize,
+    },
+    /// O tipo do arquivo enviado não é aceito.
+    AssetTypeNotAllowed,
+    /// O conteúdo do arquivo não bate com o tipo que ele diz ter.
+    AssetInvalid,
     NotFound,
     /// A nota está na lixeira e a operação só vale para notas ativas.
     InTrash,
@@ -40,6 +50,10 @@ impl NotesError {
         match self {
             NotesError::TitleEmpty => "notes.title-empty",
             NotesError::TitleTooLong { .. } => "notes.title-too-long",
+            NotesError::UrlInvalid => "notes.url-invalid",
+            NotesError::AssetTooLarge { .. } => "notes.asset-too-large",
+            NotesError::AssetTypeNotAllowed => "notes.asset-type-not-allowed",
+            NotesError::AssetInvalid => "notes.asset-invalid",
             NotesError::ContentInvalid => "notes.content-invalid",
             NotesError::ContentTooLarge { .. } => "notes.content-too-large",
             NotesError::NotFound => "notes.not-found",
@@ -61,6 +75,12 @@ impl fmt::Display for NotesError {
             NotesError::TitleTooLong { max } => {
                 write!(f, "o título excede o máximo de {max} caracteres")
             }
+            NotesError::UrlInvalid => write!(f, "o endereço não é um link http ou https válido"),
+            NotesError::AssetTooLarge { max } => {
+                write!(f, "o arquivo excede o máximo de {max} bytes")
+            }
+            NotesError::AssetTypeNotAllowed => write!(f, "tipo de arquivo não aceito"),
+            NotesError::AssetInvalid => write!(f, "o arquivo não corresponde ao tipo informado"),
             NotesError::ContentInvalid => write!(f, "o conteúdo não é uma lista de blocos válida"),
             NotesError::ContentTooLarge { max } => {
                 write!(f, "o conteúdo excede o máximo de {max} bytes")

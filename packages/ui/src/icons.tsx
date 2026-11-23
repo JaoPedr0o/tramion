@@ -114,3 +114,10 @@ export const MonitorIcon = (props: IconProps) => (
     <path d="M6 13.5h4M8 10.5v3" />
   </Svg>
 );
+
+/** Elo de corrente: link. */
+export const LinkIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M6.5 9.5l3-3M5.8 7.2 4.4 8.6a2.4 2.4 0 0 0 3.4 3.4l1.4-1.4M10.2 8.8l1.4-1.4A2.4 2.4 0 0 0 8.2 4L6.8 5.4" />
+  </Svg>
+);

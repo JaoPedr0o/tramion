@@ -28,5 +28,11 @@ export interface BlockEditorProps {
   /** "/Página": cria a subpágina e devolve o id (ou `null` se falhou). */
   onCreateSubpage(): Promise<string | null>;
   onOpenPage(pageId: string): void;
+  /** Todas as páginas ativas (para o menu "@" de menções). */
+  pages: readonly NoteSummary[];
+  /** Guarda um arquivo enviado (imagem, vídeo, áudio) e devolve o endereço para exibi-lo. */
+  onUploadFile(file: File): Promise<string>;
+  /** Abre um link http(s) no navegador do sistema. */
+  onOpenExternal(url: string): void;
   handleRef?: Ref<BlockEditorHandle>;
 }

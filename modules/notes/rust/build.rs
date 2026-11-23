@@ -11,6 +11,8 @@ const COMMANDS: &[&str] = &[
     "delete",
     "restore",
     "purge",
+    "save_asset",
+    "open_external",
 ];
 
 fn main() {

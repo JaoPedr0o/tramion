@@ -11,4 +11,6 @@ permissions = [
   "allow-delete",
   "allow-restore",
   "allow-purge",
+  "allow-save-asset",
+  "allow-open-external",
 ]

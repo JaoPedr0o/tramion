@@ -2,8 +2,10 @@
 //!
 //! O app usa duas coisas daqui: [`MIGRATIONS`] (para abrir o banco) e [`init`] (o plugin do Tauri).
 
+pub mod assets;
 mod commands;
 pub mod error;
+pub mod external;
 pub mod model;
 pub mod repository;
 pub mod service;
@@ -46,6 +48,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::delete,
             commands::restore,
             commands::purge,
+            commands::save_asset,
+            commands::open_external,
         ])
         .build()
 }
