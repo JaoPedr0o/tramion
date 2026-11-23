@@ -9,7 +9,7 @@ compilar os instaladores e montar um rascunho de release.
 2. No projeto:
 
    ```bash
-   git remote add origin https://github.com/SEU-USUARIO/tramion.git
+   git remote add origin https://github.com/JaoPedr0o/tramion.git
    git push -u origin main
    ```
 

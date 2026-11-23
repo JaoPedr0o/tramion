@@ -20,4 +20,4 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
-[0.1.0]: https://github.com/OWNER/tramion/releases/tag/v0.1.0
+[0.1.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.1.0
