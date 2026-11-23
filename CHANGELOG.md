@@ -4,6 +4,14 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.1] - 2026-11-24
+
+### Alterado
+
+- **Navegação do celular de volta ao jeito anterior**: o seletor de telas (Notas, Foco) fica no menu lateral (a gaveta),
+  sem barra de abas fixa embaixo da tela, e as abas Pomodoro e Hábitos ficam no topo da tela do Foco. A barra de baixo
+  da 0.6.0 se sobrepunha à do Foco e atrapalhava. O seletor mantém os ícones.
+
 ## [0.6.0] - 2026-11-24
 
 ### Adicionado
@@ -154,6 +162,7 @@ Primeira versão pública.
 - Backup automático antes de atualizar o banco e movimentação automática dos dados de nomes anteriores do aplicativo.
 - Identidade visual do Tramion e ícone do aplicativo.
 
+[0.6.1]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.6.1
 [0.6.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.6.0
 [0.5.0]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.5.0
 [0.4.1]: https://github.com/JaoPedr0o/tramion/releases/tag/v0.4.1

@@ -91,29 +91,14 @@ describe("moldura do app", () => {
       expect(within(nav).getByText("P")).toBeTruthy(); // a que não tem: inicial de "Primeira tela"
     });
 
-    it("no celular, vira uma barra de abas fora do menu lateral (a gaveta fica só com as páginas)", () => {
+    it("no celular continua dentro do menu lateral (a gaveta), sem barra de abas embaixo", () => {
       narrowScreen(true);
       render(<App views={registry(full, withIcon)} />);
 
       const nav = screen.getByRole("navigation", { name: "Telas" });
-      expect(screen.getByRole("complementary", { name: "Barra lateral" }).contains(nav)).toBe(
-        false,
-      );
-      expect(nav.className).toContain("shell__tabbar");
+      expect(screen.getByRole("complementary", { name: "Barra lateral" }).contains(nav)).toBe(true);
       expect(screen.getAllByRole("navigation", { name: "Telas" })).toHaveLength(1);
-    });
-
-    it("trocar de aba no celular mostra a outra tela, mesmo com a gaveta fechada", async () => {
-      narrowScreen(true);
-      render(<App views={registry(full, withIcon)} />);
-
-      await userEvent.setup().click(
-        within(screen.getByRole("navigation", { name: "Telas" })).getByRole("button", {
-          name: "Segunda tela",
-        }),
-      );
-
-      expect(screen.getByText("tela dois")).toBeTruthy();
+      expect(document.querySelector(".shell__tabbar")).toBeNull();
     });
   });
 

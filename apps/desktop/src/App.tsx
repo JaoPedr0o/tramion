@@ -129,13 +129,8 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
             <SidebarToggleButton />
           </div>
 
-          {available.length > 1 && !narrow && (
-            <ViewSwitcher
-              variant="segmented"
-              views={available}
-              selectedId={view?.id}
-              onSelect={selectView}
-            />
+          {available.length > 1 && (
+            <ViewSwitcher views={available} selectedId={view?.id} onSelect={selectView} />
           )}
 
           <div
@@ -181,15 +176,6 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
           <main className="shell__main">
             {Main ? <Main /> : <p className="shell__empty">Nenhum módulo carregado.</p>}
           </main>
-          {/* No celular, as telas (Notas, Foco...) ficam numa barra de abas embaixo, sempre à mão. */}
-          {available.length > 1 && narrow && (
-            <ViewSwitcher
-              variant="tabbar"
-              views={available}
-              selectedId={view?.id}
-              onSelect={selectView}
-            />
-          )}
         </div>
       </div>
     </ShellProvider>

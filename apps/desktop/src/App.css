@@ -107,37 +107,6 @@
   font-weight: 600;
 }
 
-/* Barra de abas do celular: ícone em cima, nome embaixo, alvo de toque grande. */
-.shell__tabbar {
-  display: flex;
-  flex: none;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-sidebar);
-}
-
-.shell__tab {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-  padding: var(--space-1) var(--space-2);
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.shell__tab[aria-current="page"] {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
 .shell__sidebar-body {
   flex: 1;
   min-height: 0;

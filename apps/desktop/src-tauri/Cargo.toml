@@ -1,6 +1,6 @@
 [package]
 name = "desktop"
-version = "0.6.0"
+version = "0.6.1"
 description = "Tramion: aplicativo desktop local-first de organização pessoal"
 authors = ["Tramion"]
 edition = "2024"
