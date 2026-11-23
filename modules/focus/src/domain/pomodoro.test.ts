@@ -69,7 +69,8 @@ describe("cronômetro (pelo relógio, não por ticks)", () => {
 
 describe("o que vem depois", () => {
   it("sem pausa longa ligada, sempre pausa curta depois do foco", () => {
-    for (let done = 1; done <= 8; done++) expect(nextKind("focus", done, DEFAULT_SETTINGS)).toBe("break");
+    for (let done = 1; done <= 8; done++)
+      expect(nextKind("focus", done, DEFAULT_SETTINGS)).toBe("break");
   });
 
   it("com pausa longa a cada 4, a quarta sessão leva à pausa longa", () => {

@@ -62,7 +62,10 @@ export function memoryGateway(
   const clean = (input: HabitInput) => {
     const name = input.name.trim();
     if (name === "" || name.length > 100) throw new FocusError("focus.name-invalid", "nome");
-    if (input.frequency === "weekly" && !(input.timesPerWeek && input.timesPerWeek >= 1 && input.timesPerWeek <= 7))
+    if (
+      input.frequency === "weekly" &&
+      !(input.timesPerWeek && input.timesPerWeek >= 1 && input.timesPerWeek <= 7)
+    )
       throw new FocusError("focus.frequency-invalid", "frequência");
     return {
       name,

@@ -25,3 +25,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0018](0018-busca-visoes-modelos-markdown-e-lembretes.md)  | Busca, visões salvas, modelos, Markdown e lembretes               | Aceita   |
 | [0019](0019-hoje-conexoes-historico-grafico-e-bandeja.md)  | Hoje, conexões, histórico, gráfico, exportação e bandeja          | Aceita   |
 | [0020](0020-proposta-sincronizacao-entre-aparelhos.md)     | Proposta: sincronização entre aparelhos e app de celular          | Proposta |
+| [0022](0022-modulo-foco.md)                                | Módulo Foco (pomodoro e hábitos)                                  | Aceita   |

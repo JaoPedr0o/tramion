@@ -1,0 +1,536 @@
+/* Módulo Foco. Tudo com o prefixo `focus`, usando só os tokens do app (tema claro e escuro vêm deles). */
+
+.focus {
+  --focus-pad: var(--space-4);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--focus-pad) var(--focus-pad)
+    max(var(--focus-pad), var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
+.focus-topbar {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.focus-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Abas */
+.focus__tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.focus__tab {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus__tab:hover {
+  color: var(--color-text);
+}
+
+.focus__tab[aria-selected="true"] {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.focus__tab:focus-visible,
+.focus-btn:focus-visible,
+.focus-link:focus-visible,
+.focus-habit__check:focus-visible,
+.focus-habit__day:focus-visible,
+.focus-field input:focus-visible,
+.focus-field select:focus-visible,
+.focus-details summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Botões (mesmo padrão dos diálogos recentes: peso 600 e alvo de 44 px) */
+.focus-btn {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus-btn:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.focus-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.focus-btn--primary {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.focus-btn--primary:hover:not(:disabled) {
+  background: var(--color-accent);
+  filter: brightness(1.08);
+}
+
+.focus-link {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.focus-error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.focus-ok {
+  margin: 0;
+  color: var(--color-positive);
+}
+
+.focus-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* Pomodoro */
+.focus-pomodoro__kind {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+.focus-pomodoro__clock {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(56px, 18vw, 96px);
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-pomodoro__clock[data-idle="true"],
+.focus-pomodoro__clock[data-paused="true"] {
+  color: var(--color-text-muted);
+}
+
+.focus-card > .focus-actions {
+  justify-content: center;
+}
+
+.focus-finished {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-soft);
+}
+
+.focus-finished p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.focus-pomodoro__today {
+  margin: 0;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.focus-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+/* Campos */
+.focus-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+
+.focus-field input,
+.focus-field select {
+  min-height: 44px;
+  padding: 0 var(--space-2-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.focus-fieldset {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.focus-fieldset legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-weight: 600;
+}
+
+.focus-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.focus-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-accent);
+}
+
+/* Hábitos */
+.focus-habits__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.focus-habits__head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.focus-habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focus-habit {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.focus-habit[data-archived="true"] {
+  opacity: 0.7;
+}
+
+.focus-habit__check {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: none;
+  color: var(--color-on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.focus-habit__check[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.focus-habit__check:disabled,
+.focus-habit__day:disabled {
+  cursor: default;
+}
+
+.focus-habit__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-habit__name {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.focus-habit__meta {
+  margin: var(--space-0) 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.focus-habit__week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.focus-habit__day {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus-habit__day[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.focus-habit__actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+/* Mapa de calor */
+.focus-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.focus-heatmap__scroll {
+  overflow-x: auto;
+}
+
+.focus-heatmap__grid {
+  --gap: 3px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.focus-heatmap__months {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  column-gap: var(--gap);
+  height: 14px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.focus-heatmap__months span {
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.focus-heatmap__cells {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
+  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+.focus-heatmap__cell {
+  display: inline-block;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--color-hover);
+}
+
+.focus-heatmap__cell[data-level="1"] {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+.focus-heatmap__cell[data-level="2"] {
+  background: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.focus-heatmap__cell[data-level="3"] {
+  background: color-mix(in srgb, var(--color-accent) 78%, transparent);
+}
+.focus-heatmap__cell[data-level="4"] {
+  background: var(--color-accent);
+}
+.focus-heatmap__cell[data-future="true"] {
+  background: transparent;
+}
+
+.focus-heatmap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.focus-heatmap__legend .focus-heatmap__cell {
+  width: 12px;
+}
+
+/* Janela de hábito: cabeçalho e rodapé fixos, miolo rolável */
+.focus-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.focus-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(640px, 100dvh - 2 * var(--space-4));
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-menu);
+}
+
+.focus-dialog__form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.focus-dialog__header {
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.focus-dialog__header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.focus-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.focus-dialog__footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Celular: a janela vira uma folha de tela cheia, respeitando as barras do sistema. */
+@media (max-width: 719px) {
+  .focus {
+    --focus-pad: var(--space-3);
+  }
+
+  .focus-backdrop {
+    align-items: stretch;
+    background: var(--color-surface);
+  }
+
+  .focus-dialog {
+    width: 100%;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .focus-dialog__header {
+    padding-top: max(var(--space-3), var(--safe-top, env(safe-area-inset-top, 0px)));
+    padding-left: max(var(--space-4), var(--safe-left, env(safe-area-inset-left, 0px)));
+    padding-right: max(var(--space-4), var(--safe-right, env(safe-area-inset-right, 0px)));
+  }
+
+  .focus-dialog__footer {
+    padding-bottom: max(var(--space-3), var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+    padding-left: max(var(--space-4), var(--safe-left, env(safe-area-inset-left, 0px)));
+    padding-right: max(var(--space-4), var(--safe-right, env(safe-area-inset-right, 0px)));
+  }
+
+  .focus-dialog__footer .focus-btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .focus-btn,
+  .focus-habit__check,
+  .focus-habit__day {
+    transition:
+      background var(--duration-fast) var(--ease),
+      border-color var(--duration-fast) var(--ease);
+  }
+}

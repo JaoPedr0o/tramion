@@ -73,6 +73,13 @@ describe("fronteiras de arquitetura", () => {
       expect(await boundaryErrors(other, 'import "@tramion/notes";')).toHaveLength(1);
     });
 
+    it("proíbe o módulo Foco de importar o de notas, e o de notas de importar o Foco", async () => {
+      expect(
+        await boundaryErrors("modules/focus/src/virtual.ts", 'import "@tramion/notes";'),
+      ).toHaveLength(1);
+      expect(await boundaryErrors(file, 'import "@tramion/focus";')).toHaveLength(1);
+    });
+
     it("proíbe um módulo de importar o app", async () => {
       expect(await boundaryErrors(file, 'import "@tramion/desktop";')).toHaveLength(1);
     });

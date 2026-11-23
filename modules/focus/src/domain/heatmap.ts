@@ -43,7 +43,12 @@ export function buildHeatmap({ counts, total, today, weeks = 26 }: HeatmapInput)
       const day = addDays(first, week * 7 + weekday);
       const count = counts.get(day) ?? 0;
       const future = day > today;
-      column.push({ day, count: future ? 0 : count, level: future ? 0 : levelOf(count, total), future });
+      column.push({
+        day,
+        count: future ? 0 : count,
+        level: future ? 0 : levelOf(count, total),
+        future,
+      });
     }
     columns.push(column);
   }
@@ -55,6 +60,7 @@ export function buildHeatmap({ counts, total, today, weeks = 26 }: HeatmapInput)
     if (month !== previous) monthLabels.push({ week, month });
   });
   // Um mês que só aparece na primeira coluna por poucos dias não ganha rótulo (ficaria colado no seguinte).
-  if (monthLabels.length > 1 && monthLabels[1]!.week - monthLabels[0]!.week < 2) monthLabels.shift();
+  if (monthLabels.length > 1 && monthLabels[1]!.week - monthLabels[0]!.week < 2)
+    monthLabels.shift();
   return { weeks: columns, monthLabels };
 }

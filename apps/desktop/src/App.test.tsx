@@ -134,6 +134,33 @@ describe("moldura do app", () => {
       expect(shell().getAttribute("data-sidebar")).toBe("collapsed");
     });
 
+    it("escolher outra tela no seletor fecha a gaveta no celular, mas não no computador", async () => {
+      const second: ViewContribution = {
+        id: "dois",
+        title: "Segunda tela",
+        main: () => <p>tela dois</p>,
+      };
+      for (const [isNarrow, expected] of [
+        [true, "collapsed"],
+        [false, "open"],
+      ] as const) {
+        narrow(isNarrow);
+        const user = userEvent.setup();
+        render(<App views={registry(full, second)} />);
+        if (isNarrow) {
+          await user.click(
+            within(screen.getByRole("banner")).getByRole("button", {
+              name: "Abrir a barra lateral",
+            }),
+          );
+        }
+        await user.click(screen.getByRole("button", { name: "Segunda tela" }));
+        expect(screen.getByText("tela dois")).toBeTruthy();
+        expect(shell().getAttribute("data-sidebar")).toBe(expected);
+        cleanup();
+      }
+    });
+
     it("sem a gaveta aberta, não há fundo escurecido; em tela larga também não", () => {
       narrow(false);
 

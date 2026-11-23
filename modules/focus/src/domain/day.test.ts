@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayOf, daysBetween, isDay, isWeekend, mondayOf, monthOf, weekdayOf } from "./day.ts";
+import {
+  addDays,
+  dayOf,
+  daysBetween,
+  isDay,
+  isWeekend,
+  mondayOf,
+  monthOf,
+  weekdayOf,
+} from "./day.ts";
 
 describe("dayOf (virada do dia e fuso)", () => {
   // 2026-11-20 02:30 UTC = 23:30 do dia 19 em São Paulo (UTC-3) e 11:30 do dia 20 em Tóquio (UTC+9).

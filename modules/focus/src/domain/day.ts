@@ -34,7 +34,9 @@ export function isDay(text: string): boolean {
   const [year, month, date] = [Number(match[1]), Number(match[2]), Number(match[3])];
   const check = new Date(Date.UTC(year, month - 1, date));
   return (
-    check.getUTCFullYear() === year && check.getUTCMonth() === month - 1 && check.getUTCDate() === date
+    check.getUTCFullYear() === year &&
+    check.getUTCMonth() === month - 1 &&
+    check.getUTCDate() === date
   );
 }
 

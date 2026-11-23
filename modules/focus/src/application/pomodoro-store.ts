@@ -121,7 +121,11 @@ export function createPomodoroStore({ gateway, platform, clock }: PomodoroStoreO
       };
     }
     // Primeiro o cronômetro muda de fase (para ninguém ver "00:00 rodando"), depois grava e avisa.
-    set({ timer: IDLE, completedInCycle: cycle, finished: { kind: timer.kind, recordFailed: false } });
+    set({
+      timer: IDLE,
+      completedInCycle: cycle,
+      finished: { kind: timer.kind, recordFailed: false },
+    });
 
     if (state.settings.notify) {
       const message = isFocus
@@ -168,7 +172,8 @@ export function createPomodoroStore({ gateway, platform, clock }: PomodoroStoreO
       } catch (error) {
         set({
           loaded: true,
-          error: error instanceof FocusError ? error : new FocusError("focus.internal", String(error)),
+          error:
+            error instanceof FocusError ? error : new FocusError("focus.internal", String(error)),
         });
       }
       await refreshSessions();
@@ -199,7 +204,9 @@ export function createPomodoroStore({ gateway, platform, clock }: PomodoroStoreO
     startNext(noteId: string | null = null) {
       const finished = state.finished;
       if (state.timer.phase !== "idle") return;
-      const kind = finished ? nextKind(finished.kind, state.completedInCycle, state.settings) : "focus";
+      const kind = finished
+        ? nextKind(finished.kind, state.completedInCycle, state.settings)
+        : "focus";
       start(kind, kind === "focus" ? noteId : null);
     },
 
@@ -218,7 +225,8 @@ export function createPomodoroStore({ gateway, platform, clock }: PomodoroStoreO
         return true;
       } catch (error) {
         set({
-          error: error instanceof FocusError ? error : new FocusError("focus.internal", String(error)),
+          error:
+            error instanceof FocusError ? error : new FocusError("focus.internal", String(error)),
         });
         return false;
       }
@@ -236,6 +244,8 @@ export function createPomodoroStore({ gateway, platform, clock }: PomodoroStoreO
 
     /** O dia local de hoje, pelo relógio e fuso do módulo. */
     today: () => dayOf(clock.now(), clock.timeZone),
+    /** O dia local de um instante qualquer (mesmo fuso). */
+    dayOf: (ms: number) => dayOf(ms, clock.timeZone),
   };
 }
 

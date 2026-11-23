@@ -126,8 +126,12 @@ describe("sequência: N vezes por semana (em semanas)", () => {
   // Semanas: 9-15 (nov), 16-22, 23-29.
   it("conta semanas que bateram a meta", () => {
     const checks = [
-      "2026-11-09", "2026-11-11", "2026-11-13", // semana de 9: 3
-      "2026-11-16", "2026-11-18", "2026-11-20", // semana de 16: 3
+      "2026-11-09",
+      "2026-11-11",
+      "2026-11-13", // semana de 9: 3
+      "2026-11-16",
+      "2026-11-18",
+      "2026-11-20", // semana de 16: 3
     ];
     expect(weekly(3, checks, "2026-11-22")).toEqual({ current: 2, best: 2, unit: "weeks" });
   });
@@ -138,15 +142,27 @@ describe("sequência: N vezes por semana (em semanas)", () => {
   });
 
   it("a semana corrente soma assim que bate a meta", () => {
-    const checks = ["2026-11-09", "2026-11-11", "2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18"];
+    const checks = [
+      "2026-11-09",
+      "2026-11-11",
+      "2026-11-13",
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18",
+    ];
     expect(weekly(3, checks, "2026-11-18")).toMatchObject({ current: 2, best: 2 });
   });
 
   it("uma semana passada abaixo da meta quebra", () => {
     const checks = [
-      "2026-11-02", "2026-11-03", "2026-11-04", // semana de 2: 3
-      "2026-11-09", "2026-11-10", // semana de 9: só 2 (quebra)
-      "2026-11-16", "2026-11-17", "2026-11-18", // semana de 16: 3
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-04", // semana de 2: 3
+      "2026-11-09",
+      "2026-11-10", // semana de 9: só 2 (quebra)
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18", // semana de 16: 3
     ];
     expect(weekly(3, checks, "2026-11-22")).toMatchObject({ current: 1, best: 1 });
   });

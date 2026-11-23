@@ -122,7 +122,13 @@ describe("store de hábitos", () => {
 
 describe("auxiliares", () => {
   it("dailyCounts soma só hábitos ativos", () => {
-    const base = { icon: null, frequency: "daily", timesPerWeek: null, createdAt: 1, updatedAt: 1 } as const;
+    const base = {
+      icon: null,
+      frequency: "daily",
+      timesPerWeek: null,
+      createdAt: 1,
+      updatedAt: 1,
+    } as const;
     const habits = [
       { ...base, id: "a", name: "A", archivedAt: null },
       { ...base, id: "b", name: "B", archivedAt: null },

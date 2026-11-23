@@ -131,7 +131,11 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
                   type="button"
                   className="shell__view"
                   aria-current={candidate.id === view?.id ? "page" : undefined}
-                  onClick={() => setSelectedId(candidate.id)}
+                  onClick={() => {
+                    setSelectedId(candidate.id);
+                    // No celular a gaveta fecha ao escolher a tela, para mostrá-la.
+                    if (narrow) closeSidebar();
+                  }}
                 >
                   {candidate.title}
                 </button>

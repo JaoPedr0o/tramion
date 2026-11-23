@@ -32,7 +32,9 @@ describe("mapa de calor", () => {
       ["2026-11-18", 2],
     ]);
     const levels = (total: number) =>
-      buildHeatmap({ counts, total, today, weeks: 1 }).weeks[0]!.slice(0, 3).map((c) => c.level);
+      buildHeatmap({ counts, total, today, weeks: 1 })
+        .weeks[0]!.slice(0, 3)
+        .map((c) => c.level);
     expect(levels(4)).toEqual([0, 1, 2]);
     expect(levels(2)).toEqual([0, 2, 4]);
     expect(levels(1)).toEqual([0, 4, 4]); // passar do total satura em 4
@@ -63,7 +65,8 @@ describe("mapa de calor", () => {
     // Em ordem de coluna, sem rótulos colados.
     const columns = map.monthLabels.map((label) => label.week);
     expect(columns).toEqual([...columns].sort((a, b) => a - b));
-    for (let i = 1; i < columns.length; i++) expect(columns[i]! - columns[i - 1]!).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < columns.length; i++)
+      expect(columns[i]! - columns[i - 1]!).toBeGreaterThanOrEqual(2);
   });
 
   it("atravessa a virada do ano", () => {

@@ -1,6 +1,7 @@
 // Composition root (TypeScript): o ÚNICO lugar que conhece todos os módulos e os liga ao núcleo.
 import type { AppEvents, ViewRegistry } from "@tramion/contracts";
 import { createEventBus, createModuleRegistry, createViewRegistry } from "@tramion/core";
+import { createFocusModule } from "@tramion/focus";
 import { createNotesModule } from "@tramion/notes";
 
 export function bootstrap(): { views: ViewRegistry } {
@@ -10,6 +11,7 @@ export function bootstrap(): { views: ViewRegistry } {
 
   // Para adicionar um módulo ao produto: uma linha aqui. Para remover: apagar a linha.
   registry.add(createNotesModule());
+  registry.add(createFocusModule());
 
   registry.start();
   return { views };

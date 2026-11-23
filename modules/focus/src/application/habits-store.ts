@@ -43,7 +43,11 @@ export function createHabitsStore({ gateway, clock }: HabitsStoreOptions) {
   };
   const today = () => dayOf(clock.now(), clock.timeZone);
 
-  function withCheck(habitId: string, day: Day, done: boolean): ReadonlyMap<string, ReadonlySet<Day>> {
+  function withCheck(
+    habitId: string,
+    day: Day,
+    done: boolean,
+  ): ReadonlyMap<string, ReadonlySet<Day>> {
     const next = new Map(state.checks);
     const days = new Set(next.get(habitId) ?? []);
     if (done) days.add(day);
