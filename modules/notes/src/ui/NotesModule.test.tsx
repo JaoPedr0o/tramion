@@ -1024,6 +1024,43 @@ describe("módulo de notas (a tela inteira)", () => {
       );
     });
 
+    it("data: escolhe a hora (opcional), mantém a hora ao trocar o dia e tira a hora", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Prazo", "Data");
+      await addRow(user);
+      const cells = async () => Object.values((await stored(fake)).rows[0]!.cells);
+
+      // Sem data ainda não há o que escolher de hora.
+      expect(main().queryByRole("button", { name: /hora de prazo/i })).toBeNull();
+      await user.type(main().getByLabelText("Prazo — Sem título"), "2024-05-17");
+      await vi.waitFor(async () => expect(await cells()).toEqual(["2024-05-17"]));
+
+      await user.click(
+        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+      );
+      const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
+      await user.type(within(dialog).getByLabelText("Hora"), "14:30");
+      await user.click(within(dialog).getByRole("button", { name: "Definir hora" }));
+      await vi.waitFor(async () => expect(await cells()).toEqual(["2024-05-17T14:30"]));
+      expect(
+        main().getByRole("button", { name: "Hora de Prazo — Sem título: 14:30" }),
+      ).toBeTruthy();
+
+      // Trocar o dia mantém a hora.
+      const input = main().getByLabelText("Prazo — Sem título");
+      fireEvent.change(input, { target: { value: "2024-05-18" } });
+      await vi.waitFor(async () => expect(await cells()).toEqual(["2024-05-18T14:30"]));
+
+      await user.click(main().getByRole("button", { name: "Hora de Prazo — Sem título: 14:30" }));
+      await user.click(
+        within(await screen.findByRole("dialog", { name: "Hora de Prazo" })).getByRole("button", {
+          name: "Tirar a hora",
+        }),
+      );
+      await vi.waitFor(async () => expect(await cells()).toEqual(["2024-05-18"]));
+    });
+
     it("seleção: cria opções na hora, escolhe uma e mostra a etiqueta", async () => {
       const { user, fake } = setup();
       await newDatabase(user);

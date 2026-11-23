@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { CellValue, Property, SelectOption } from "../domain/database.ts";
+import { DateCell } from "./DateCell.tsx";
 import { Popover } from "./Popover.tsx";
 import { useSyncedDraft } from "./useSyncedDraft.ts";
 
@@ -185,6 +186,8 @@ export function DatabaseCell(props: Props) {
     case "select":
     case "multi_select":
       return <OptionsCell {...props} />;
+    case "date":
+      return <DateCell {...props} />;
     default:
       return <TextCell {...props} />;
   }

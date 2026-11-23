@@ -15,6 +15,7 @@ import {
   weekOf,
   type IsoDate,
 } from "../application/calendar.ts";
+import { datePart, joinDateTime, timePart } from "../application/date-time.ts";
 import type { DatabaseRow, Property } from "../domain/database.ts";
 import { PageGlyph } from "./PageGlyph.tsx";
 import { Popover } from "./Popover.tsx";
@@ -47,7 +48,8 @@ function ChangeDateButton({
   onChange(iso: IsoDate | null): void;
 }) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useSyncedDraft(current ?? "");
+  const [draft, setDraft] = useSyncedDraft(current === null ? "" : datePart(current));
+  const time = current === null ? null : timePart(current);
   const anchor = useRef<HTMLSpanElement>(null);
   const ignore = useMemo(() => [anchor], []);
   return (
@@ -78,7 +80,7 @@ function ChangeDateButton({
                 // O campo vai se preenchendo por partes (dia, mês, ano): só grava quando a data está completa.
                 setDraft(event.target.value);
                 if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value)) {
-                  onChange(event.target.value);
+                  onChange(joinDateTime(event.target.value, time));
                   setOpen(false);
                 }
               }}
@@ -133,28 +135,45 @@ export function DatabaseCalendar({
     [rows, dateProperty],
   );
 
-  const item = (row: DatabaseRow, iso: IsoDate | null) => (
-    <li
-      key={row.id}
-      className="calendar__item"
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/plain", row.id);
-        event.dataTransfer.effectAllowed = "move";
-        setDragging(row.id);
-      }}
-      onDragEnd={() => {
-        setDragging(null);
-        setOver(null);
-      }}
-    >
-      <button type="button" className="calendar__open" onClick={() => onOpen(row.id)}>
-        <PageGlyph icon={row.icon} size={14} />
-        <span>{row.title}</span>
-      </button>
-      <ChangeDateButton row={row} current={iso} onChange={(next) => onMoveDate(row.id, next)} />
-    </li>
-  );
+  /** Muda o dia da linha mantendo a hora (se tiver). */
+  const moveToDay = (rowId: string, day: IsoDate) => {
+    const old = rows.find((r) => r.id === rowId)?.cells[dateProperty.id];
+    onMoveDate(rowId, joinDateTime(day, typeof old === "string" ? timePart(old) : null));
+  };
+
+  const item = (row: DatabaseRow, iso: IsoDate | null) => {
+    const full = row.cells[dateProperty.id];
+    // O valor completo (com a hora, se houver) só vale para linhas que estão em algum dia.
+    const current = iso !== null && typeof full === "string" ? full : iso;
+    const time = current === null ? null : timePart(current);
+    return (
+      <li
+        key={row.id}
+        className="calendar__item"
+        draggable
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", row.id);
+          event.dataTransfer.effectAllowed = "move";
+          setDragging(row.id);
+        }}
+        onDragEnd={() => {
+          setDragging(null);
+          setOver(null);
+        }}
+      >
+        <button type="button" className="calendar__open" onClick={() => onOpen(row.id)}>
+          <PageGlyph icon={row.icon} size={14} />
+          <span>{row.title}</span>
+          {time && <small className="calendar__time">{time}</small>}
+        </button>
+        <ChangeDateButton
+          row={row}
+          current={current}
+          onChange={(next) => onMoveDate(row.id, next)}
+        />
+      </li>
+    );
+  };
 
   const label = scale === "week" ? weekLabel(weeks[0]!) : monthLabel(monthOf(anchor));
   return (
@@ -236,7 +255,7 @@ export function DatabaseCalendar({
                   onDragLeave={() => setOver((current) => (current === day.iso ? null : current))}
                   onDrop={(event) => {
                     event.preventDefault();
-                    if (dragging !== null) onMoveDate(dragging, day.iso);
+                    if (dragging !== null) moveToDay(dragging, day.iso);
                     setDragging(null);
                     setOver(null);
                   }}

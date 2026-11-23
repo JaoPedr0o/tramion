@@ -2967,3 +2967,94 @@
     gap: 0;
   }
 }
+
+/* ───────── Lembretes com hora (bloco próprio, no fim do arquivo) ───────── */
+.date-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.date-cell .db-cell__input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Botões do campo de hora: alvo de toque de 44 px e texto firme (peso 600). */
+.time-btn {
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.time-btn:hover {
+  background: var(--color-hover);
+}
+
+.time-btn--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.time-btn--primary:hover {
+  background: var(--color-accent);
+  filter: brightness(1.08);
+}
+
+.time-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.time-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.time-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.time-form__field input {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px; /* abaixo de 16px o navegador do celular amplia a tela ao tocar */
+}
+
+.time-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.time-form__actions .time-btn {
+  flex: 1;
+}
+
+.calendar__time {
+  margin-left: var(--space-1);
+  font-weight: 600;
+  opacity: 0.8;
+}
