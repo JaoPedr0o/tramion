@@ -1046,7 +1046,7 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await stored(fake)).reminders).toBeNull();
 
       await user.click(
-        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+        await main().findByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
       );
       const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
       await user.type(within(dialog).getByLabelText("Hora"), "18:52");
@@ -1076,7 +1076,7 @@ describe("módulo de notas (a tela inteira)", () => {
       );
 
       await user.click(
-        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+        await main().findByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
       );
       const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
       await user.type(within(dialog).getByLabelText("Hora"), "18:52");
@@ -1101,7 +1101,7 @@ describe("módulo de notas (a tela inteira)", () => {
       await vi.waitFor(async () => expect(await cells()).toEqual(["2024-05-17"]));
 
       await user.click(
-        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+        await main().findByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
       );
       const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
       await user.type(within(dialog).getByLabelText("Hora"), "14:30");
