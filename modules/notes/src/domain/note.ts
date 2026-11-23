@@ -66,3 +66,15 @@ export interface UpdateNote {
   /** O `updatedAt` que quem edita viu ao abrir a nota. Se a nota já mudou, a edição é recusada. */
   readonly expectedUpdatedAt: number;
 }
+
+/** Um resultado da busca global. */
+export interface SearchHit {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+  readonly isDatabase: boolean;
+  /** Trecho do texto da página em volta do que foi encontrado (pode ser vazio). */
+  readonly snippet: string;
+  /** `true` se o título bate com a busca (senão, só o texto bateu). */
+  readonly inTitle: boolean;
+}

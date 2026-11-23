@@ -9,6 +9,7 @@ use crate::external;
 use crate::model::{
     DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote,
 };
+use crate::search::{self, SearchHit};
 use crate::service;
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request};
@@ -316,4 +317,13 @@ pub async fn rename_note(
 #[tauri::command]
 pub async fn empty_trash(db: State<'_, SharedDatabase>) -> Result<Vec<String>, CommandError> {
     with_db(&db, service::empty_trash)
+}
+
+#[tauri::command]
+pub async fn search(
+    db: State<'_, SharedDatabase>,
+    query: String,
+    limit: usize,
+) -> Result<Vec<SearchHit>, CommandError> {
+    with_db(&db, |conn| search::search(conn, &query, limit))
 }

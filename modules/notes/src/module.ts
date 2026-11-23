@@ -1,6 +1,7 @@
 import type { ModuleManifest } from "@tramion/contracts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { createNavigationStore } from "./application/navigation-store.ts";
+import { createSearchStore } from "./application/search-store.ts";
 import type { EmojiData } from "./application/emoji.ts";
 import type { NotesPlatform } from "./application/notes-platform.ts";
 import { createNotesService } from "./application/notes-service.ts";
@@ -33,10 +34,12 @@ export function createNotesModule(
       const service = createNotesService({ gateway, events });
       // O estado de navegação é compartilhado pelos quatro espaços da tela, que o app monta em lugares diferentes.
       const store = createNavigationStore();
+      const search = createSearchStore();
       const deps = {
         service,
         events,
         store,
+        search,
         actions: createPageActions(service, store),
         BlockEditor: options.BlockEditor ?? LazyBlockEditor,
         platform: options.platform ?? createTauriNotesPlatform(),

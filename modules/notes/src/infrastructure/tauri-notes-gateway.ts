@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { NotesGateway } from "../application/notes-gateway.ts";
 import type { DatabaseData, Property } from "../domain/database.ts";
-import type { Note, NoteSummary, TrashSummary } from "../domain/note.ts";
+import type { Note, NoteSummary, SearchHit, TrashSummary } from "../domain/note.ts";
 import { toNotesError } from "./notes-error.ts";
 
 /** Chama um comando do plugin Rust (`plugin:notes|<comando>`) e padroniza o erro. */
@@ -33,6 +33,7 @@ export function createTauriNotesGateway(): NotesGateway {
     restore: (id) => call<string[]>("restore", { id }),
     purge: (id) => call<string[]>("purge", { id }),
     emptyTrash: () => call<string[]>("empty_trash"),
+    search: (query, limit) => call<SearchHit[]>("search", { query, limit }),
     createDatabase: ({ title, parentId }) => call<Note>("create_database", { title, parentId }),
     getDatabase: (id) => call<DatabaseData>("get_database", { id }),
     addProperty: ({ databaseId, name, type }) =>

@@ -8,6 +8,7 @@ export {
   MoreIcon,
   PageIcon,
   PlusIcon,
+  SearchIcon,
   SidebarIcon,
   StarFilledIcon,
   StarIcon,

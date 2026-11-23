@@ -1,4 +1,4 @@
-import { IconButton, PlusIcon, TrashIcon } from "@tramion/ui";
+import { IconButton, PlusIcon, SearchIcon, TrashIcon } from "@tramion/ui";
 import { useEffect, useState, type ComponentType } from "react";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
@@ -12,7 +12,13 @@ import { usePages } from "./useNoteList.ts";
  * Conteúdo da barra lateral: Favoritos, a árvore de Páginas (com "adicionar" e ações ao passar o mouse) e,
  * no rodapé, a Lixeira. Também cuida dos atalhos Ctrl+N e Ctrl+Shift+N, que valem com a barra recolhida.
  */
-export function createSidebar({ service, events, store, actions }: NotesUiDeps): ComponentType {
+export function createSidebar({
+  service,
+  events,
+  store,
+  search,
+  actions,
+}: NotesUiDeps): ComponentType {
   return function NotesSidebar() {
     const nav = useNavigation(store);
     const pages = usePages(service, events);
@@ -39,6 +45,13 @@ export function createSidebar({ service, events, store, actions }: NotesUiDeps):
 
     return (
       <div className="notes-sidebar">
+        <button type="button" className="sidebar-row sidebar-search" onClick={() => search.open()}>
+          <span className="sidebar-row__icon" aria-hidden="true">
+            <SearchIcon />
+          </span>
+          <span className="sidebar-row__title">Buscar</span>
+          <kbd className="sidebar-search__keys">Ctrl K</kbd>
+        </button>
         {favorites.length > 0 && (
           <section aria-labelledby="notes-favorites-title">
             <h2 id="notes-favorites-title" className="sidebar-label">

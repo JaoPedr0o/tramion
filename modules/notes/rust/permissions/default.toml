@@ -12,6 +12,7 @@ permissions = [
   "allow-restore",
   "allow-purge",
   "allow-empty-trash",
+  "allow-search",
   "allow-save-asset",
   "allow-set-appearance",
   "allow-report-error",

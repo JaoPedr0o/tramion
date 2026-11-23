@@ -57,6 +57,7 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     restore: unused,
     purge: unused,
     emptyTrash: unused,
+    search: unused,
     createDatabase: unused,
     getDatabase: unused,
     addProperty: unused,

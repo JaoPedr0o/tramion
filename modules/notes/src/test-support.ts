@@ -53,6 +53,7 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     restore: vi.fn(async () => []),
     purge: vi.fn(async () => []),
     emptyTrash: vi.fn(async () => []),
+    search: vi.fn(async () => []),
     createDatabase: vi.fn(async () => aNote()),
     getDatabase: vi.fn(async () => ({ id: "n1", title: "Base", properties: [], rows: [] })),
     addProperty: vi.fn(async () => {
@@ -303,6 +304,36 @@ export function createFakeGateway() {
         }
       }
       return affected;
+    },
+
+    async search(query, limit) {
+      const fold = (text: string) =>
+        text
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+      const words = fold(query).split(/\s+/).filter(Boolean);
+      if (words.length === 0) return [];
+      const hits = [...notes.values()]
+        .filter((n) => n.deletedAt === null)
+        .map((n) => {
+          const title = fold(n.title);
+          const body = fold(n.body);
+          const all = words.every((w) => title.includes(w) || body.includes(w));
+          const inTitle = words.every((w) => title.includes(w));
+          return { n, all, inTitle };
+        })
+        .filter((entry) => entry.all)
+        .sort((a, b) => Number(b.inTitle) - Number(a.inTitle) || b.n.updatedAt - a.n.updatedAt)
+        .slice(0, Math.max(1, Math.min(limit, 50)));
+      return hits.map(({ n, inTitle }) => ({
+        id: n.id,
+        title: n.title,
+        icon: n.icon,
+        isDatabase: databases.has(n.id),
+        snippet: n.body.slice(0, 80),
+        inTitle,
+      }));
     },
 
     async emptyTrash() {

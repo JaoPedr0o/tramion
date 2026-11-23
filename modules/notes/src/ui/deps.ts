@@ -1,5 +1,6 @@
 import type { AppEvents, EventBus } from "@tramion/contracts";
 import type { NavigationStore } from "../application/navigation-store.ts";
+import type { SearchStore } from "../application/search-store.ts";
 import type { NotesService } from "../application/notes-service.ts";
 import type { ComponentType } from "react";
 import type { EmojiData } from "../application/emoji.ts";
@@ -12,6 +13,8 @@ export interface NotesUiDeps {
   service: NotesService;
   events: EventBus<AppEvents>;
   store: NavigationStore;
+  /** Se a caixa de busca (Ctrl + K) está aberta. */
+  search: SearchStore;
   actions: ReturnType<typeof createPageActions>;
   /** O editor de blocos (o de verdade é carregado sob demanda; os testes passam um falso). */
   BlockEditor: ComponentType<BlockEditorProps>;

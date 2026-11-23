@@ -1,7 +1,8 @@
 import { Logo } from "@tramion/ui";
-import type { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { NotePanel } from "./NotePanel.tsx";
+import { SearchDialog } from "./SearchDialog.tsx";
 import { TrashView } from "./TrashView.tsx";
 import { useNavigation } from "./useNavigation.ts";
 
@@ -12,8 +13,22 @@ export function createMain(deps: NotesUiDeps): ComponentType {
   return function NotesMain() {
     const nav = useNavigation(store);
 
+    // Ctrl + K (ou Cmd + K) abre e fecha a busca. Se o editor já tratou a tecla (ele usa Ctrl + K para criar link com
+    // texto selecionado), a busca não abre.
+    useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.defaultPrevented || event.altKey || event.shiftKey) return;
+        if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") return;
+        event.preventDefault();
+        deps.search.toggle();
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, []);
+
     return (
       <div className="notes-main">
+        <SearchDialog deps={deps} />
         {nav.actionError && (
           <p role="alert" className="notes-main__error">
             {nav.actionError}

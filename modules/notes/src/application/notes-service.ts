@@ -11,6 +11,7 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  SearchHit,
   SetAppearance,
   TrashSummary,
   UpdateNote,
@@ -33,6 +34,8 @@ export interface NotesService {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez tudo o que está na lixeira; devolve os ids de todas as páginas apagadas. */
   emptyTrash(): Promise<readonly string[]>;
+  /** Busca global nas páginas ativas. */
+  search(query: string, limit?: number): Promise<readonly SearchHit[]>;
 
   createDatabase(input: { title: string; parentId: string | null }): Promise<Note>;
   getDatabase(id: string): Promise<DatabaseData>;
@@ -104,6 +107,8 @@ export function createNotesService(deps: {
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
       return affected;
     },
+
+    search: (query, limit = 20) => gateway.search(query, limit),
 
     // Um evento por página apagada, como em `purge`.
     async emptyTrash() {

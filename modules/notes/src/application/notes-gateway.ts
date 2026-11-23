@@ -10,6 +10,7 @@ import type {
   NewNote,
   Note,
   NoteSummary,
+  SearchHit,
   SetAppearance,
   TrashSummary,
   UpdateNote,
@@ -39,6 +40,8 @@ export interface NotesGateway {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez TUDO o que está na lixeira; devolve os ids apagados (lista vazia se não havia nada). */
   emptyTrash(): Promise<readonly string[]>;
+  /** Busca nas páginas ativas (título e texto), sem diferenciar acento nem maiúscula; no máximo `limit` resultados. */
+  search(query: string, limit: number): Promise<readonly SearchHit[]>;
 
   // ─── Bases de dados ───
   /** Cria uma base (página marcada) no fim das irmãs de `parentId` (`null` = raiz). */

@@ -1563,4 +1563,151 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(main().queryByRole("region", { name: "Base de dados" })).toBeNull();
     });
   });
+
+  describe("busca global (Ctrl + K)", () => {
+    const box = () => within(screen.getByRole("dialog", { name: "Buscar" }));
+    const searchInput = () => screen.getByRole("combobox", { name: "Buscar páginas" });
+
+    async function seed(fake: ReturnType<typeof setup>["fake"]) {
+      await fake.gateway.create({ title: "Receita de pão", body: "farinha, fermento e água" });
+      await fake.gateway.create({ title: "Ação judicial", body: "prazo de recurso" });
+      await fake.gateway.create({ title: "Diário", body: "hoje comprei pão e leite" });
+    }
+
+    it("Ctrl + K abre a caixa com o foco no campo; Ctrl + K de novo ou Esc fecham", async () => {
+      const { user } = setup();
+
+      await user.keyboard("{Control>}k{/Control}");
+      expect(screen.getByRole("dialog", { name: "Buscar" })).toBeTruthy();
+      expect(document.activeElement).toBe(searchInput());
+      expect(box().getByText("Digite para buscar no título e no texto.")).toBeTruthy();
+
+      await user.keyboard("{Control>}k{/Control}");
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).toBeNull();
+
+      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).toBeNull();
+    });
+
+    it("o botão Buscar da barra lateral também abre; clicar fora fecha", async () => {
+      const { user } = setup();
+
+      await user.click(sidebar().getByRole("button", { name: /Buscar/ }));
+      expect(screen.getByRole("dialog", { name: "Buscar" })).toBeTruthy();
+
+      await user.click(document.querySelector(".search-backdrop")!);
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).toBeNull();
+    });
+
+    it("encontra pelo título e pelo texto, sem diferenciar acento nem maiúscula, com trecho", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await user.keyboard("{Control>}k{/Control}");
+
+      await user.type(searchInput(), "PAO");
+
+      const options = await box().findAllByRole("option");
+      expect(options).toHaveLength(2);
+      expect(options[0]!.textContent).toContain("Receita de pão"); // título primeiro
+      expect(options[1]!.textContent).toContain("Diário");
+      expect(options[1]!.textContent).toContain("hoje comprei pão e leite");
+    });
+
+    it("várias palavras: todas precisam aparecer", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await user.keyboard("{Control>}k{/Control}");
+
+      await user.type(searchInput(), "acao recurso");
+
+      expect(await box().findAllByRole("option")).toHaveLength(1);
+      expect(box().getByRole("option").textContent).toContain("Ação judicial");
+    });
+
+    it("sem resultado avisa; apagar a busca volta à dica", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await user.keyboard("{Control>}k{/Control}");
+
+      await user.type(searchInput(), "zzzz");
+      expect(await box().findByText("Nenhuma página encontrada.")).toBeTruthy();
+
+      await user.clear(searchInput());
+      expect(box().getByText("Digite para buscar no título e no texto.")).toBeTruthy();
+      expect(box().queryByRole("option")).toBeNull();
+    });
+
+    it("setas escolhem em círculo e Enter abre a página escolhida", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await user.keyboard("{Control>}k{/Control}");
+      await user.type(searchInput(), "pao");
+      await box().findAllByRole("option");
+
+      expect(box().getAllByRole("option")[0]!.getAttribute("aria-selected")).toBe("true");
+      await user.keyboard("{ArrowDown}");
+      expect(box().getAllByRole("option")[1]!.getAttribute("aria-selected")).toBe("true");
+      await user.keyboard("{ArrowDown}");
+      expect(box().getAllByRole("option")[0]!.getAttribute("aria-selected")).toBe("true"); // volta ao início
+      await user.keyboard("{ArrowUp}");
+      expect(box().getAllByRole("option")[1]!.getAttribute("aria-selected")).toBe("true");
+
+      await user.keyboard("{Enter}");
+
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).toBeNull();
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Diário",
+      );
+    });
+
+    it("clicar num resultado abre a página", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await user.keyboard("{Control>}k{/Control}");
+      await user.type(searchInput(), "judicial");
+
+      await user.click(await box().findByRole("option"));
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Ação judicial",
+      );
+    });
+
+    it("páginas na lixeira não aparecem", async () => {
+      const { user, fake } = setup();
+      await seed(fake);
+      await fake.gateway.delete("n1");
+      await user.keyboard("{Control>}k{/Control}");
+
+      await user.type(searchInput(), "receita");
+
+      expect(await box().findByText("Nenhuma página encontrada.")).toBeTruthy();
+    });
+
+    it("falha na busca mostra um aviso", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "search").mockRejectedValue(new NotesError("notes.internal", "x"));
+      await user.keyboard("{Control>}k{/Control}");
+
+      await user.type(searchInput(), "algo");
+
+      expect((await box().findByRole("alert")).textContent).toContain(
+        "Não foi possível buscar agora",
+      );
+    });
+
+    it("devolve o foco para onde estava ao fechar", async () => {
+      const { user } = setup();
+      const button = sidebar().getByRole("button", { name: "Nova página" });
+      button.focus();
+
+      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Escape}");
+
+      expect(document.activeElement).toBe(button);
+    });
+  });
 });

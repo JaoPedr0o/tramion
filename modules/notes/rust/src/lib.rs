@@ -12,6 +12,7 @@ pub mod external;
 pub mod model;
 pub mod repository;
 pub mod samples;
+pub mod search;
 pub mod service;
 
 use tauri::Runtime;
@@ -73,6 +74,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::restore,
             commands::purge,
             commands::empty_trash,
+            commands::search,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,
