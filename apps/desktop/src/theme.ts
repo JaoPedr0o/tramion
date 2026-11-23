@@ -25,6 +25,16 @@ export function saveTheme(theme: ThemePreference): void {
   }
 }
 
+/** O tema que vale agora é claro? (Em "system", segue o sistema.) */
+export function isLightTheme(theme: ThemePreference): boolean {
+  if (theme === "light") return true;
+  if (theme === "dark") return false;
+  return (
+    typeof window.matchMedia === "function" &&
+    !window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+}
+
 /**
  * Aplica o tema. Os estilos (`tokens.css`) entendem `data-theme="light|dark"`; sem o atributo, vale a
  * preferência do sistema.

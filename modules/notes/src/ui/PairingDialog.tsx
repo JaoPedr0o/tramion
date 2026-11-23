@@ -184,21 +184,37 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
         <h2 className="pairing__title">Parear celular</h2>
 
         <div className="pairing__modes" role="group" aria-label="Quem mostra o código">
-          <button type="button" aria-pressed={mode === "show"} onClick={() => switchTo("show")}>
-            Mostrar código neste aparelho
+          <button
+            type="button"
+            className="pairing__mode"
+            aria-label="Mostrar código neste aparelho"
+            aria-pressed={mode === "show"}
+            onClick={() => switchTo("show")}
+          >
+            Mostrar código
           </button>
-          <button type="button" aria-pressed={mode === "scan"} onClick={() => switchTo("scan")}>
-            Ler código de outro aparelho
+          <button
+            type="button"
+            className="pairing__mode"
+            aria-label="Ler código de outro aparelho"
+            aria-pressed={mode === "scan"}
+            onClick={() => switchTo("scan")}
+          >
+            Ler código
           </button>
         </div>
 
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="pairing__error">
+            {error}
+          </p>
+        ) : null}
 
         {mode === "show" ? (
-          <>
+          <section className="pairing__section">
             <p className="pairing__hint">
-              No outro aparelho, escolha “Ler código de outro aparelho” e aponte a câmera para este
-              QR. Os dois precisam estar na mesma rede Wi-Fi.
+              No outro aparelho, escolha “Ler código” e aponte a câmera para este QR. Os dois
+              precisam estar na mesma rede Wi-Fi.
             </p>
             {offer && !expired ? (
               <>
@@ -220,25 +236,25 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
               </>
             ) : null}
             {expired ? (
-              <p>
-                O código expirou.{" "}
-                <button type="button" onClick={() => void generate()}>
+              <div className="pairing__expired">
+                <p>O código expirou.</p>
+                <button type="button" className="pairing__btn" onClick={() => void generate()}>
                   Gerar novo código
                 </button>
-              </p>
+              </div>
             ) : null}
-          </>
+          </section>
         ) : (
-          <>
+          <section className="pairing__section">
             {platform.canScanQr ? (
               <>
                 <p className="pairing__hint">
                   Aponte a câmera para o QR mostrado no outro aparelho (em “Parear celular” →
-                  “Mostrar código neste aparelho”).
+                  “Mostrar código”).
                 </p>
                 <button
                   type="button"
-                  className="pairing__camera"
+                  className="pairing__btn pairing__btn--primary pairing__btn--wide"
                   disabled={busy || scanning}
                   onClick={() => void scan()}
                 >
@@ -251,11 +267,12 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
                 aparelho.
               </p>
             )}
-            <p className="pairing__hint">
-              {platform.canScanQr ? "Ou cole o código:" : "Código do outro aparelho:"}
-            </p>
+            <label className="pairing__field-label" htmlFor="pairing-code">
+              {platform.canScanQr ? "Ou cole o código" : "Código do outro aparelho"}
+            </label>
             <div className="pairing__connect">
               <input
+                id="pairing-code"
                 aria-label="Código do outro aparelho"
                 placeholder="tramion-pair:1:…"
                 value={code}
@@ -263,6 +280,7 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
               />
               <button
                 type="button"
+                className="pairing__btn pairing__btn--primary"
                 disabled={busy || code.trim() === ""}
                 onClick={() => {
                   void run(async () => [await platform.pairWithCode(code.trim())]).then((ok) => {
@@ -273,51 +291,61 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
                 Conectar
               </button>
             </div>
-          </>
+          </section>
         )}
 
-        {peers.some((peer) => peer.canDial) ? (
-          <button type="button" disabled={busy} onClick={() => void run(() => platform.syncNow())}>
-            Sincronizar agora
-          </button>
-        ) : null}
-        {result ? <p role="status">{result}</p> : null}
+        <section className="pairing__section">
+          <h3 className="pairing__subtitle">Aparelhos pareados</h3>
+          {peers.some((peer) => peer.canDial) ? (
+            <button
+              type="button"
+              className="pairing__btn pairing__btn--primary pairing__btn--wide"
+              disabled={busy}
+              onClick={() => void run(() => platform.syncNow())}
+            >
+              {busy ? "Sincronizando…" : "Sincronizar agora"}
+            </button>
+          ) : null}
+          {result ? (
+            <p role="status" className="pairing__result">
+              {result}
+            </p>
+          ) : null}
+          {peers.length === 0 ? (
+            <p className="pairing__empty">Nenhum aparelho pareado.</p>
+          ) : (
+            <ul className="pairing__peers" aria-label="Aparelhos pareados">
+              {peers.map((peer) => (
+                <li key={peer.device} className="pairing__peer">
+                  <span className="pairing__peer-info">
+                    <span className="pairing__peer-name">{peer.name}</span>
+                    <small>
+                      {peer.lastSyncAt === null
+                        ? "Ainda não sincronizou"
+                        : `Sincronizou ${new Date(peer.lastSyncAt).toLocaleString("pt-BR")}`}
+                    </small>
+                  </span>
+                  <button
+                    type="button"
+                    className="pairing__btn pairing__btn--danger"
+                    aria-label={`Remover ${peer.name}`}
+                    onClick={() => {
+                      void platform
+                        .removePeer(peer.device)
+                        .then(refreshPeers)
+                        .catch((failure: unknown) => setError(reasonOf(failure)));
+                    }}
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-        <h3 className="pairing__subtitle">Aparelhos pareados</h3>
-        {peers.length === 0 ? (
-          <p className="pairing__empty">Nenhum aparelho pareado.</p>
-        ) : (
-          <ul className="pairing__peers" aria-label="Aparelhos pareados">
-            {peers.map((peer) => (
-              <li key={peer.device}>
-                <span>
-                  {peer.name}
-                  <small>
-                    {peer.lastSyncAt === null
-                      ? " · ainda não sincronizou"
-                      : ` · sincronizou ${new Date(peer.lastSyncAt).toLocaleString("pt-BR")}`}
-                  </small>
-                </span>
-                <button
-                  type="button"
-                  aria-label={`Remover ${peer.name}`}
-                  onClick={() => {
-                    void platform
-                      .removePeer(peer.device)
-                      .then(refreshPeers)
-                      .catch((failure: unknown) => setError(reasonOf(failure)));
-                  }}
-                >
-                  Remover
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="capture__bar">
-          <span />
-          <button type="button" onClick={close}>
+        <div className="pairing__footer">
+          <button type="button" className="pairing__btn pairing__btn--wide" onClick={close}>
             Fechar
           </button>
         </div>

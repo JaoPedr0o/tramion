@@ -2488,62 +2488,164 @@
 
 /* ───────── Parear celular ───────── */
 .pairing {
-  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: calc(100dvh - 32px - var(--safe-top, 0px) - var(--safe-bottom, 0px));
   overflow-y: auto;
 }
 
 .pairing__title {
-  margin: 0 0 var(--space-1);
-  font-size: 18px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pairing__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .pairing__subtitle {
-  margin: var(--space-3) 0 var(--space-1);
-  font-size: 14px;
+  margin: var(--space-1) 0 0;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .pairing__hint,
 .pairing__expiry,
 .pairing__empty,
 .pairing__warning {
-  margin: var(--space-1) 0;
+  margin: 0;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pairing__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-selected);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.pairing__result {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Todos os botões da janela: texto firme (peso 600), tamanho legível e alvo de toque confortável. */
+.pairing__btn,
+.pairing__mode {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.pairing__btn:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.pairing__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pairing__btn--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.pairing__btn--primary:hover:not(:disabled) {
+  background: var(--color-accent);
+  filter: brightness(1.08);
+}
+
+.pairing__btn--danger {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.pairing__btn--wide {
+  width: 100%;
+}
+
+/* Escolha de quem mostra o código: duas metades iguais, a ativa preenchida. */
+.pairing__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--color-selected);
+}
+
+.pairing__mode {
+  border-color: transparent;
+}
+
+.pairing__mode[aria-pressed="true"] {
+  background: var(--color-bg);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
 }
 
 .pairing__qr {
   display: block;
-  width: 240px;
-  height: 240px;
-  margin: var(--space-2) auto;
+  width: min(240px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  margin: var(--space-1) auto;
   border-radius: var(--radius);
   background: #fff;
 }
 
+.pairing__manual summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .pairing__manual code {
   display: block;
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
   overflow-wrap: anywhere;
   user-select: all;
   font-size: 12px;
 }
 
-.pairing__peers {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pairing__peers li {
+.pairing__expired {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-1) 0;
 }
 
-.pairing__peers small {
+.pairing__expired p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pairing__field-label {
   color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .pairing__connect {
@@ -2554,56 +2656,57 @@
 .pairing__connect input {
   flex: 1;
   min-width: 0;
-  padding: var(--space-1) var(--space-2);
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
 }
 
-.pairing__modes {
+/* Lista de aparelhos: cada um num cartão, com o nome firme e a data de sincronização discreta embaixo. */
+.pairing__peers {
   display: flex;
-  gap: var(--space-1);
-  margin: var(--space-2) 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.pairing__modes button {
-  flex: 1;
-  padding: var(--space-1) var(--space-2);
+.pairing__peer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
 }
 
-.pairing__modes button[aria-pressed="true"] {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  border-color: var(--color-accent);
+.pairing__peer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.pairing__camera {
-  display: block;
-  width: 100%;
-  margin: var(--space-2) 0;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font: inherit;
+.pairing__peer-name {
   font-size: 15px;
-  cursor: pointer;
+  font-weight: 600;
 }
 
-.pairing__camera:disabled {
-  opacity: 0.6;
-  cursor: default;
+.pairing__peer small {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.pairing__footer {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ───────── Telas de celular (abaixo de 720 px) ───────── */
@@ -2632,10 +2735,18 @@
     gap: var(--space-2);
   }
 
-  .pairing__qr {
-    width: min(240px, 100%);
-    height: auto;
-    aspect-ratio: 1;
+  /* Botão de fechar em largura total, e os cartões de aparelho empilham o botão Remover. */
+  .pairing__footer .pairing__btn {
+    width: 100%;
+  }
+
+  .pairing__peer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pairing__peer .pairing__btn {
+    width: 100%;
   }
 
   .capture textarea {

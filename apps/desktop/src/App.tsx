@@ -11,7 +11,8 @@ import {
 } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { isNarrowScreen, useDrawerGestures, useNarrowScreen } from "./drawer";
-import { applyTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
+import { installSafeArea, setSystemBarsLight } from "./safe-area";
+import { applyTheme, isLightTheme, readTheme, saveTheme, type ThemePreference } from "./theme";
 
 const STORAGE_KEY = "tramion.sidebarCollapsed";
 /** Chaves dos nomes antigos do app: a preferência de quem já usava continua valendo. */
@@ -73,7 +74,17 @@ export default function App({ views, workspaceName = "Tramion" }: Props) {
   useEffect(() => {
     applyTheme(theme);
     saveTheme(theme);
+    // Os ícones das barras do sistema (celular) acompanham o tema do app, e não o do sistema.
+    setSystemBarsLight(isLightTheme(theme));
+    if (theme !== "system" || typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setSystemBarsLight(isLightTheme("system"));
+    query.addEventListener?.("change", onChange);
+    return () => query.removeEventListener?.("change", onChange);
   }, [theme]);
+
+  // Celular: margens seguras (barras do sistema e teclado) informadas pelo Android.
+  useEffect(() => installSafeArea(), []);
 
   // Ctrl+\ recolhe e abre a barra lateral, como no Notion.
   useEffect(() => {

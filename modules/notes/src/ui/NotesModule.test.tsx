@@ -3225,7 +3225,7 @@ describe("módulo de notas (a tela inteira)", () => {
       await open(user);
 
       expect(await within(dialog()).findByText(/Celular \(ab12\)/)).toBeTruthy();
-      expect(within(dialog()).getByText(/ainda não sincronizou/)).toBeTruthy();
+      expect(within(dialog()).getByText(/ainda não sincronizou/i)).toBeTruthy();
       await user.click(within(dialog()).getByRole("button", { name: "Remover Celular (ab12)" }));
 
       expect(platform.removePeer).toHaveBeenCalledWith("cel");
