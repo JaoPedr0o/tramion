@@ -1390,7 +1390,7 @@
   background: var(--color-selected);
 }
 
-/* ───────── Identidade "Aesthetic" ───────── */
+/* ───────── Identidade Tramion ───────── */
 /* Títulos dentro da página, na mesma serifa suave do título da página. */
 .bn-block-content[data-content-type="heading"] {
   font-family: var(--font-display);
@@ -1433,5 +1433,5 @@
 }
 
 .notes-empty .logo {
-  filter: drop-shadow(0 10px 24px rgb(201 162 236 / 45%));
+  filter: drop-shadow(0 10px 24px rgb(106 88 236 / 40%));
 }

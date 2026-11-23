@@ -1,8 +1,9 @@
 /* Tokens de design: a ÚNICA fonte de cores, medidas e tipografia.
    Componentes usam var(--...) e nunca valores soltos. Trocar o tema = trocar variáveis.
 
-   Identidade "Aesthetic": tons suaves de lavanda, rosé e creme no claro ("Pétala"); roxo profundo e
-   lilás no escuro ("Crepúsculo"). Títulos em serifa suave (Fraunces), texto em sans limpa (Inter). */
+   Identidade Tramion: índigo e violeta suaves com um toque de coral. Tema claro "Aurora" (branco azulado e
+   periwinkle); tema escuro "Noite" (azul-noite profundo). Títulos em serifa suave (Fraunces), texto em sans
+   limpa (Inter). */
 :root {
   color-scheme: light dark;
   --font-sans:
@@ -30,39 +31,39 @@
   --row-height: 30px;
 
   /* Cores (tema claro: "Pétala") */
-  --color-bg: #fffcf9;
-  --color-sidebar: #f8f1f5;
-  --sidebar-background: linear-gradient(180deg, #faf2f7 0%, #f6f0f9 58%, #f9f1ef 100%);
+  --color-bg: #fbfaff;
+  --color-sidebar: #f2f0fc;
+  --sidebar-background: linear-gradient(180deg, #f4f2fd 0%, #efeefb 60%, #f6f0f8 100%);
   --color-surface: #ffffff;
-  --color-text: #3a3042;
-  --color-text-muted: #85788f;
-  --color-border: #eee5ee;
-  --color-hover: rgba(138, 96, 168, 0.08);
-  --color-selected: rgba(170, 120, 210, 0.16);
-  --color-accent: #9b63cf;
-  --color-accent-soft: rgba(155, 99, 207, 0.14);
+  --color-text: #26233a;
+  --color-text-muted: #7a7796;
+  --color-border: #e7e5f4;
+  --color-hover: rgba(90, 80, 200, 0.07);
+  --color-selected: rgba(111, 92, 240, 0.14);
+  --color-accent: #6a58ec;
+  --color-accent-soft: rgba(106, 88, 236, 0.13);
   --color-danger: #d6455d;
   --color-warning-bg: #fbf0dc;
   --color-danger-bg: #fbe3e8;
-  --gradient-brand: linear-gradient(135deg, #c9a2ec 0%, #f4a6c7 52%, #ffd0b0 100%);
+  --gradient-brand: linear-gradient(135deg, #5d4be0 0%, #9a7bff 55%, #ff9a8b 100%);
   --shadow-menu:
-    0 0 0 1px rgba(90, 60, 120, 0.06), 0 4px 10px rgba(90, 60, 120, 0.1),
-    0 12px 30px rgba(90, 60, 120, 0.16);
+    0 0 0 1px rgba(60, 50, 140, 0.07), 0 4px 10px rgba(60, 50, 140, 0.1),
+    0 12px 30px rgba(60, 50, 140, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #16131b;
-    --color-sidebar: #1c1823;
-    --sidebar-background: linear-gradient(180deg, #1e1926 0%, #1b1723 60%, #1d1820 100%);
-    --color-surface: #231e2b;
-    --color-text: rgba(255, 244, 250, 0.86);
-    --color-text-muted: #a597b3;
-    --color-border: #302838;
-    --color-hover: rgba(210, 170, 240, 0.07);
-    --color-selected: rgba(190, 140, 230, 0.16);
-    --color-accent: #c79bf0;
-    --color-accent-soft: rgba(199, 155, 240, 0.16);
+    --color-bg: #12111c;
+    --color-sidebar: #171627;
+    --sidebar-background: linear-gradient(180deg, #191830 0%, #161526 62%, #181626 100%);
+    --color-surface: #1e1c30;
+    --color-text: rgba(240, 238, 255, 0.88);
+    --color-text-muted: #9f9bc0;
+    --color-border: #2a2840;
+    --color-hover: rgba(160, 150, 255, 0.08);
+    --color-selected: rgba(140, 120, 255, 0.18);
+    --color-accent: #a99bff;
+    --color-accent-soft: rgba(169, 155, 255, 0.17);
     --color-danger: #ff7f93;
     --color-warning-bg: #42382a;
     --color-danger-bg: #4d2a35;
@@ -73,17 +74,17 @@
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #16131b;
-  --color-sidebar: #1c1823;
-  --sidebar-background: linear-gradient(180deg, #1e1926 0%, #1b1723 60%, #1d1820 100%);
-  --color-surface: #231e2b;
-  --color-text: rgba(255, 244, 250, 0.86);
-  --color-text-muted: #a597b3;
-  --color-border: #302838;
-  --color-hover: rgba(210, 170, 240, 0.07);
-  --color-selected: rgba(190, 140, 230, 0.16);
-  --color-accent: #c79bf0;
-  --color-accent-soft: rgba(199, 155, 240, 0.16);
+  --color-bg: #12111c;
+  --color-sidebar: #171627;
+  --sidebar-background: linear-gradient(180deg, #191830 0%, #161526 62%, #181626 100%);
+  --color-surface: #1e1c30;
+  --color-text: rgba(240, 238, 255, 0.88);
+  --color-text-muted: #9f9bc0;
+  --color-border: #2a2840;
+  --color-hover: rgba(160, 150, 255, 0.08);
+  --color-selected: rgba(140, 120, 255, 0.18);
+  --color-accent: #a99bff;
+  --color-accent-soft: rgba(169, 155, 255, 0.17);
   --color-danger: #ff7f93;
   --color-warning-bg: #42382a;
   --color-danger-bg: #4d2a35;
