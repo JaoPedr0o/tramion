@@ -53,8 +53,11 @@ android {
         }
         getByName("release") {
             signingConfigs.findByName("release")?.let { signingConfig = it }
+            // Sem minificação (R8): o otimizador removia partes dos plugins do Tauri que são chamadas por reflexão
+            // (por exemplo, os argumentos do leitor de QR), derrubando o app ao abrir a câmera. O APK fica maior, mas
+            // funciona; reavaliar com regras de manutenção próprias quando houver aparelho para testar.
             optimization {
-               enable = true
+               enable = false
             }
             proguardFiles(
                 *fileTree(".") {
