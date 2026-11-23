@@ -15,7 +15,10 @@ import type {
 } from "../domain/database.ts";
 import { Choice } from "./Choice.tsx";
 import { DatabaseBoard } from "./DatabaseBoard.tsx";
+import { DatabaseCalendar } from "./DatabaseCalendar.tsx";
 import { DatabaseCell } from "./DatabaseCell.tsx";
+import { DatabaseGallery } from "./DatabaseGallery.tsx";
+import { DatabaseList } from "./DatabaseList.tsx";
 import {
   AddPropertyButton,
   FilterButton,
@@ -31,6 +34,36 @@ import { useSyncedDraft } from "./useSyncedDraft.ts";
 interface Props {
   deps: NotesUiDeps;
   id: string;
+}
+
+type ViewMode = "table" | "board" | "list" | "gallery" | "calendar";
+
+const VIEW_MODES: ReadonlyArray<readonly [ViewMode, string]> = [
+  ["table", "Tabela"],
+  ["board", "Quadro"],
+  ["list", "Lista"],
+  ["gallery", "Galeria"],
+  ["calendar", "Calendário"],
+];
+
+/** A forma de exibição escolhida é lembrada por base (conveniência: se o armazenamento faltar, volta à tabela). */
+const viewKey = (databaseId: string) => `tramion.databaseView.${databaseId}`;
+
+function readView(databaseId: string): ViewMode {
+  try {
+    const stored = localStorage.getItem(viewKey(databaseId));
+    return VIEW_MODES.some(([mode]) => mode === stored) ? (stored as ViewMode) : "table";
+  } catch {
+    return "table";
+  }
+}
+
+function saveView(databaseId: string, mode: ViewMode) {
+  try {
+    localStorage.setItem(viewKey(databaseId), mode);
+  } catch {
+    /* sem armazenamento: não lembra */
+  }
 }
 
 type State =
@@ -63,8 +96,13 @@ export function DatabaseView({ deps, id }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState<readonly FilterRule[]>([]);
   const [sort, setSort] = useState<SortRule | null>(null);
-  const [view, setView] = useState<"table" | "board">("table");
+  const [view, setViewState] = useState<ViewMode>(() => readView(id));
   const [groupById, setGroupById] = useState<string | null>(null);
+  const [dateById, setDateById] = useState<string | null>(null);
+  const setView = (mode: ViewMode) => {
+    setViewState(mode);
+    saveView(id, mode);
+  };
 
   const load = useCallback(() => {
     service.getDatabase(id).then(
@@ -167,18 +205,18 @@ export function DatabaseView({ deps, id }: Props) {
       load(); // as células que usavam a opção foram limpas pelo Rust
     }).then(() => undefined);
 
-  /** Cria uma linha; com `group`, já a coloca numa coluna do quadro (valor da coluna de seleção). */
-  const addRow = (group?: { property: Property; optionId: string | null }) =>
+  /** Cria uma linha; com `initial`, já a cria com esse valor numa coluna (a coluna do quadro ou a data do calendário). */
+  const addRow = (initial?: { property: Property; value: CellValue }) =>
     attempt(async () => {
       const note = await service.createRow({ databaseId: id, title: "Sem título" });
       const cells: Record<string, CellValue> = {};
-      if (group?.optionId) {
+      if (initial) {
         await service.setCell({
           noteId: note.id,
-          propertyId: group.property.id,
-          value: group.optionId,
+          propertyId: initial.property.id,
+          value: initial.value,
         });
-        cells[group.property.id] = group.optionId;
+        cells[initial.property.id] = initial.value;
       }
       // O evento `note.created` também recarrega a base; quem chegar primeiro vale, sem duplicar a linha.
       patch((d) =>
@@ -227,22 +265,22 @@ export function DatabaseView({ deps, id }: Props) {
     );
 
   const { properties } = state.data;
+  // Tabela, lista e galeria mostram todas as linhas e têm o botão de nova linha; quadro e calendário criam por coluna e dia.
+  const listLike = view === "table" || view === "list" || view === "gallery";
   const selectProperties = properties.filter((p) => p.type === "select");
   // A coluna do quadro: a escolhida, se ainda existir; senão a primeira de seleção.
   const groupProperty =
     selectProperties.find((p) => p.id === groupById) ?? selectProperties[0] ?? null;
+  const dateProperties = properties.filter((p) => p.type === "date");
+  // A coluna do calendário: a escolhida, se ainda existir; senão a primeira de data.
+  const dateProperty = dateProperties.find((p) => p.id === dateById) ?? dateProperties[0] ?? null;
   return (
     <section className="database" aria-label="Base de dados">
       <TitleField key={state.data.title} title={state.data.title} onRename={renameDatabase} />
 
       <div className="db-toolbar">
         <div role="tablist" aria-label="Forma de exibição" className="db-views">
-          {(
-            [
-              ["table", "Tabela"],
-              ["board", "Quadro"],
-            ] as const
-          ).map(([mode, label]) => (
+          {VIEW_MODES.map(([mode, label]) => (
             <button
               key={mode}
               type="button"
@@ -260,6 +298,14 @@ export function DatabaseView({ deps, id }: Props) {
             value={groupProperty.id}
             options={selectProperties.map((p) => ({ id: p.id, label: p.name }))}
             onChange={setGroupById}
+          />
+        )}
+        {view === "calendar" && dateProperty && dateProperties.length > 1 && (
+          <Choice
+            label="Mostrar por"
+            value={dateProperty.id}
+            options={dateProperties.map((p) => ({ id: p.id, label: p.name }))}
+            onChange={setDateById}
           />
         )}
         <FilterButton properties={properties} rules={rules} onChange={setRules} />
@@ -280,12 +326,40 @@ export function DatabaseView({ deps, id }: Props) {
             rows={rows}
             onOpen={(rowId) => actions.openPage(rowId, allPages)}
             onMove={(rowId, optionId) => void setCell(rowId, groupProperty, optionId)}
-            onAdd={(optionId) => void addRow({ property: groupProperty, optionId })}
+            onAdd={(optionId) =>
+              void addRow(optionId ? { property: groupProperty, value: optionId } : undefined)
+            }
           />
         ) : (
           <p className="db-empty">
             Para ver o quadro, adicione uma coluna do tipo Seleção (como &quot;Status&quot;): cada
             opção vira uma coluna do quadro.
+          </p>
+        )
+      ) : view === "list" ? (
+        <DatabaseList
+          properties={properties}
+          rows={rows}
+          onOpen={(rowId) => actions.openPage(rowId, allPages)}
+        />
+      ) : view === "gallery" ? (
+        <DatabaseGallery
+          properties={properties}
+          rows={rows}
+          onOpen={(rowId) => actions.openPage(rowId, allPages)}
+        />
+      ) : view === "calendar" ? (
+        dateProperty ? (
+          <DatabaseCalendar
+            dateProperty={dateProperty}
+            rows={rows}
+            onOpen={(rowId) => actions.openPage(rowId, allPages)}
+            onMoveDate={(rowId, iso) => void setCell(rowId, dateProperty, iso)}
+            onAdd={(iso) => void addRow({ property: dateProperty, value: iso })}
+          />
+        ) : (
+          <p className="db-empty">
+            Para ver o calendário, adicione uma coluna do tipo Data: cada linha aparece no dia dela.
           </p>
         )
       ) : (
@@ -377,14 +451,14 @@ export function DatabaseView({ deps, id }: Props) {
         </>
       )}
 
-      {view === "table" && rows.length === 0 && (
+      {listLike && rows.length === 0 && (
         <p className="db-empty">
           {state.data.rows.length === 0
             ? "Esta base ainda não tem linhas."
             : "Nenhuma linha passa nos filtros."}
         </p>
       )}
-      {view === "table" && (
+      {listLike && (
         <button type="button" className="db-new-row" onClick={() => void addRow()}>
           + Nova linha
         </button>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { AppEvents, ViewContribution } from "@tramion/contracts";
 import { createEventBus, createViewRegistry } from "@tramion/core";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotesError } from "../domain/errors.ts";
@@ -103,6 +103,7 @@ async function parentWithChild(user: User) {
 describe("módulo de notas (a tela inteira)", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    localStorage.clear(); // a forma de exibição das bases é lembrada: cada teste começa do zero
   });
   afterEach(() => {
     cleanup();
@@ -1320,6 +1321,227 @@ describe("módulo de notas (a tela inteira)", () => {
         "value",
         "Sem título",
       );
+    });
+
+    /** Base com colunas "Obs" (texto) e "Prazo" (data) e duas linhas: "Pão" (dia 5) e "Leite" (sem data). */
+    async function datedBase(user: User, fake: Fake, today = new Date(2026, 10, 15)) {
+      vi.setSystemTime(today);
+      await newDatabase(user);
+      await addColumn(user, "Prazo", "Data");
+      await addColumn(user, "Obs", "Texto");
+      for (const title of ["Pão", "Leite"]) {
+        await addRow(user);
+        const inputs = main().getAllByRole("textbox", {
+          name: /^Título de /,
+        }) as HTMLInputElement[];
+        const last = inputs[inputs.length - 1]!;
+        await user.clear(last);
+        await user.type(last, `${title}{Enter}`);
+        await vi.waitFor(() => expect(rowTitles()).toContain(title));
+      }
+      await user.type(main().getByLabelText("Prazo — Pão"), "2026-11-05");
+      await user.type(main().getByRole("textbox", { name: "Obs — Pão" }), "integral{Enter}");
+      await vi.waitFor(async () => {
+        const data = await fake.gateway.getDatabase("n1");
+        expect(Object.values(data.rows[0]!.cells)).toHaveLength(2);
+      });
+    }
+    const showView = async (user: User, name: string) =>
+      await user.click(main().getByRole("tab", { name }));
+    const rowDate = async (fake: Fake, title: string) => {
+      const data = await fake.gateway.getDatabase("n1");
+      const date = data.properties.find((p) => p.type === "date")!;
+      return data.rows.find((r) => r.title === title)?.cells[date.id];
+    };
+
+    it("lista: uma linha por página com os valores preenchidos; abre a página ao clicar", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+
+      await showView(user, "Lista");
+
+      const list = main().getByRole("list", { name: "Lista" });
+      expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+      expect(within(list).getByText("integral")).toBeTruthy();
+      expect(within(list).getByText("2026-11-05")).toBeTruthy();
+      await user.click(within(list).getByRole("button", { name: "Pão" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty("value", "Pão");
+    });
+
+    it("lista e galeria respeitam o filtro e criam linhas pelo botão de nova linha", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Lista");
+      await user.click(main().getByRole("button", { name: "Filtrar" }));
+      const panel = dialog("Filtrar");
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.type(panel.getByRole("textbox", { name: "Valor do filtro 1" }), "leite");
+      expect(
+        within(main().getByRole("list", { name: "Lista" })).getAllByRole("listitem"),
+      ).toHaveLength(1);
+      await user.keyboard("{Escape}");
+
+      await showView(user, "Galeria");
+      expect(
+        within(main().getByRole("list", { name: "Galeria" })).getAllByRole("listitem").length,
+      ).toBeGreaterThan(0);
+      expect(main().queryByText("integral")).toBeNull(); // "Pão" está filtrado fora
+
+      await user.click(main().getByRole("button", { name: "+ Nova linha" }));
+      await vi.waitFor(async () =>
+        expect((await fake.gateway.getDatabase("n1")).rows).toHaveLength(3),
+      );
+    });
+
+    it("galeria: cartões com título e valores; abrir leva à página", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+
+      await showView(user, "Galeria");
+
+      const gallery = main().getByRole("list", { name: "Galeria" });
+      expect(within(gallery).getByText("integral")).toBeTruthy();
+      await user.click(within(gallery).getByRole("button", { name: "Leite" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Leite",
+      );
+    });
+
+    it("lista, galeria e calendário lembram a forma de exibição por base", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+
+      await showView(user, "Galeria");
+
+      expect(localStorage.getItem("tramion.databaseView.n1")).toBe("gallery");
+    });
+
+    it("calendário: mostra o mês de hoje, a linha no dia dela e as sem data à parte", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+
+      await showView(user, "Calendário");
+
+      expect(main().getByRole("heading", { name: "novembro de 2026" })).toBeTruthy();
+      const day = within(main().getByRole("cell", { name: "5 de novembro de 2026" }));
+      expect(day.getByRole("button", { name: "Pão" })).toBeTruthy();
+      const undated = within(main().getByRole("region", { name: "Sem data" }));
+      expect(undated.getByRole("button", { name: "Leite" })).toBeTruthy();
+      expect(main().getAllByRole("columnheader")).toHaveLength(7);
+    });
+
+    it("calendário: navega entre os meses e volta para hoje", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Calendário");
+
+      await user.click(main().getByRole("button", { name: "Próximo mês" }));
+      expect(main().getByRole("heading", { name: "dezembro de 2026" })).toBeTruthy();
+      expect(main().queryByRole("button", { name: "Pão" })).toBeNull();
+
+      await user.click(main().getByRole("button", { name: "Próximo mês" }));
+      expect(main().getByRole("heading", { name: "janeiro de 2027" })).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Mês anterior" }));
+      await user.click(main().getByRole("button", { name: "Mês anterior" }));
+      await user.click(main().getByRole("button", { name: "Mês anterior" }));
+      expect(main().getByRole("heading", { name: "outubro de 2026" })).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Hoje" }));
+      expect(main().getByRole("heading", { name: "novembro de 2026" })).toBeTruthy();
+    });
+
+    it("calendário: '+' cria a linha já com a data do dia", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Calendário");
+
+      await user.click(main().getByRole("button", { name: "Novo item em 20 de novembro de 2026" }));
+
+      await vi.waitFor(async () => {
+        const data = await fake.gateway.getDatabase("n1");
+        expect(data.rows).toHaveLength(3);
+      });
+      const created = (await fake.gateway.getDatabase("n1")).rows[2]!;
+      expect(Object.values(created.cells)).toEqual(["2026-11-20"]);
+      expect(
+        within(main().getByRole("cell", { name: "20 de novembro de 2026" })).getByRole("button", {
+          name: "Sem título",
+        }),
+      ).toBeTruthy();
+    });
+
+    it("calendário: arrastar para outro dia muda a data; sem data entra no dia solto", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Calendário");
+      const drag = (title: string, dayLabel: string) => {
+        const card = main().getByRole("button", { name: title }).closest("li")!;
+        act(() => {
+          card.dispatchEvent(
+            Object.assign(new Event("dragstart", { bubbles: true }), {
+              dataTransfer: { setData: vi.fn(), effectAllowed: "" },
+            }),
+          );
+        });
+        const target = main().getByRole("cell", { name: dayLabel });
+        act(() => {
+          target.dispatchEvent(new Event("dragover", { bubbles: true, cancelable: true }));
+          target.dispatchEvent(new Event("drop", { bubbles: true, cancelable: true }));
+        });
+      };
+
+      drag("Pão", "12 de novembro de 2026");
+      await vi.waitFor(async () => expect(await rowDate(fake, "Pão")).toBe("2026-11-12"));
+
+      drag("Leite", "3 de novembro de 2026");
+      await vi.waitFor(async () => expect(await rowDate(fake, "Leite")).toBe("2026-11-03"));
+      await vi.waitFor(() => expect(main().queryByRole("region", { name: "Sem data" })).toBeNull());
+    });
+
+    it("calendário: o seletor 'Mudar a data' define e tira a data (alternativa ao arrastar)", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Calendário");
+
+      await user.click(main().getByRole("button", { name: "Mudar a data de Pão" }));
+      fireEvent.change(screen.getByLabelText("Nova data"), { target: { value: "2026-11-09" } });
+      await vi.waitFor(async () => expect(await rowDate(fake, "Pão")).toBe("2026-11-09"));
+      // Espera a tela mostrar a linha no dia novo antes de continuar (senão o clique cai no item que vai sumir).
+      await vi.waitFor(() =>
+        expect(
+          within(main().getByRole("cell", { name: "9 de novembro de 2026" })).getByRole("button", {
+            name: "Pão",
+          }),
+        ).toBeTruthy(),
+      );
+
+      await user.click(main().getByRole("button", { name: "Mudar a data de Pão" }));
+      await user.click(screen.getByRole("button", { name: "Tirar a data" }));
+      await vi.waitFor(async () => expect(await rowDate(fake, "Pão")).toBeUndefined());
+      expect(
+        within(main().getByRole("region", { name: "Sem data" })).getByRole("button", {
+          name: "Pão",
+        }),
+      ).toBeTruthy();
+    });
+
+    it("calendário: sem coluna de data explica o que falta; com duas, escolhe qual mostrar", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await showView(user, "Calendário");
+      expect(main().getByText(/adicione uma coluna do tipo Data/)).toBeTruthy();
+
+      await showView(user, "Tabela");
+      await addColumn(user, "Início", "Data");
+      await addColumn(user, "Fim", "Data");
+      await showView(user, "Calendário");
+
+      await user.click(main().getByRole("button", { name: "Mostrar por" }));
+      await user.click(screen.getByRole("option", { name: "Fim" }));
+      expect(main().getByRole("button", { name: "Mostrar por" }).textContent).toBe("Fim");
+      expect((await fake.gateway.getDatabase("n1")).properties).toHaveLength(2);
     });
 
     it("volta para a tabela", async () => {

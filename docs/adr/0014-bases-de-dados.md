@@ -1,6 +1,6 @@
 # 0014. Bases de dados (tabela)
 
-**Status:** Aceita (fases 1 e 2: modelo, tabela e quadro)
+**Status:** Aceita (modelo e cinco visões: tabela, quadro, lista, galeria e calendário)
 
 ## Contexto
 
@@ -28,9 +28,20 @@ várias formas de ver os dados.
    em todos os webviews. As janelinhas ancoradas (`Popover` com `anchor`) são desenhadas em `document.body` para
    não serem cortadas pela rolagem da tabela.
 
-## Limites conhecidos (fase 1)
+## Lista, galeria e calendário (fase 3)
 
-- Só a visão em **tabela**; quadro, lista, galeria e calendário vêm depois.
-- Filtros e ordenação não persistem; não há várias visões salvas.
+- **Lista** e **galeria** mostram as mesmas linhas da tabela (com filtro e ordenação) em formatos diferentes: título,
+  símbolo e os valores preenchidos. Criam linha pelo botão "+ Nova linha".
+- **Calendário** (mês) posiciona cada linha no dia da coluna de **Data** escolhida ("Mostrar por", quando há mais de
+  uma). A semana começa no domingo. Arrastar um item para outro dia, ou usar o seletor "Mudar a data", troca só o valor
+  daquela célula; "+" no dia cria a linha já com a data. Linhas sem data ficam numa área "Sem data". Sem coluna de data,
+  a tela explica o que falta. A grade usa só UTC, então o resultado não depende do fuso do computador.
+- A **forma de exibição escolhida é lembrada por base**, em armazenamento do navegador (conveniência por usuário: se
+  faltar, a base abre em tabela).
+
+## Limites conhecidos
+
+- O calendário é mensal (sem visão de semana) e mostra todos os itens de cada dia, sem limite.
+- Filtros e ordenação não persistem; não há várias visões salvas por base.
 - Sem coluna de relação, fórmula, pessoa ou arquivo; sem reordenar colunas; sem ícone/capa na própria base.
 - Mudar o tipo de uma coluna não é permitido (apague e crie outra).
