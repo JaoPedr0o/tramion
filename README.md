@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/logo.png" alt="Logo do Tramion" width="112" height="112" />
+<img src="docs/assets/tramion-logo.png" alt="Logo do Tramion" width="112" height="112" />
 
 # Tramion
 
