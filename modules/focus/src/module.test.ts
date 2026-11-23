@@ -12,6 +12,8 @@ describe("módulo Foco", () => {
     expect(registry.start()).toEqual(["focus"]);
 
     expect(views.list().map((v) => [v.id, v.title])).toEqual([["focus", "Foco"]]);
+    // O seletor de telas mostra um ícone (o tomatinho) ao lado do nome.
+    expect(views.list()[0]!.icon).toBeTypeOf("function");
   });
 
   it("ao iniciar o app só LÊ o que estava guardado (para retomar o cronômetro): não grava, não avisa, não toca", async () => {

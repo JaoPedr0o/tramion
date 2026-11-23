@@ -1,3 +1,4 @@
+import { FocusIcon } from "./ui/FocusIcon.tsx";
 import type { ModuleManifest } from "@tramion/contracts";
 import { createHabitsStore } from "./application/habits-store.ts";
 import {
@@ -48,6 +49,7 @@ export function createFocusModule(
       views.register({
         id: "focus",
         title: "Foco",
+        icon: FocusIcon,
         topbar: createTopbar(),
         main: createMain({ pomodoro, habits }),
       });
