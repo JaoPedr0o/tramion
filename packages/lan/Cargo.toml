@@ -1,0 +1,13 @@
+[package]
+name = "tramion-lan"
+version = "0.1.0"
+description = "Sincronização pela rede local: pareamento, canal criptografado e protocolo"
+edition = "2024"
+publish = false
+
+[dependencies]
+tramion-sync = { version = "0.1.0", path = "../sync" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+snow = "0.10"
+getrandom = "0.3"
