@@ -11,6 +11,7 @@ pub mod error;
 pub mod external;
 pub mod model;
 pub mod repository;
+pub mod samples;
 pub mod service;
 
 use tauri::Runtime;
@@ -49,6 +50,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
         Migration {
             version: 7,
             sql: include_str!("../migrations/0007_rename_app_data_paths_tramion.sql"),
+        },
+        Migration {
+            version: 8,
+            sql: include_str!("../migrations/0008_notes_meta.sql"),
         },
     ],
 };

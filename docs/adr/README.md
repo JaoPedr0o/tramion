@@ -20,3 +20,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0013](0013-incorporacoes-icone-capa-e-codigo.md)          | Incorporações, ícone e capa de página, e linguagem do código      | Aceita |
 | [0014](0014-bases-de-dados.md)                             | Bases de dados (tabela)                                           | Aceita |
 | [0015](0015-nome-identidade-visual-e-instalacao.md)        | Nome, identidade visual e instalação                              | Aceita |
+| [0016](0016-paginas-de-exemplo.md)                         | Páginas de exemplo na primeira abertura                           | Aceita |

@@ -34,6 +34,15 @@ pub fn run() {
             };
             let db = Database::open(&data_dir.join(legacy::CURRENT_DB), &migrations, &options)?;
 
+            // Primeira abertura com o banco vazio: cria as páginas de exemplo (uma única vez).
+            match tramion_notes::samples::seed_if_first_run(db.connection()) {
+                Ok(true) => eprintln!("[exemplos] páginas de exemplo criadas"),
+                Ok(false) => {}
+                Err(error) => {
+                    eprintln!("[exemplos] não foi possível criar as páginas de exemplo: {error}")
+                }
+            }
+
             app.manage::<SharedDatabase>(Mutex::new(db));
             Ok(())
         })
