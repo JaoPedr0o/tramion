@@ -4360,6 +4360,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tramion-sync"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "tray-icon"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
