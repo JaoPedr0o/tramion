@@ -1,0 +1,8 @@
+# Fins de linha: sempre LF no repositório, em qualquer sistema. As migrações SQL entram no programa em tempo de
+# compilação e seu resumo (checksum) é conferido: um CRLF no Windows mudaria o resumo sem mudar o SQL.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary
+*.woff2 binary

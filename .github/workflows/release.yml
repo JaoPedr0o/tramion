@@ -1,0 +1,66 @@
+name: Release
+
+# Ao criar uma tag `vX.Y.Z`, compila os instaladores (Linux, Windows e macOS) e os anexa a um RASCUNHO de release.
+# O rascunho só vira público quando você revisa e clica em "Publish release".
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+          - platform: windows-latest
+          - platform: macos-latest
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Bibliotecas do Tauri (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libxdo-dev libssl-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: Tramion ${{ github.ref_name }}
+          releaseBody: |
+            Veja as novidades no [CHANGELOG](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md).
+
+            **Instalação**
+            - Linux: baixe o `.deb` (`sudo apt install ./Tramion_*_amd64.deb`) ou o `.AppImage`.
+            - Windows: baixe o `.msi` ou o `.exe`.
+            - macOS: baixe o `.dmg`.
+
+            Os instaladores ainda não são assinados: o Windows e o macOS vão avisar que o autor é desconhecido.
+            Os instaladores de Windows e macOS ainda não foram validados em uso real.
+          releaseDraft: true
+          prerelease: false
