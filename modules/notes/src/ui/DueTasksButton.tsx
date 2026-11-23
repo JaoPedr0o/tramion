@@ -146,35 +146,43 @@ export function DueTasksButton({
           onClose={() => setOpen(false)}
           className="due__popover"
         >
-          {tasks.length === 0 && <p className="popover__note">Nenhuma tarefa pede atenção hoje.</p>}
-          {group("Atrasadas", overdue)}
-          {group("Hoje", today)}
+          <h2 className="due__heading">Lembretes de tarefas</h2>
+          <div className="due__body">
+            {tasks.length === 0 && (
+              <p className="popover__note">Nenhuma tarefa pede atenção hoje.</p>
+            )}
+            {group("Atrasadas", overdue)}
+            {group("Hoje", today)}
 
-          <div className="due__settings">
-            <label className="due__option">
-              <input
-                type="checkbox"
-                checked={settings.systemNotifications}
-                onChange={(event) =>
-                  update({ ...settings, systemNotifications: event.target.checked })
-                }
-              />
-              Avisar pelo sistema uma vez por dia
-            </label>
-            <label className="due__option">
-              Horário do aviso
-              <input
-                type="time"
-                value={settings.time}
-                disabled={!settings.systemNotifications}
-                onChange={(event) => {
-                  if (isValidTime(event.target.value))
-                    update({ ...settings, time: event.target.value });
-                }}
-              />
-            </label>
-            <p className="popover__note">O aviso aparece enquanto o Tramion está aberto.</p>
+            <div className="due__settings">
+              <label className="due__option">
+                <input
+                  type="checkbox"
+                  checked={settings.systemNotifications}
+                  onChange={(event) =>
+                    update({ ...settings, systemNotifications: event.target.checked })
+                  }
+                />
+                Avisar pelo sistema uma vez por dia
+              </label>
+              <label className="due__option">
+                Horário do aviso
+                <input
+                  type="time"
+                  value={settings.time}
+                  disabled={!settings.systemNotifications}
+                  onChange={(event) => {
+                    if (isValidTime(event.target.value))
+                      update({ ...settings, time: event.target.value });
+                  }}
+                />
+              </label>
+              <p className="popover__note">O aviso aparece enquanto o Tramion está aberto.</p>
+            </div>
           </div>
+          <button type="button" className="dlg-btn due__close" onClick={() => setOpen(false)}>
+            Fechar
+          </button>
         </Popover>
       )}
     </div>

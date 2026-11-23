@@ -45,11 +45,20 @@ function Capture({ deps }: { deps: NotesUiDeps }) {
         if (event.target === event.currentTarget) store.closeCapture();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-label="Captura rápida" className="capture">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Captura rápida"
+        className="capture capture--quick"
+      >
+        <h2 className="capture__title">Captura rápida</h2>
+        <p className="capture__lead">
+          A primeira linha vira o título. O texto é guardado na Caixa de entrada.
+        </p>
         <textarea
           ref={field}
           aria-label="Texto da captura"
-          placeholder="Anote uma ideia. A primeira linha vira o título…"
+          placeholder="Anote uma ideia…"
           value={text}
           rows={6}
           onChange={(event) => setText(event.target.value)}
@@ -64,10 +73,20 @@ function Capture({ deps }: { deps: NotesUiDeps }) {
           }}
         />
         <div className="capture__bar">
-          <span className="capture__hint">Ctrl + Enter para guardar na Caixa de entrada</span>
-          <button type="button" disabled={saving || text.trim() === ""} onClick={() => void save()}>
-            Guardar
-          </button>
+          <span className="capture__hint capture__hint--keys">Ctrl + Enter para guardar</span>
+          <div className="capture__actions">
+            <button type="button" className="dlg-btn" onClick={() => store.closeCapture()}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="dlg-btn dlg-btn--primary"
+              disabled={saving || text.trim() === ""}
+              onClick={() => void save()}
+            >
+              Guardar
+            </button>
+          </div>
         </div>
       </div>
     </div>

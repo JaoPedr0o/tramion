@@ -2208,6 +2208,7 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.click(bell());
 
       const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+      expect(panel.getByRole("heading", { name: "Lembretes de tarefas" })).toBeTruthy();
       expect(panel.getByText("Nenhuma tarefa pede atenção hoje.")).toBeTruthy();
       expect(panel.getByLabelText("Avisar pelo sistema uma vez por dia")).toHaveProperty(
         "checked",
@@ -2263,6 +2264,17 @@ describe("módulo de notas (a tela inteira)", () => {
         "value",
         "Pagar conta",
       );
+      expect(screen.queryByRole("dialog", { name: "Lembretes de tarefas" })).toBeNull();
+    });
+
+    it("o botão Fechar fecha a janela de lembretes", async () => {
+      const { user } = setup();
+      at(8);
+      await user.click(bell());
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+
+      await user.click(panel.getByRole("button", { name: "Fechar" }));
+
       expect(screen.queryByRole("dialog", { name: "Lembretes de tarefas" })).toBeNull();
     });
 
@@ -3165,6 +3177,18 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.type(field(), "   ");
       expect(dialog().getByRole("button", { name: "Guardar" }).hasAttribute("disabled")).toBe(true);
       await user.type(field(), "algo{Escape}");
+
+      expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull();
+      expect(fake.notes.size).toBe(0);
+    });
+
+    it("tem título e botão Cancelar, que fecha sem guardar o texto digitado", async () => {
+      const { user, fake } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Captura rápida" }));
+      expect(dialog().getByRole("heading", { name: "Captura rápida" })).toBeTruthy();
+      await user.type(field(), "não guardar isto");
+
+      await user.click(dialog().getByRole("button", { name: "Cancelar" }));
 
       expect(screen.queryByRole("dialog", { name: "Captura rápida" })).toBeNull();
       expect(fake.notes.size).toBe(0);

@@ -1966,7 +1966,37 @@
 }
 
 .due__popover {
-  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(380px, calc(100vw - 16px));
+  max-height: min(70dvh, 560px);
+  padding: var(--space-3);
+  overflow: hidden;
+}
+
+.due__heading {
+  flex: none;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Só o meio rola: o título e o Fechar ficam sempre à vista. */
+.due__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.due__close {
+  flex: none;
+  width: 100%;
 }
 
 .due__list {
@@ -1980,8 +2010,10 @@
 .due__item {
   display: flex;
   gap: var(--space-2);
-  align-items: flex-start;
+  align-items: center;
+  box-sizing: border-box;
   width: 100%;
+  min-height: 44px;
   padding: var(--space-1) var(--space-2);
   border: 0;
   border-radius: var(--radius);
@@ -2002,12 +2034,13 @@
 }
 
 .due__title {
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .due__meta {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .due__settings {
@@ -2024,6 +2057,34 @@
   gap: var(--space-2);
   align-items: center;
   justify-content: space-between;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.due__option input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.due__option input[type="time"] {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.due__settings .popover__note {
+  margin: 0;
+  font-size: 13px;
 }
 
 /* ───────── Página "Hoje" ───────── */
@@ -2449,44 +2510,68 @@
   box-shadow: var(--shadow-menu);
 }
 
+.capture--quick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: calc(100dvh - 14vh - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 24px);
+}
+
+.capture__title {
+  flex: none;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.capture__lead {
+  flex: none;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .capture textarea {
   box-sizing: border-box;
+  flex: 1 1 auto;
   width: 100%;
-  resize: vertical;
-  padding: var(--space-2);
+  min-height: 120px;
+  resize: none;
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 .capture__bar {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--space-2);
+  gap: var(--space-3);
 }
 
 .capture__hint {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-.capture__bar button {
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font: inherit;
-  cursor: pointer;
+.capture__actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
-.capture__bar button:disabled {
-  opacity: 0.5;
-  cursor: default;
+/* Sem teclado físico (celular), o atalho Ctrl + Enter não faz sentido. */
+@media (pointer: coarse) {
+  .capture__hint--keys {
+    display: none;
+  }
 }
 
 /* ───────── Parear celular ───────── */
@@ -2558,7 +2643,8 @@
 
 /* Todos os botões da janela: texto firme (peso 600), tamanho legível e alvo de toque confortável. */
 .pairing__btn,
-.pairing__mode {
+.pairing__mode,
+.dlg-btn {
   box-sizing: border-box;
   min-height: 44px;
   padding: 0 var(--space-3);
@@ -2573,22 +2659,26 @@
   cursor: pointer;
 }
 
-.pairing__btn:hover:not(:disabled) {
+.pairing__btn:hover:not(:disabled),
+.dlg-btn:hover:not(:disabled) {
   background: var(--color-hover);
 }
 
-.pairing__btn:disabled {
+.pairing__btn:disabled,
+.dlg-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.pairing__btn--primary {
+.pairing__btn--primary,
+.dlg-btn--primary {
   border-color: var(--color-accent);
   background: var(--color-accent);
   color: var(--color-on-accent);
 }
 
-.pairing__btn--primary:hover:not(:disabled) {
+.pairing__btn--primary:hover:not(:disabled),
+.dlg-btn--primary:hover:not(:disabled) {
   background: var(--color-accent);
   filter: brightness(1.08);
 }
@@ -2761,6 +2851,34 @@
     width: 100%;
     max-height: 100%;
     align-self: flex-start;
+  }
+
+  .capture--quick {
+    width: 100%;
+    max-height: 100%;
+    align-self: flex-start;
+  }
+
+  .capture__bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .capture__actions .dlg-btn {
+    flex: 1;
+  }
+
+  /* Lembretes: a janelinha ancorada vira uma folha na área útil, entre as barras do sistema. A posição calculada
+     pelo componente é em linha, por isso o !important. */
+  .due__popover {
+    position: fixed !important;
+    top: calc(var(--safe-top, 0px) + 16px) !important;
+    right: 16px !important;
+    bottom: auto !important;
+    left: 16px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 32px) !important;
   }
 
   /* Botão de fechar em largura total, e os cartões de aparelho empilham o botão Remover. */
