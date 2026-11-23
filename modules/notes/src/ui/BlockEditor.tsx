@@ -340,11 +340,54 @@ function TurnIntoItem() {
   );
 }
 
-/** O menu da alça do bloco: Transformar em, Cores e Excluir. */
+/** Linguagens do bloco de código, em ordem alfabética (o seletor nativo do editor não abre em todos os sistemas). */
+const CODE_LANGUAGES = Object.entries(
+  codeBlockOptions.supportedLanguages as Record<string, { name: string }>,
+)
+  .map(([id, { name }]) => ({ id, name }))
+  .sort((a, b) => a.name.localeCompare(b.name, "pt"));
+
+/** "Linguagem": escolhe a linguagem do bloco de código pelo menu da alça. Só aparece em blocos de código. */
+function CodeLanguageItem() {
+  const Components = useComponentsContext()!;
+  const editor = useBlockNoteEditor();
+  const block = useExtensionState(SideMenuExtension, { selector: (state) => state?.block });
+
+  if (!block || block.type !== "codeBlock") return null;
+  const current = (block.props as { language?: string }).language;
+  return (
+    <Components.Generic.Menu.Root position="right" sub portalElement={null}>
+      <Components.Generic.Menu.Trigger sub>
+        <Components.Generic.Menu.Item subTrigger>Linguagem</Components.Generic.Menu.Item>
+      </Components.Generic.Menu.Trigger>
+      <Components.Generic.Menu.Dropdown
+        sub
+        className="bn-menu-dropdown bn-drag-handle-menu bn-language-menu"
+      >
+        {CODE_LANGUAGES.map((language) => (
+          <Components.Generic.Menu.Item
+            key={language.id}
+            checked={language.id === current}
+            onClick={() =>
+              (editor as unknown as EditorApi).updateBlock(block.id, {
+                props: { language: language.id },
+              })
+            }
+          >
+            {language.name}
+          </Components.Generic.Menu.Item>
+        ))}
+      </Components.Generic.Menu.Dropdown>
+    </Components.Generic.Menu.Root>
+  );
+}
+
+/** O menu da alça do bloco: Transformar em, Linguagem (código), Cores e Excluir. */
 function BlockMenu() {
   return (
     <DragHandleMenu>
       <TurnIntoItem />
+      <CodeLanguageItem />
       <BlockColorsItem>Cores</BlockColorsItem>
       <RemoveBlockItem>Excluir</RemoveBlockItem>
     </DragHandleMenu>

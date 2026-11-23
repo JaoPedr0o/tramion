@@ -918,3 +918,9 @@
 .page-glyph {
   font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
+
+/* A lista de linguagens é longa: rola dentro do menu. */
+.bn-language-menu {
+  max-height: 320px;
+  overflow-y: auto;
+}
