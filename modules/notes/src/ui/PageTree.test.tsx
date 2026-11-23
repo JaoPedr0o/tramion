@@ -24,6 +24,7 @@ function renderTree(
   const onToggle = vi.fn();
   const onSelect = vi.fn();
   const onNewSubpage = vi.fn();
+  const onDuplicate = vi.fn();
   const onMove = vi.fn();
   const onToggleFavorite = vi.fn();
   const onDelete = vi.fn();
@@ -35,6 +36,7 @@ function renderTree(
       onToggle={onToggle}
       onSelect={onSelect}
       onNewSubpage={onNewSubpage}
+      onDuplicate={onDuplicate}
       onMove={onMove}
       onToggleFavorite={onToggleFavorite}
       onDelete={onDelete}
@@ -46,6 +48,7 @@ function renderTree(
     onToggle,
     onSelect,
     onNewSubpage,
+    onDuplicate,
     onMove,
     onToggleFavorite,
     onDelete,
@@ -199,13 +202,14 @@ describe("árvore de páginas (teclado e acessibilidade)", () => {
       expect(onSelect).not.toHaveBeenCalled();
     });
 
-    it("o menu oferece nova subpágina, mover, favoritar e lixeira", async () => {
-      const { user, onNewSubpage, onToggleFavorite, onDelete } = renderTree();
+    it("o menu oferece nova subpágina, duplicar, mover, favoritar e lixeira", async () => {
+      const { user, onNewSubpage, onDuplicate, onToggleFavorite, onDelete } = renderTree();
       const open = () => user.click(screen.getByRole("button", { name: "Mais ações de D" }));
 
       await open();
       expect(screen.getAllByRole("menuitem").map((el) => el.textContent)).toEqual([
         "Nova subpágina",
+        "Duplicar",
         "Mover para…",
         "Adicionar aos favoritos",
         "Mover para a lixeira",
@@ -213,11 +217,14 @@ describe("árvore de páginas (teclado e acessibilidade)", () => {
 
       await user.click(screen.getByRole("menuitem", { name: "Nova subpágina" }));
       await open();
+      await user.click(screen.getByRole("menuitem", { name: "Duplicar" }));
+      await open();
       await user.click(screen.getByRole("menuitem", { name: "Adicionar aos favoritos" }));
       await open();
       await user.click(screen.getByRole("menuitem", { name: "Mover para a lixeira" }));
 
       expect(onNewSubpage).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
+      expect(onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
       expect(onToggleFavorite).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
       expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: "d" }));
     });

@@ -3,6 +3,7 @@ import type { NoteSummary } from "../domain/note.ts";
 
 export interface PageMenuHandlers {
   onNewSubpage(page: NoteSummary): void;
+  onDuplicate(page: NoteSummary): void;
   onMove(page: NoteSummary): void;
   onToggleFavorite(page: NoteSummary): void;
   onDelete(page: NoteSummary): void;
@@ -17,6 +18,7 @@ export function pageMenuItems(page: NoteSummary, handlers: PageMenuHandlers): Me
       icon: <PlusIcon />,
       onSelect: () => handlers.onNewSubpage(page),
     },
+    { id: "duplicate", label: "Duplicar", onSelect: () => handlers.onDuplicate(page) },
     { id: "move", label: "Mover para…", onSelect: () => handlers.onMove(page) },
     {
       id: "favorite",

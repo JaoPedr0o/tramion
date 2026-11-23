@@ -28,6 +28,28 @@ export function createPageActions(service: NotesService, store: NavigationStore)
         store.open(note.id, parentId ? [parentId, ...ancestorIds(pages, parentId)] : []);
       }),
 
+    /**
+     * Duplica a página (e as subpáginas) e abre a cópia. Antes, salva o que estiver pendente no editor, para a cópia
+     * trazer as últimas teclas.
+     */
+    duplicatePage: (id: string, pages: readonly NoteSummary[]) =>
+      guard(async () => {
+        await store.flush();
+        const [copyId] = await service.duplicate(id);
+        if (copyId) store.open(copyId, ancestorIds(pages, id));
+      }),
+
+    /** Cria uma página a partir de um modelo (na raiz ou dentro de `parentId`) e a abre. */
+    createFromTemplate: (
+      templateId: string,
+      parentId: string | null,
+      pages: readonly NoteSummary[],
+    ) =>
+      guard(async () => {
+        const note = await service.createFromTemplate({ templateId, parentId });
+        store.open(note.id, parentId ? [parentId, ...ancestorIds(pages, parentId)] : []);
+      }),
+
     /** Cria uma base de dados (na raiz ou dentro de `parentId`), a abre e deixa a árvore aberta até ela. */
     createDatabase: (parentId: string | null, pages: readonly NoteSummary[]) =>
       guard(async () => {

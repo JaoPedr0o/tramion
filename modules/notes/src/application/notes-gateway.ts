@@ -14,6 +14,7 @@ import type {
   NoteSummary,
   SearchHit,
   SetAppearance,
+  TemplateInfo,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -42,6 +43,12 @@ export interface NotesGateway {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez TUDO o que está na lixeira; devolve os ids apagados (lista vazia se não havia nada). */
   emptyTrash(): Promise<readonly string[]>;
+  /** Duplica a página e toda a subárvore ativa; devolve os ids criados, com a cópia da página escolhida primeiro. */
+  duplicate(id: string): Promise<readonly string[]>;
+  /** Os modelos de página embutidos. */
+  listTemplates(): Promise<readonly TemplateInfo[]>;
+  /** Cria uma página (ou base) a partir de um modelo, na raiz (`parentId` nulo) ou dentro de outra página. */
+  createFromTemplate(input: { templateId: string; parentId: string | null }): Promise<Note>;
   /** Busca nas páginas ativas (título e texto), sem diferenciar acento nem maiúscula; no máximo `limit` resultados. */
   search(query: string, limit: number): Promise<readonly SearchHit[]>;
 

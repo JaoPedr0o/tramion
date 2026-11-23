@@ -78,3 +78,11 @@ export interface SearchHit {
   /** `true` se o título bate com a busca (senão, só o texto bateu). */
   readonly inTitle: boolean;
 }
+
+/** Um modelo de página embutido no aplicativo. */
+export interface TemplateInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly icon: string;
+  readonly description: string;
+}

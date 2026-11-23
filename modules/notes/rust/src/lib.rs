@@ -7,6 +7,7 @@ mod commands;
 pub mod database;
 pub mod database_repository;
 pub mod diagnostics;
+pub mod duplicate;
 pub mod error;
 pub mod external;
 pub mod model;
@@ -14,6 +15,7 @@ pub mod repository;
 pub mod samples;
 pub mod search;
 pub mod service;
+pub mod templates;
 
 use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
@@ -82,6 +84,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::add_view,
             commands::update_view,
             commands::delete_view,
+            commands::duplicate_note,
+            commands::list_templates,
+            commands::create_from_template,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

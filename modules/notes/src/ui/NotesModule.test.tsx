@@ -1910,4 +1910,88 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(document.activeElement).toBe(button);
     });
   });
+
+  describe("duplicar página e modelos", () => {
+    it("Duplicar, pelo menu da página, cria 'Cópia de …' ao lado, abre a cópia e leva as subpáginas", async () => {
+      const { user, fake } = setup();
+      await parentWithChild(user); // Pai + Filha
+      await user.click(treeitem("Pai"));
+
+      await openPageMenu(user, "Duplicar");
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Cópia de Pai",
+      );
+      const titles = [...fake.notes.values()].map((n) => n.title);
+      expect(titles.filter((t) => t === "Filha")).toHaveLength(2); // a original e a cópia dela
+      expect(titles).toContain("Pai");
+      expect(treeitem("Cópia de Pai")).toBeTruthy();
+    });
+
+    it("Duplicar não altera a página original", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Original");
+      const before = fake.notes.get("n1")!;
+
+      await openPageMenu(user, "Duplicar");
+      await main().findByDisplayValue("Cópia de Original");
+
+      expect(fake.notes.get("n1")).toEqual(before);
+    });
+
+    it("falha ao duplicar mostra o aviso e nada é criado", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Original");
+      vi.spyOn(fake.gateway, "duplicate").mockRejectedValue(new NotesError("notes.internal", "x"));
+
+      await openPageMenu(user, "Duplicar");
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+      expect(fake.notes.size).toBe(1);
+    });
+
+    it("Modelos lista os modelos e criar um deles abre a página nova com o símbolo", async () => {
+      const { user, fake } = setup();
+
+      await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
+      const list = within(await screen.findByRole("dialog", { name: "Modelos de página" }));
+      expect(list.getByText("Notas de reunião")).toBeTruthy();
+      expect(list.getByText("Pauta e decisões")).toBeTruthy();
+      await user.click(list.getByRole("button", { name: /Entrada de diário/ }));
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Entrada de diário",
+      );
+      expect(fake.notes.get("n1")?.icon).toBe("📓");
+      expect(screen.queryByRole("dialog", { name: "Modelos de página" })).toBeNull();
+    });
+
+    it("falha ao criar pelo modelo mostra o aviso", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "createFromTemplate").mockRejectedValue(
+        new NotesError("notes.internal", "x"),
+      );
+
+      await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
+      await user.click(
+        within(await screen.findByRole("dialog", { name: "Modelos de página" })).getByRole(
+          "button",
+          { name: /Notas de reunião/ },
+        ),
+      );
+
+      expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+    });
+
+    it("sem modelos disponíveis, avisa", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "listTemplates").mockResolvedValue([]);
+
+      await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
+
+      expect(await screen.findByText("Nenhum modelo disponível.")).toBeTruthy();
+    });
+  });
 });

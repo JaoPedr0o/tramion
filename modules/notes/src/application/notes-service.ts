@@ -15,6 +15,7 @@ import type {
   NoteSummary,
   SearchHit,
   SetAppearance,
+  TemplateInfo,
   TrashSummary,
   UpdateNote,
 } from "../domain/note.ts";
@@ -36,6 +37,10 @@ export interface NotesService {
   purge(id: string): Promise<readonly string[]>;
   /** Apaga de vez tudo o que está na lixeira; devolve os ids de todas as páginas apagadas. */
   emptyTrash(): Promise<readonly string[]>;
+  /** Duplica a página e a subárvore; devolve os ids criados (a cópia da página escolhida primeiro). */
+  duplicate(id: string): Promise<readonly string[]>;
+  listTemplates(): Promise<readonly TemplateInfo[]>;
+  createFromTemplate(input: { templateId: string; parentId: string | null }): Promise<Note>;
   /** Busca global nas páginas ativas. */
   search(query: string, limit?: number): Promise<readonly SearchHit[]>;
 
@@ -111,6 +116,21 @@ export function createNotesService(deps: {
       const affected = await gateway.restore(id);
       for (const affectedId of affected) events.emit("note.restored", { id: affectedId });
       return affected;
+    },
+
+    // Um evento por página criada: duplicar uma página com subpáginas cria várias.
+    async duplicate(id) {
+      const created = await gateway.duplicate(id);
+      for (const createdId of created) events.emit("note.created", { id: createdId });
+      return created;
+    },
+
+    listTemplates: () => gateway.listTemplates(),
+
+    async createFromTemplate(input) {
+      const note = await gateway.createFromTemplate(input);
+      events.emit("note.created", { id: note.id });
+      return note;
     },
 
     search: (query, limit = 20) => gateway.search(query, limit),

@@ -74,6 +74,7 @@ export function createTopbar({ service, events, store, actions }: NotesUiDeps): 
           icon={<MoreIcon />}
           items={pageMenuItems(page, {
             onNewSubpage: (target) => void actions.createPage(target.id, list),
+            onDuplicate: (target) => void actions.duplicatePage(target.id, list),
             onMove: setMoving,
             onToggleFavorite: (target) => void actions.toggleFavorite(target),
             onDelete: (target) => void actions.deletePage(target.id),

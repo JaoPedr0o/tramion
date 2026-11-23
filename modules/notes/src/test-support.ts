@@ -61,6 +61,9 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     purge: vi.fn(async () => []),
     emptyTrash: vi.fn(async () => []),
     search: vi.fn(async () => []),
+    duplicate: vi.fn(async () => []),
+    listTemplates: vi.fn(async () => []),
+    createFromTemplate: vi.fn(async () => aNote()),
     createDatabase: vi.fn(async () => aNote()),
     getDatabase: vi.fn(async () => ({
       id: "n1",
@@ -328,6 +331,53 @@ export function createFakeGateway() {
         }
       }
       return affected;
+    },
+
+    async duplicate(id) {
+      const root = must(id);
+      if (root.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+      // Subárvore ativa, pais antes das filhas (imitação: copia páginas; as regras de bases são testadas no Rust).
+      const order: Note[] = [root];
+      for (let index = 0; index < order.length; index++) {
+        order.push(...activeChildren(order[index]!.id));
+      }
+      const ids = new Map<string, string>();
+      const created: string[] = [];
+      for (const old of order) {
+        const isRoot = old.id === id;
+        const parentId = isRoot ? old.parentId : (ids.get(old.parentId!) ?? null);
+        const copy = await gateway.create({
+          title: isRoot ? `Cópia de ${old.title}`.slice(0, 200) : old.title,
+          body: old.body,
+          parentId,
+        });
+        ids.set(old.id, copy.id);
+        created.push(copy.id);
+      }
+      for (const old of order) {
+        const copy = notes.get(ids.get(old.id)!)!;
+        let content = old.content;
+        for (const [from, to] of ids) content = content.split(from).join(to);
+        notes.set(copy.id, { ...copy, content, icon: old.icon, cover: old.cover });
+        if (databases.has(old.id)) databases.add(copy.id);
+      }
+      return created;
+    },
+
+    async listTemplates() {
+      return [
+        { id: "meeting", name: "Notas de reunião", icon: "🗒️", description: "Pauta e decisões" },
+        { id: "journal", name: "Entrada de diário", icon: "📓", description: "Um espaço livre" },
+      ];
+    },
+
+    async createFromTemplate({ templateId, parentId }) {
+      const template = (await this.listTemplates()).find((t) => t.id === templateId);
+      if (!template) throw new NotesError("notes.not-found", "modelo");
+      const note = await gateway.create({ title: template.name, body: "", parentId });
+      const next = { ...note, icon: template.icon };
+      notes.set(note.id, next);
+      return next;
     },
 
     async search(query, limit) {

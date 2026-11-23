@@ -4,6 +4,7 @@
 use crate::assets;
 use crate::database;
 use crate::diagnostics;
+use crate::duplicate;
 use crate::error::NotesError;
 use crate::external;
 use crate::model::{
@@ -11,6 +12,7 @@ use crate::model::{
 };
 use crate::search::{self, SearchHit};
 use crate::service;
+use crate::templates::{self, TemplateInfo};
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager, Runtime, State};
@@ -355,4 +357,28 @@ pub async fn update_view(
 #[tauri::command]
 pub async fn delete_view(db: State<'_, SharedDatabase>, id: String) -> Result<(), CommandError> {
     with_db(&db, |conn| database::delete_view(conn, &id))
+}
+
+#[tauri::command]
+pub async fn duplicate_note(
+    db: State<'_, SharedDatabase>,
+    id: String,
+) -> Result<Vec<String>, CommandError> {
+    with_db(&db, |conn| duplicate::duplicate(conn, &id))
+}
+
+#[tauri::command]
+pub async fn list_templates() -> Result<Vec<TemplateInfo>, CommandError> {
+    Ok(templates::list_templates())
+}
+
+#[tauri::command]
+pub async fn create_from_template(
+    db: State<'_, SharedDatabase>,
+    template_id: String,
+    parent_id: Option<String>,
+) -> Result<Note, CommandError> {
+    with_db(&db, |conn| {
+        templates::create_from_template(conn, &template_id, parent_id.as_deref())
+    })
 }

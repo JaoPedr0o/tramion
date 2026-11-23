@@ -12,41 +12,53 @@ use tramion_infra_sqlite::rusqlite::{Connection, OptionalExtension};
 const MARKER_KEY: &str = "samples_seeded";
 
 /// Um bloco do editor e o texto simples dele (para a busca, que lê o espelho `body`).
-struct Block {
+pub(crate) struct Block {
     json: Value,
     text: String,
 }
 
-fn rich(text: &str) -> Value {
+pub(crate) fn rich(text: &str) -> Value {
     json!([{ "type": "text", "text": text, "styles": {} }])
 }
 
-fn block(kind: &str, props: Value, text: &str) -> Block {
+pub(crate) fn block(kind: &str, props: Value, text: &str) -> Block {
     Block {
         json: json!({ "type": kind, "props": props, "content": rich(text), "children": [] }),
         text: text.to_string(),
     }
 }
 
-fn paragraph(text: &str) -> Block {
+pub(crate) fn paragraph(text: &str) -> Block {
     block("paragraph", json!({}), text)
 }
-fn heading(level: u8, text: &str) -> Block {
+pub(crate) fn heading(level: u8, text: &str) -> Block {
     block("heading", json!({ "level": level }), text)
 }
-fn bullet(text: &str) -> Block {
+pub(crate) fn bullet(text: &str) -> Block {
     block("bulletListItem", json!({}), text)
 }
-fn todo(text: &str, checked: bool) -> Block {
+pub(crate) fn todo(text: &str, checked: bool) -> Block {
     block("checkListItem", json!({ "checked": checked }), text)
 }
-fn quote(text: &str) -> Block {
+pub(crate) fn quote(text: &str) -> Block {
     block("quote", json!({}), text)
 }
 
-/// Cria a página com o conteúdo, o símbolo e (opcional) a capa.
+/// Cria a página (na raiz) com o conteúdo, o símbolo e (opcional) a capa.
 fn page(
     conn: &Connection,
+    title: &str,
+    icon: &str,
+    cover: Option<&str>,
+    blocks: &[Block],
+) -> Result<Note, NotesError> {
+    page_in(conn, None, title, icon, cover, blocks)
+}
+
+/// Cria a página dentro de `parent_id` (`None` = raiz) com o conteúdo, o símbolo e (opcional) a capa.
+pub(crate) fn page_in(
+    conn: &Connection,
+    parent_id: Option<&str>,
     title: &str,
     icon: &str,
     cover: Option<&str>,
@@ -57,7 +69,7 @@ fn page(
         NewNote {
             title: title.to_string(),
             body: String::new(),
-            parent_id: None,
+            parent_id: parent_id.map(str::to_string),
         },
     )?;
     let body = blocks

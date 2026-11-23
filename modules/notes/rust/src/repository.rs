@@ -310,3 +310,19 @@ pub fn purge_all_trashed(conn: &Connection) -> Result<Vec<String>> {
         conn.prepare("DELETE FROM notes_note WHERE deleted_at IS NOT NULL RETURNING id")?;
     stmt.query_map([], |row| row.get(0))?.collect()
 }
+
+/// Copia o conteúdo, o símbolo e a capa para uma nota (usado ao duplicar). Não mexe em `updated_at`.
+pub fn copy_fields(
+    conn: &Connection,
+    id: &str,
+    body: &str,
+    content: &str,
+    icon: Option<&str>,
+    cover: Option<&str>,
+) -> Result<()> {
+    conn.execute(
+        "UPDATE notes_note SET body = ?2, content = ?3, icon = ?4, cover = ?5 WHERE id = ?1",
+        params![id, body, content, icon, cover],
+    )?;
+    Ok(())
+}

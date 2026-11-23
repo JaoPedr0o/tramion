@@ -5,6 +5,7 @@ import type { NotesUiDeps } from "./deps.ts";
 import { MoveDialog } from "./MoveDialog.tsx";
 import { PageGlyph } from "./PageGlyph.tsx";
 import { PageTree } from "./PageTree.tsx";
+import { TemplatesButton } from "./TemplatesButton.tsx";
 import { useNavigation } from "./useNavigation.ts";
 import { usePages } from "./useNoteList.ts";
 
@@ -12,13 +13,8 @@ import { usePages } from "./useNoteList.ts";
  * Conteúdo da barra lateral: Favoritos, a árvore de Páginas (com "adicionar" e ações ao passar o mouse) e,
  * no rodapé, a Lixeira. Também cuida dos atalhos Ctrl+N e Ctrl+Shift+N, que valem com a barra recolhida.
  */
-export function createSidebar({
-  service,
-  events,
-  store,
-  search,
-  actions,
-}: NotesUiDeps): ComponentType {
+export function createSidebar(deps: NotesUiDeps): ComponentType {
+  const { service, events, store, search, actions } = deps;
   return function NotesSidebar() {
     const nav = useNavigation(store);
     const pages = usePages(service, events);
@@ -52,6 +48,7 @@ export function createSidebar({
           <span className="sidebar-row__title">Buscar</span>
           <kbd className="sidebar-search__keys">Ctrl K</kbd>
         </button>
+        <TemplatesButton deps={deps} pages={list} />
         {favorites.length > 0 && (
           <section aria-labelledby="notes-favorites-title">
             <h2 id="notes-favorites-title" className="sidebar-label">
@@ -115,6 +112,7 @@ export function createSidebar({
               onToggle={store.toggle}
               onSelect={(id) => actions.openPage(id, list)}
               onNewSubpage={(page) => void actions.createPage(page.id, list)}
+              onDuplicate={(page) => void actions.duplicatePage(page.id, list)}
               onMove={setMoving}
               onToggleFavorite={(page) => void actions.toggleFavorite(page)}
               onDelete={(page) => void actions.deletePage(page.id)}
