@@ -13,6 +13,7 @@ com cinco formas de exibição, e nenhum servidor, cadastro ou internet.
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-2024-000000?logo=rust&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)
+![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 ![Local-first](https://img.shields.io/badge/local--first-sem%20nuvem-b4492a)
 
 [Funcionalidades](#funcionalidades) ·
@@ -176,7 +177,7 @@ avisos) e leia as [convenções](docs/conventions.md) e os [ADRs](docs/adr/) rel
 
 ## Licença
 
-Ainda não definida: até que um arquivo `LICENSE` seja adicionado, todos os direitos são reservados ao autor.
+[MIT](LICENSE): você pode usar, copiar, modificar e distribuir, inclusive comercialmente, mantendo o aviso de direitos autorais.
 
 ## Agradecimentos
 
