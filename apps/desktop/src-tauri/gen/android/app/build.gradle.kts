@@ -25,6 +25,19 @@ android {
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+    // A assinatura de release vem de variáveis de ambiente (nada secreto fica no repositório): o caminho da chave e a
+    // senha. Sem elas, o APK de release sai sem assinatura e o Android se recusa a instalá-lo.
+    signingConfigs {
+        val keystorePath = System.getenv("TRAMION_KEYSTORE")
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("TRAMION_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TRAMION_KEY_ALIAS") ?: "tramion"
+                keyPassword = System.getenv("TRAMION_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
@@ -39,6 +52,7 @@ android {
             }
         }
         getByName("release") {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                enable = true
             }

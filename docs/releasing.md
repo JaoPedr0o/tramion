@@ -52,3 +52,22 @@ No GitHub: **Releases → Draft a new release → escolha a tag → arraste o `.
 - **Não são assinados.** O Windows (SmartScreen) e o macOS (Gatekeeper) avisam que o autor é desconhecido. Assinar exige
   certificado (Windows) e conta de desenvolvedor Apple (macOS); fica para quando fizer sentido.
 - Os dados do usuário ficam fora do instalador (veja o README), então atualizar ou desinstalar não apaga nada.
+
+## APK do Android
+
+O APK é gerado e **assinado** pelo fluxo de publicação, se o repositório tiver estes dois segredos
+(Settings → Secrets and variables → Actions):
+
+- `ANDROID_KEYSTORE_BASE64`: o arquivo da chave (`tramion-release.jks`) em base64 (`base64 -w0 tramion-release.jks`);
+- `ANDROID_KEYSTORE_PASSWORD`: a senha da chave.
+
+Sem eles, o job do Android é pulado e a release sai só com os instaladores do computador.
+
+**Cuidados com a chave de assinatura**
+
+- Ela **nunca** vai para o repositório. Localmente fica em `~/.config/tramion-signing/` (arquivo da chave e senha).
+- **Faça uma cópia de segurança** (gerenciador de senhas, pen drive). Quem perde a chave não consegue mais publicar
+  atualizações que o Android aceite por cima do app instalado: seria preciso desinstalar e instalar de novo, perdendo
+  os dados do celular.
+- Para compilar um APK assinado na sua máquina: defina `TRAMION_KEYSTORE` (caminho) e `TRAMION_KEYSTORE_PASSWORD` e
+  rode `pnpm tauri android build --apk --target aarch64` em `apps/desktop`.

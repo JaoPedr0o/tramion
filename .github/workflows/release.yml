@@ -64,3 +64,76 @@ jobs:
             Os instaladores de Windows e macOS ainda não foram validados em uso real.
           releaseDraft: true
           prerelease: false
+
+  # APK do Android, assinado com a chave guardada nos segredos do repositório. Só roda se os segredos existirem
+  # (ANDROID_KEYSTORE_BASE64 e ANDROID_KEYSTORE_PASSWORD); sem eles, a release sai só com os instaladores do computador.
+  android:
+    needs: build
+    runs-on: ubuntu-22.04
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      TRAMION_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    steps:
+      - name: Há chave de assinatura?
+        id: key
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$TRAMION_KEYSTORE_PASSWORD" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Sem chave de assinatura nos segredos: o APK não será gerado." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+
+      - uses: pnpm/action-setup@v4
+        if: steps.key.outputs.present == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.key.outputs.present == 'true'
+        with:
+          targets: aarch64-linux-android
+
+      - uses: swatinem/rust-cache@v2
+        if: steps.key.outputs.present == 'true'
+
+      - name: NDK do Android
+        if: steps.key.outputs.present == 'true'
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.1.12297006" "platforms;android-36"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.1.12297006" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+        if: steps.key.outputs.present == 'true'
+
+      - name: Compilar e assinar o APK
+        if: steps.key.outputs.present == 'true'
+        working-directory: apps/desktop
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/tramion-release.jks"
+          export TRAMION_KEYSTORE="$RUNNER_TEMP/tramion-release.jks"
+          pnpm tauri android build --apk --target aarch64
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk \
+            "$RUNNER_TEMP/Tramion_${GITHUB_REF_NAME#v}_android-arm64.apk"
+          echo "APK=$RUNNER_TEMP/Tramion_${GITHUB_REF_NAME#v}_android-arm64.apk" >> "$GITHUB_ENV"
+
+      - name: Anexar o APK ao rascunho da release
+        if: steps.key.outputs.present == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          files: ${{ env.APK }}
