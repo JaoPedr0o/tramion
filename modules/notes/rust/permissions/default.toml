@@ -22,6 +22,7 @@ permissions = [
   "allow-save-markdown",
   "allow-set-reminders",
   "allow-due-tasks",
+  "allow-upcoming-tasks",
   "allow-save-asset",
   "allow-set-appearance",
   "allow-report-error",

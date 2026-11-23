@@ -3,6 +3,7 @@ import { useEffect, type ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { NotePanel } from "./NotePanel.tsx";
 import { SearchDialog } from "./SearchDialog.tsx";
+import { TodayView } from "./TodayView.tsx";
 import { TrashView } from "./TrashView.tsx";
 import { useNavigation } from "./useNavigation.ts";
 
@@ -51,6 +52,8 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         )}
         {nav.mode === "trash" ? (
           <TrashView service={service} events={events} store={store} />
+        ) : nav.mode === "today" ? (
+          <TodayView deps={deps} />
         ) : nav.selectedId ? (
           <NotePanel key={nav.selectedId} deps={deps} id={nav.selectedId} />
         ) : (

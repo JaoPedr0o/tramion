@@ -21,6 +21,16 @@ export function createTopbar({ service, events, store, actions }: NotesUiDeps): 
     const list = pages.status === "ready" ? pages.items : [];
     const [moving, setMoving] = useState<NoteSummary | null>(null);
 
+    if (nav.mode === "today") {
+      return (
+        <div className="notes-topbar">
+          <span className="notes-breadcrumb__current">
+            <span>Hoje</span>
+          </span>
+        </div>
+      );
+    }
+
     if (nav.mode === "trash") {
       return (
         <div className="notes-topbar">

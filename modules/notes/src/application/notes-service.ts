@@ -61,6 +61,7 @@ export interface NotesService {
     config: ReminderConfig | null;
   }): Promise<ReminderConfig | null>;
   dueTasks(today: string): Promise<readonly DueTask[]>;
+  upcomingTasks(today: string, days: number): Promise<readonly DueTask[]>;
   renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }
 
@@ -182,6 +183,7 @@ export function createNotesService(deps: {
     },
 
     dueTasks: (today) => gateway.dueTasks(today),
+    upcomingTasks: (today, days) => gateway.upcomingTasks(today, days),
 
     async renameNote(input) {
       const note = await gateway.renameNote(input);

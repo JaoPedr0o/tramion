@@ -2021,3 +2021,72 @@
   align-items: center;
   justify-content: space-between;
 }
+
+/* ───────── Página "Hoje" ───────── */
+.today {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+.today__heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-title);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.today__date {
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.today__section {
+  margin: var(--space-4) 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.today__empty {
+  color: var(--color-text-muted);
+}
+
+.today__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today__item {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.today__item:hover {
+  background: var(--color-hover);
+}
+
+.today__title {
+  font-weight: 500;
+}
+
+.today__meta {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

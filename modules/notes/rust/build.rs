@@ -22,6 +22,7 @@ const COMMANDS: &[&str] = &[
     "save_markdown",
     "set_reminders",
     "due_tasks",
+    "upcoming_tasks",
     "save_asset",
     "set_appearance",
     "report_error",

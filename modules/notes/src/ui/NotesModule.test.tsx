@@ -2407,4 +2407,130 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await main().findByRole("alert")).textContent).toContain("não são válidos");
     });
   });
+
+  describe("página Hoje", () => {
+    type Fake = ReturnType<typeof setup>["fake"];
+    const openToday = async (user: User) => {
+      await user.click(sidebar().getByRole("button", { name: "Hoje" }));
+      return await main().findByRole("heading", { name: "Hoje", level: 1 });
+    };
+
+    async function seedAgenda(fake: Fake) {
+      const base = await fake.gateway.createDatabase({ title: "Tarefas", parentId: null });
+      const date = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Prazo",
+        type: "date",
+      });
+      const rows: Array<[string, string]> = [
+        ["Atrasada", "2026-11-10"],
+        ["Vence agora", "2026-11-15"],
+        ["Amanhã sim", "2026-11-16"],
+        ["Longe demais", "2026-12-25"],
+      ];
+      for (const [title, when] of rows) {
+        const row = await fake.gateway.createRow({ databaseId: base.id, title });
+        await fake.gateway.setCell({ noteId: row.id, propertyId: date.id, value: when });
+      }
+      await fake.gateway.setReminders({
+        databaseId: base.id,
+        config: { enabled: true, dateProperty: date.id, doneProperty: null, doneOption: null },
+      });
+      return base;
+    }
+
+    it("abre pelo botão Hoje da barra lateral, com a data de hoje e a barra superior", async () => {
+      const { user } = setup();
+      vi.setSystemTime(new Date(2026, 10, 15, 9, 0));
+
+      await openToday(user);
+
+      expect(main().getByText("15 de novembro de 2026")).toBeTruthy();
+      expect(topbar().getByText("Hoje")).toBeTruthy();
+      expect(sidebar().getByRole("button", { name: "Hoje" }).getAttribute("aria-current")).toBe(
+        "page",
+      );
+    });
+
+    it("sem tarefas explica como ligar os lembretes", async () => {
+      const { user } = setup();
+
+      await openToday(user);
+
+      expect(await main().findByText(/Ligue os lembretes numa base de dados/)).toBeTruthy();
+    });
+
+    it("mostra atrasadas, de hoje e os próximos 7 dias, sem o que está longe", async () => {
+      const { user, fake, events } = setup();
+      vi.setSystemTime(new Date(2026, 10, 15, 9, 0));
+      await seedAgenda(fake);
+      await openToday(user);
+      act(() => events.emit("note.updated", { id: "n1" }));
+
+      expect(
+        within(await main().findByRole("region", { name: "Atrasadas" })).getByText("Atrasada"),
+      ).toBeTruthy();
+      expect(
+        within(main().getByRole("region", { name: "Para hoje" })).getByText("Vence agora"),
+      ).toBeTruthy();
+      const next = within(main().getByRole("region", { name: "Próximos dias" }));
+      expect(next.getByText("Amanhã sim")).toBeTruthy();
+      expect(main().queryByText("Longe demais")).toBeNull();
+    });
+
+    it("clicar numa tarefa abre a página dela", async () => {
+      const { user, fake, events } = setup();
+      vi.setSystemTime(new Date(2026, 10, 15, 9, 0));
+      await seedAgenda(fake);
+      await openToday(user);
+      act(() => events.emit("note.updated", { id: "n1" }));
+
+      await user.click(await main().findByRole("button", { name: /Vence agora/ }));
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Vence agora",
+      );
+    });
+
+    it("lista as páginas editadas recentemente (sem as linhas de bases) e os favoritos", async () => {
+      const { user, fake, events } = setup();
+      await seedAgenda(fake);
+      const velha = await fake.gateway.create({ title: "Página velha", body: "" });
+      await fake.gateway.setPinned(velha.id, true);
+      await fake.gateway.create({ title: "Página nova", body: "" });
+      act(() => events.emit("note.created", { id: velha.id }));
+      await openToday(user);
+
+      const recent = within(await main().findByRole("region", { name: "Editadas recentemente" }));
+      expect(recent.getByText("Página nova")).toBeTruthy();
+      expect(recent.queryByText("Atrasada")).toBeNull(); // linha de base não é "página recente"
+      expect(recent.getByText("Tarefas")).toBeTruthy(); // a própria base aparece
+      expect(
+        within(main().getByRole("region", { name: "Favoritos" })).getByText("Página velha"),
+      ).toBeTruthy();
+    });
+
+    it("falha ao carregar as tarefas mostra um aviso, sem quebrar a página", async () => {
+      const { user, fake } = setup();
+      vi.spyOn(fake.gateway, "dueTasks").mockRejectedValue(new NotesError("notes.internal", "x"));
+
+      await openToday(user);
+
+      expect((await main().findByRole("alert")).textContent).toContain(
+        "Não foi possível carregar as tarefas",
+      );
+    });
+
+    it("sair de Hoje (abrir uma página) e voltar funciona", async () => {
+      const { user } = setup();
+      await openToday(user);
+      await user.click(sidebar().getByRole("button", { name: "Nova página" }));
+      expect(await main().findByRole("textbox", { name: "Título" })).toBeTruthy();
+
+      await openToday(user);
+
+      expect(main().queryByRole("textbox", { name: "Título" })).toBeNull();
+    });
+  });
 });

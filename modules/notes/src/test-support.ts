@@ -93,6 +93,7 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     deleteView: vi.fn(async () => {}),
     setReminders: vi.fn(async () => null),
     dueTasks: vi.fn(async () => []),
+    upcomingTasks: vi.fn(async () => []),
     renameNote: vi.fn(async () => aNote()),
     ...overrides,
   };
@@ -179,6 +180,7 @@ export function createFakeGateway() {
     | "deleteView"
     | "setReminders"
     | "dueTasks"
+    | "upcomingTasks"
     | "renameNote";
   const gateway: Omit<NotesGateway, DatabaseMethod> = {
     async list() {
@@ -486,6 +488,34 @@ export function createFakeGateway() {
     }
   };
 
+  /** Imita a varredura de tarefas do Rust: bases com lembretes ligados, linhas ativas, não concluídas. */
+  const scanTasks = (accept: (date: string) => boolean, overdue: (date: string) => boolean) => {
+    const found: DueTask[] = [];
+    for (const [databaseId, config] of reminders) {
+      const base = notes.get(databaseId);
+      if (!config.enabled || !base || base.deletedAt !== null) continue;
+      for (const row of activeChildren(databaseId)) {
+        const date = cells.get(cellKey(row.id, config.dateProperty));
+        if (typeof date !== "string" || !accept(date)) continue;
+        const mark = config.doneProperty
+          ? cells.get(cellKey(row.id, config.doneProperty))
+          : undefined;
+        const finished = config.doneOption === null ? mark === true : mark === config.doneOption;
+        if (finished) continue;
+        found.push({
+          id: row.id,
+          title: row.title,
+          icon: row.icon,
+          databaseId,
+          databaseTitle: base.title,
+          date,
+          overdue: overdue(date),
+        });
+      }
+    }
+    return found.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+  };
+
   const databaseGateway: Pick<NotesGateway, DatabaseMethod> = {
     async createDatabase({ title, parentId }) {
       const note = await gateway.create({ title, body: "", parentId });
@@ -667,30 +697,21 @@ export function createFakeGateway() {
 
     async dueTasks(today) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new NotesError("notes.cell-invalid", "data");
-      const due: DueTask[] = [];
-      for (const [databaseId, config] of reminders) {
-        const base = notes.get(databaseId);
-        if (!config.enabled || !base || base.deletedAt !== null) continue;
-        for (const row of activeChildren(databaseId)) {
-          const date = cells.get(cellKey(row.id, config.dateProperty));
-          if (typeof date !== "string" || date > today) continue;
-          const mark = config.doneProperty
-            ? cells.get(cellKey(row.id, config.doneProperty))
-            : undefined;
-          const finished = config.doneOption === null ? mark === true : mark === config.doneOption;
-          if (finished) continue;
-          due.push({
-            id: row.id,
-            title: row.title,
-            icon: row.icon,
-            databaseId,
-            databaseTitle: base.title,
-            date,
-            overdue: date < today,
-          });
-        }
-      }
-      return due.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+      return scanTasks(
+        (date) => date <= today,
+        (date) => date < today,
+      );
+    },
+
+    async upcomingTasks(today, days) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new NotesError("notes.cell-invalid", "data");
+      const [y, m, d] = today.split("-").map(Number) as [number, number, number];
+      const limit = Math.max(1, Math.min(60, days));
+      const end = new Date(Date.UTC(y, m - 1, d + limit)).toISOString().slice(0, 10);
+      return scanTasks(
+        (date) => date > today && date <= end,
+        () => false,
+      );
     },
 
     async renameNote({ id, title, expectedUpdatedAt }) {

@@ -3,7 +3,7 @@
 use serde_json::{Value, json};
 use tramion_infra_sqlite::Database;
 use tramion_notes::MIGRATIONS;
-use tramion_notes::database::{self, due_tasks, set_reminders};
+use tramion_notes::database::{self, due_tasks, set_reminders, upcoming_tasks};
 use tramion_notes::duplicate::duplicate;
 use tramion_notes::error::NotesError;
 use tramion_notes::model::{NewNote, Note};
@@ -338,4 +338,74 @@ fn apagar_a_base_de_vez_leva_a_configuracao_e_duplicar_copia_com_as_colunas_nova
         .query_row("SELECT COUNT(*) FROM notes_reminder", [], |r| r.get(0))
         .unwrap();
     assert_eq!(count, 1, "só sobrou a da cópia");
+}
+
+fn upcoming(db: &Database, days: i64) -> Vec<(String, String)> {
+    upcoming_tasks(db.connection(), TODAY, days)
+        .unwrap()
+        .into_iter()
+        .map(|t| (t.title, t.date))
+        .collect()
+}
+
+#[test]
+fn agenda_lista_os_proximos_dias_sem_hoje_nem_atrasadas_nem_concluidas() {
+    let db = db();
+    let t = tasks(&db, "Tarefas");
+    row(&db, &t, "Atrasada", Some("2026-11-10"));
+    row(&db, &t, "Hoje", Some(TODAY));
+    row(&db, &t, "Amanhã", Some("2026-11-16"));
+    row(&db, &t, "Daqui a 7", Some("2026-11-22"));
+    row(&db, &t, "Daqui a 8", Some("2026-11-23"));
+    let feita = row(&db, &t, "Feita", Some("2026-11-17"));
+    database::set_cell(db.connection(), &feita, &t.done_box, &json!(true)).unwrap();
+    on(&db, &t);
+
+    let list = upcoming(&db, 7);
+
+    assert_eq!(
+        list,
+        [
+            ("Amanhã".to_string(), "2026-11-16".to_string()),
+            ("Daqui a 7".to_string(), "2026-11-22".to_string())
+        ]
+    );
+    assert!(
+        upcoming_tasks(db.connection(), TODAY, 7)
+            .unwrap()
+            .iter()
+            .all(|t| !t.overdue)
+    );
+}
+
+#[test]
+fn agenda_limita_os_dias_entre_1_e_60_e_cruza_mes_e_ano() {
+    let db = db();
+    let t = tasks(&db, "Tarefas");
+    row(&db, &t, "Amanhã", Some("2026-11-16"));
+    row(&db, &t, "Em 45 dias", Some("2026-12-30"));
+    row(&db, &t, "Em 61 dias", Some("2027-01-15"));
+    on(&db, &t);
+
+    assert_eq!(upcoming(&db, 0).len(), 1, "0 vira 1 dia");
+    assert_eq!(upcoming(&db, -5).len(), 1);
+    assert_eq!(upcoming(&db, 45).len(), 2, "atravessa o mês");
+    assert_eq!(
+        upcoming(&db, 1000).len(),
+        2,
+        "o teto é 60 dias: 2026-12-30 entra, 2027-01-15 não"
+    );
+}
+
+#[test]
+fn agenda_sem_lembretes_ou_com_data_invalida() {
+    let db = db();
+    let t = tasks(&db, "Tarefas");
+    row(&db, &t, "Amanhã", Some("2026-11-16"));
+
+    assert!(upcoming(&db, 7).is_empty(), "sem lembretes ligados");
+    assert_eq!(
+        code(upcoming_tasks(db.connection(), "hoje", 7)),
+        "notes.cell-invalid"
+    );
 }

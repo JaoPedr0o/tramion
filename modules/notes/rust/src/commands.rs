@@ -420,3 +420,13 @@ pub async fn due_tasks(
 ) -> Result<Vec<DueTask>, CommandError> {
     with_db(&db, |conn| database::due_tasks(conn, &today))
 }
+
+/// As tarefas com prazo nos próximos `days` dias (depois de `today`).
+#[tauri::command]
+pub async fn upcoming_tasks(
+    db: State<'_, SharedDatabase>,
+    today: String,
+    days: i64,
+) -> Result<Vec<DueTask>, CommandError> {
+    with_db(&db, |conn| database::upcoming_tasks(conn, &today, days))
+}

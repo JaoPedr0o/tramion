@@ -95,6 +95,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::save_markdown,
             commands::set_reminders,
             commands::due_tasks,
+            commands::upcoming_tasks,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

@@ -634,13 +634,14 @@ fn is_iso_date(text: &str) -> bool {
     text.len() == 10 && is_valid_date(text)
 }
 
-/// As tarefas que pedem atenção em `today` (`AAAA-MM-DD`, no relógio do usuário): linhas de bases com lembretes
-/// ligados cujo prazo é hoje ou já passou e que ainda não foram concluídas. Mais antigas primeiro.
-pub fn due_tasks(conn: &Connection, today: &str) -> Result<Vec<DueTask>, NotesError> {
-    if !is_iso_date(today) {
-        return Err(NotesError::CellInvalid);
-    }
-    let mut due: Vec<DueTask> = Vec::new();
+/// Varre as bases com lembretes ligados e devolve as tarefas NÃO concluídas cujo prazo passa em `accept`; `overdue`
+/// diz se o prazo conta como atrasado. Mais antigas primeiro.
+fn scan_tasks(
+    conn: &Connection,
+    accept: impl Fn(&str) -> bool,
+    overdue: impl Fn(&str) -> bool,
+) -> Result<Vec<DueTask>, NotesError> {
+    let mut found: Vec<DueTask> = Vec::new();
     for (database_id, database_title, raw) in repo::list_active_reminders(conn)? {
         let Ok(config) = serde_json::from_str::<Value>(&raw) else {
             continue;
@@ -670,7 +671,7 @@ pub fn due_tasks(conn: &Connection, today: &str) -> Result<Vec<DueTask>, NotesEr
             let Some(date) = dates.get(&row_id).and_then(Value::as_str) else {
                 continue;
             };
-            if date > today {
+            if !accept(date) {
                 continue;
             }
             let finished = match (done.get(&row_id), done_option) {
@@ -681,22 +682,53 @@ pub fn due_tasks(conn: &Connection, today: &str) -> Result<Vec<DueTask>, NotesEr
             if finished {
                 continue;
             }
-            due.push(DueTask {
+            found.push(DueTask {
                 id: row_id,
                 title,
                 icon,
                 database_id: database_id.clone(),
                 database_title: database_title.clone(),
                 date: date.to_string(),
-                overdue: date < today,
+                overdue: overdue(date),
             });
         }
     }
-    due.sort_by(|a, b| {
+    found.sort_by(|a, b| {
         a.date
             .cmp(&b.date)
             .then(a.title.cmp(&b.title))
             .then(a.id.cmp(&b.id))
     });
-    Ok(due)
+    Ok(found)
+}
+
+/// As tarefas que pedem atenção em `today` (`AAAA-MM-DD`, no relógio do usuário): linhas de bases com lembretes
+/// ligados cujo prazo é hoje ou já passou e que ainda não foram concluídas. Mais antigas primeiro.
+pub fn due_tasks(conn: &Connection, today: &str) -> Result<Vec<DueTask>, NotesError> {
+    if !is_iso_date(today) {
+        return Err(NotesError::CellInvalid);
+    }
+    scan_tasks(conn, |date| date <= today, |date| date < today)
+}
+
+/// Máximo de dias à frente na agenda.
+pub const MAX_AGENDA_DAYS: i64 = 60;
+
+/// As tarefas não concluídas com prazo DEPOIS de hoje e até `days` dias à frente (de 1 a 60), de bases com lembretes
+/// ligados. Mais próximas primeiro.
+pub fn upcoming_tasks(
+    conn: &Connection,
+    today: &str,
+    days: i64,
+) -> Result<Vec<DueTask>, NotesError> {
+    if !is_iso_date(today) {
+        return Err(NotesError::CellInvalid);
+    }
+    let days = days.clamp(1, MAX_AGENDA_DAYS);
+    let end: String = conn.query_row(
+        "SELECT date(?1, ?2)",
+        [today, &format!("+{days} days")],
+        |row| row.get(0),
+    )?;
+    scan_tasks(conn, |date| date > today && date <= end.as_str(), |_| false)
 }

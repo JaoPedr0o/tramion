@@ -77,6 +77,8 @@ export interface NotesGateway {
     databaseId: string;
     config: ReminderConfig | null;
   }): Promise<ReminderConfig | null>;
+  /** As tarefas com prazo nos próximos `days` dias (de 1 a 60), depois de `today`, de bases com lembretes ligados. */
+  upcomingTasks(today: string, days: number): Promise<readonly DueTask[]>;
   /** As tarefas atrasadas ou que vencem em `today` (`AAAA-MM-DD`, data local), de bases com lembretes ligados. */
   dueTasks(today: string): Promise<readonly DueTask[]>;
   /** Troca só o título, respeitando a versão (como `update`). */

@@ -55,6 +55,7 @@ export function createTauriNotesGateway(): NotesGateway {
     setReminders: ({ databaseId, config }) =>
       call<ReminderConfig | null>("set_reminders", { databaseId, config }),
     dueTasks: (today) => call<DueTask[]>("due_tasks", { today }),
+    upcomingTasks: (today, days) => call<DueTask[]>("upcoming_tasks", { today, days }),
     renameNote: ({ id, title, expectedUpdatedAt }) =>
       call<Note>("rename_note", { id, title, expectedUpdatedAt }),
   };

@@ -43,6 +43,17 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
 
     return (
       <div className="notes-sidebar">
+        <button
+          type="button"
+          className="sidebar-row"
+          aria-current={nav.mode === "today" ? "page" : undefined}
+          onClick={store.showToday}
+        >
+          <span className="sidebar-row__icon" aria-hidden="true">
+            ◐
+          </span>
+          <span className="sidebar-row__title">Hoje</span>
+        </button>
         <button type="button" className="sidebar-row sidebar-search" onClick={() => search.open()}>
           <span className="sidebar-row__icon" aria-hidden="true">
             <SearchIcon />
