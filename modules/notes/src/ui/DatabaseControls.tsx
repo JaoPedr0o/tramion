@@ -11,8 +11,11 @@ import {
 import {
   PROPERTY_TYPES,
   PROPERTY_TYPE_LABELS,
+  VIEW_MODES,
   type Property,
   type PropertyType,
+  type View,
+  type ViewMode,
 } from "../domain/database.ts";
 import { Choice } from "./Choice.tsx";
 import { Popover } from "./Popover.tsx";
@@ -328,5 +331,119 @@ export function SortButton({
         </div>
       )}
     </PopoverButton>
+  );
+}
+
+// ───────── Visões salvas ─────────
+
+/** "+ Nova visão": escolhe a forma de exibição da visão nova. */
+export function NewViewButton({ onCreate }: { onCreate(mode: ViewMode): void }) {
+  return (
+    <PopoverButton label="Nova visão" caption="+" className="db-add-column">
+      {(close) => (
+        <div className="db-form" role="group" aria-label="Forma de exibição da nova visão">
+          {VIEW_MODES.map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                onCreate(mode);
+                close();
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </PopoverButton>
+  );
+}
+
+/** Opções da visão ativa: renomear, mudar a forma de exibição, duplicar e excluir. */
+export function ViewOptionsButton({
+  view,
+  canDelete,
+  onRename,
+  onMode,
+  onDuplicate,
+  onDelete,
+}: {
+  view: View;
+  canDelete: boolean;
+  onRename(name: string): Promise<boolean>;
+  onMode(mode: ViewMode): void;
+  onDuplicate(): void;
+  onDelete(): Promise<boolean>;
+}) {
+  return (
+    <PopoverButton label="Opções da visão" caption="⋯" className="db-add-column">
+      {(close) => (
+        <ViewOptions
+          view={view}
+          canDelete={canDelete}
+          onRename={onRename}
+          onMode={onMode}
+          onDuplicate={() => {
+            onDuplicate();
+            close();
+          }}
+          onDelete={async () => {
+            if (await onDelete()) close();
+          }}
+        />
+      )}
+    </PopoverButton>
+  );
+}
+
+function ViewOptions({
+  view,
+  canDelete,
+  onRename,
+  onMode,
+  onDuplicate,
+  onDelete,
+}: {
+  view: View;
+  canDelete: boolean;
+  onRename(name: string): Promise<boolean>;
+  onMode(mode: ViewMode): void;
+  onDuplicate(): void;
+  onDelete(): Promise<void>;
+}) {
+  const [name, setName] = useState(view.name);
+  return (
+    <div className="db-form">
+      <input
+        aria-label="Nome da visão"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        onBlur={() => {
+          const next = name.trim();
+          if (next !== "" && next !== view.name) void onRename(next);
+          else setName(view.name);
+        }}
+        onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+      />
+      <Choice
+        label="Exibir como"
+        value={view.config.mode}
+        options={VIEW_MODES.map(([id, label]) => ({ id, label }))}
+        onChange={(id) => onMode(id as ViewMode)}
+      />
+      <button type="button" onClick={onDuplicate}>
+        Duplicar visão
+      </button>
+      <button
+        type="button"
+        className="db-form__danger"
+        disabled={!canDelete}
+        title={canDelete ? undefined : "A última visão não pode ser apagada"}
+        onClick={() => void onDelete()}
+      >
+        Excluir visão
+      </button>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DatabaseRow } from "../domain/database.ts";
 import {
+  addDays,
   addMonths,
   groupByDate,
   isoOf,
@@ -9,6 +10,8 @@ import {
   monthLabel,
   monthOf,
   todayIso,
+  weekLabel,
+  weekOf,
 } from "./calendar.ts";
 
 const row = (id: string, cells: DatabaseRow["cells"] = {}): DatabaseRow => ({
@@ -157,5 +160,48 @@ describe("groupByDate", () => {
 
     expect(byDate.size).toBe(0);
     expect(undated).toEqual([]);
+  });
+});
+
+describe("semana", () => {
+  it("addDays anda para a frente e para trás, virando mês e ano", () => {
+    expect(addDays("2026-11-30", 1)).toBe("2026-12-01");
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+    expect(addDays("2026-01-01", -1)).toBe("2025-12-31");
+    expect(addDays("2024-02-28", 1)).toBe("2024-02-29");
+    expect(addDays("2025-02-28", 1)).toBe("2025-03-01");
+    expect(addDays("2026-11-15", 0)).toBe("2026-11-15");
+    expect(addDays("2026-11-15", 7)).toBe("2026-11-22");
+  });
+
+  it("weekOf devolve de domingo a sábado, com a data dentro", () => {
+    const week = weekOf("2026-11-18"); // quarta-feira
+
+    expect(week.map((d) => d.iso)).toEqual([
+      "2026-11-15",
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18",
+      "2026-11-19",
+      "2026-11-20",
+      "2026-11-21",
+    ]);
+    expect(week.every((d) => d.inMonth)).toBe(true);
+    expect(weekOf("2026-11-15")[0]!.iso).toBe("2026-11-15"); // domingo começa a própria semana
+    expect(weekOf("2026-11-21")[0]!.iso).toBe("2026-11-15"); // sábado ainda é a mesma semana
+  });
+
+  it("semana que cruza o mês ou o ano marca os dias de fora", () => {
+    const week = weekOf("2026-12-31"); // quinta-feira
+
+    expect(week[0]!.iso).toBe("2026-12-27");
+    expect(week[6]!.iso).toBe("2027-01-02");
+    expect(week.filter((d) => d.inMonth).map((d) => d.day)).toEqual([27, 28, 29, 30, 31]);
+  });
+
+  it("weekLabel em português nos três casos", () => {
+    expect(weekLabel(weekOf("2026-11-18"))).toBe("15 a 21 de novembro de 2026");
+    expect(weekLabel(weekOf("2026-11-30"))).toBe("29 de novembro a 5 de dezembro de 2026");
+    expect(weekLabel(weekOf("2026-12-31"))).toBe("27 de dezembro de 2026 a 2 de janeiro de 2027");
   });
 });

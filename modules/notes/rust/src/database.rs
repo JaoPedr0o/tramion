@@ -9,7 +9,7 @@
 use crate::database_repository as repo;
 use crate::error::NotesError;
 use crate::external::validate_external_url;
-use crate::model::{DatabaseData, DatabaseRow, Note, Property};
+use crate::model::{DatabaseData, DatabaseRow, Note, Property, View};
 use crate::repository;
 use crate::service::{ensure_active_parent, validate_title};
 use serde_json::Value;
@@ -22,6 +22,18 @@ pub const MAX_OPTIONS: usize = 50;
 pub const MAX_OPTION_NAME_CHARS: usize = 60;
 pub const MAX_TEXT_CELL_CHARS: usize = 2000;
 pub const MAX_URL_CELL_CHARS: usize = 2000;
+pub const MAX_VIEWS: usize = 20;
+pub const MAX_VIEW_NAME_CHARS: usize = 60;
+pub const MAX_VIEW_CONFIG_BYTES: usize = 20_000;
+pub const MAX_VIEW_FILTERS: usize = 20;
+
+/// Formas de exibição aceitas numa visão.
+pub const VIEW_MODES: [&str; 5] = ["table", "board", "list", "gallery", "calendar"];
+
+/// A configuração padrão de uma visão nova ou de uma base recém-criada.
+pub fn default_view_config() -> Value {
+    serde_json::json!({ "mode": "table", "filters": [], "sort": null })
+}
 
 pub const PROPERTY_KINDS: [&str; 7] = [
     "text",
@@ -215,6 +227,7 @@ pub fn create_database(
     let tx = conn.unchecked_transaction()?;
     let note = repository::insert(&tx, title, "", parent_id)?;
     repo::mark_database(&tx, &note.id)?;
+    repo::insert_view(&tx, &note.id, "Tabela", &default_view_config().to_string())?;
     tx.commit()?;
     Ok(note)
 }
@@ -246,6 +259,7 @@ pub fn get_database(conn: &Connection, id: &str) -> Result<DatabaseData, NotesEr
         id: id.to_string(),
         title,
         properties,
+        views: repo::list_views(conn, id)?,
         rows,
     })
 }
@@ -381,4 +395,153 @@ pub fn rename_note(
             Some((current_updated_at, None)) => NotesError::Conflict { current_updated_at },
         }),
     }
+}
+
+// ───────── Visões salvas ─────────
+
+fn validate_view_name(raw: &str) -> Result<&str, NotesError> {
+    let name = raw.trim();
+    if name.is_empty() || name.chars().count() > MAX_VIEW_NAME_CHARS {
+        return Err(NotesError::ViewInvalid);
+    }
+    Ok(name)
+}
+
+/// Texto curto: no máximo `max` caracteres e sem caracteres de controle.
+fn short_text(value: &Value, max: usize) -> Option<&str> {
+    let text = value.as_str()?;
+    (text.chars().count() <= max && !text.chars().any(char::is_control)).then_some(text)
+}
+
+/// Uma coluna ou nada (`null`/ausente). Não confere se a coluna existe: colunas apagadas depois são ignoradas pela tela.
+fn optional_id(config: &Value, key: &str) -> Result<Value, NotesError> {
+    match config.get(key) {
+        None | Some(Value::Null) => Ok(Value::Null),
+        Some(value) => short_text(value, 64)
+            .map(|text| Value::String(text.to_string()))
+            .ok_or(NotesError::ViewInvalid),
+    }
+}
+
+/// Confere a configuração e a devolve LIMPA (só os campos conhecidos): forma de exibição, filtros, ordenação,
+/// coluna de agrupamento (quadro), coluna de data e escala (calendário).
+pub fn validate_view_config(config: &Value) -> Result<Value, NotesError> {
+    let Value::Object(object) = config else {
+        return Err(NotesError::ViewInvalid);
+    };
+    if config.to_string().len() > MAX_VIEW_CONFIG_BYTES {
+        return Err(NotesError::ViewInvalid);
+    }
+
+    let mode = object
+        .get("mode")
+        .and_then(Value::as_str)
+        .filter(|mode| VIEW_MODES.contains(mode))
+        .ok_or(NotesError::ViewInvalid)?;
+
+    let filters = match object.get("filters") {
+        None | Some(Value::Null) => Vec::new(),
+        Some(Value::Array(list)) if list.len() <= MAX_VIEW_FILTERS => list
+            .iter()
+            .map(|item| {
+                let field = |key: &str| {
+                    item.get(key)
+                        .and_then(|v| short_text(v, 500))
+                        .map(str::to_string)
+                        .ok_or(NotesError::ViewInvalid)
+                };
+                Ok(serde_json::json!({
+                    "property": field("property")?,
+                    "operator": field("operator")?,
+                    "value": field("value")?,
+                }))
+            })
+            .collect::<Result<Vec<_>, NotesError>>()?,
+        Some(_) => return Err(NotesError::ViewInvalid),
+    };
+
+    let sort = match object.get("sort") {
+        None | Some(Value::Null) => Value::Null,
+        Some(sort) => {
+            let direction = sort
+                .get("direction")
+                .and_then(Value::as_str)
+                .filter(|d| *d == "asc" || *d == "desc")
+                .ok_or(NotesError::ViewInvalid)?;
+            let property = sort
+                .get("property")
+                .and_then(|v| short_text(v, 64))
+                .ok_or(NotesError::ViewInvalid)?;
+            serde_json::json!({ "property": property, "direction": direction })
+        }
+    };
+
+    let scale = match object.get("scale") {
+        None | Some(Value::Null) => Value::Null,
+        Some(Value::String(scale)) if scale == "month" || scale == "week" => {
+            Value::String(scale.clone())
+        }
+        Some(_) => return Err(NotesError::ViewInvalid),
+    };
+
+    Ok(serde_json::json!({
+        "mode": mode,
+        "filters": filters,
+        "sort": sort,
+        "groupBy": optional_id(config, "groupBy")?,
+        "dateProperty": optional_id(config, "dateProperty")?,
+        "scale": scale,
+    }))
+}
+
+/// Acrescenta uma visão no fim.
+pub fn add_view(
+    conn: &Connection,
+    database_id: &str,
+    name: &str,
+    config: &Value,
+) -> Result<View, NotesError> {
+    let name = validate_view_name(name)?;
+    let clean = validate_view_config(config)?;
+    active_database(conn, database_id)?;
+    if repo::count_views(conn, database_id)? as usize >= MAX_VIEWS {
+        return Err(NotesError::LimitReached { max: MAX_VIEWS });
+    }
+    Ok(repo::insert_view(
+        conn,
+        database_id,
+        name,
+        &clean.to_string(),
+    )?)
+}
+
+/// Renomeia a visão e/ou troca a configuração (o que estiver ausente fica como está).
+pub fn update_view(
+    conn: &Connection,
+    id: &str,
+    name: Option<&str>,
+    config: Option<&Value>,
+) -> Result<View, NotesError> {
+    let current = repo::find_view(conn, id)?.ok_or(NotesError::ViewNotFound)?;
+    active_database(conn, &current.database_id)?;
+    let name = match name {
+        Some(name) => validate_view_name(name)?.to_string(),
+        None => current.name.clone(),
+    };
+    let config = match config {
+        Some(config) => validate_view_config(config)?,
+        None => current.config.clone(),
+    };
+    repo::update_view(conn, id, &name, &config.to_string())?.ok_or(NotesError::ViewNotFound)
+}
+
+/// Apaga a visão. A última visão de uma base não pode ser apagada (a base sempre tem uma forma de ser vista).
+pub fn delete_view(conn: &Connection, id: &str) -> Result<(), NotesError> {
+    let current = repo::find_view(conn, id)?.ok_or(NotesError::ViewNotFound)?;
+    active_database(conn, &current.database_id)?;
+    if repo::count_views(conn, &current.database_id)? <= 1 {
+        return Err(NotesError::ViewInvalid);
+    }
+    repo::delete_view(conn, id)?;
+    Ok(())
 }

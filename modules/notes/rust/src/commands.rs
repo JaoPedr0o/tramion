@@ -7,7 +7,7 @@ use crate::diagnostics;
 use crate::error::NotesError;
 use crate::external;
 use crate::model::{
-    DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote,
+    DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote, View,
 };
 use crate::search::{self, SearchHit};
 use crate::service;
@@ -326,4 +326,33 @@ pub async fn search(
     limit: usize,
 ) -> Result<Vec<SearchHit>, CommandError> {
     with_db(&db, |conn| search::search(conn, &query, limit))
+}
+
+#[tauri::command]
+pub async fn add_view(
+    db: State<'_, SharedDatabase>,
+    database_id: String,
+    name: String,
+    config: serde_json::Value,
+) -> Result<View, CommandError> {
+    with_db(&db, |conn| {
+        database::add_view(conn, &database_id, &name, &config)
+    })
+}
+
+#[tauri::command]
+pub async fn update_view(
+    db: State<'_, SharedDatabase>,
+    id: String,
+    name: Option<String>,
+    config: Option<serde_json::Value>,
+) -> Result<View, CommandError> {
+    with_db(&db, |conn| {
+        database::update_view(conn, &id, name.as_deref(), config.as_ref())
+    })
+}
+
+#[tauri::command]
+pub async fn delete_view(db: State<'_, SharedDatabase>, id: String) -> Result<(), CommandError> {
+    with_db(&db, |conn| database::delete_view(conn, &id))
 }

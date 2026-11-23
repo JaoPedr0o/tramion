@@ -12,7 +12,10 @@ import type {
   Property,
   PropertyType,
   SelectOption,
+  ViewConfig,
+  ViewMode,
 } from "../domain/database.ts";
+import { VIEW_MODES } from "../domain/database.ts";
 import { Choice } from "./Choice.tsx";
 import { DatabaseBoard } from "./DatabaseBoard.tsx";
 import { DatabaseCalendar } from "./DatabaseCalendar.tsx";
@@ -22,8 +25,10 @@ import { DatabaseList } from "./DatabaseList.tsx";
 import {
   AddPropertyButton,
   FilterButton,
+  NewViewButton,
   PropertyHeaderButton,
   SortButton,
+  ViewOptionsButton,
 } from "./DatabaseControls.tsx";
 import type { NotesUiDeps } from "./deps.ts";
 import { messageFor } from "./messages.ts";
@@ -34,36 +39,6 @@ import { useSyncedDraft } from "./useSyncedDraft.ts";
 interface Props {
   deps: NotesUiDeps;
   id: string;
-}
-
-type ViewMode = "table" | "board" | "list" | "gallery" | "calendar";
-
-const VIEW_MODES: ReadonlyArray<readonly [ViewMode, string]> = [
-  ["table", "Tabela"],
-  ["board", "Quadro"],
-  ["list", "Lista"],
-  ["gallery", "Galeria"],
-  ["calendar", "Calendário"],
-];
-
-/** A forma de exibição escolhida é lembrada por base (conveniência: se o armazenamento faltar, volta à tabela). */
-const viewKey = (databaseId: string) => `tramion.databaseView.${databaseId}`;
-
-function readView(databaseId: string): ViewMode {
-  try {
-    const stored = localStorage.getItem(viewKey(databaseId));
-    return VIEW_MODES.some(([mode]) => mode === stored) ? (stored as ViewMode) : "table";
-  } catch {
-    return "table";
-  }
-}
-
-function saveView(databaseId: string, mode: ViewMode) {
-  try {
-    localStorage.setItem(viewKey(databaseId), mode);
-  } catch {
-    /* sem armazenamento: não lembra */
-  }
 }
 
 type State =
@@ -94,19 +69,23 @@ export function DatabaseView({ deps, id }: Props) {
   const allPages = pages.status === "ready" ? pages.items : [];
   const [state, setState] = useState<State>({ status: "loading" });
   const [error, setError] = useState<string | null>(null);
-  const [rules, setRules] = useState<readonly FilterRule[]>([]);
-  const [sort, setSort] = useState<SortRule | null>(null);
-  const [view, setViewState] = useState<ViewMode>(() => readView(id));
-  const [groupById, setGroupById] = useState<string | null>(null);
-  const [dateById, setDateById] = useState<string | null>(null);
-  const setView = (mode: ViewMode) => {
-    setViewState(mode);
-    saveView(id, mode);
-  };
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // Alterações de visão ainda não gravadas (a gravação espera uma pausa): valem sobre o que vier do banco.
+  const pending = useRef(new Map<string, ViewConfig>());
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const load = useCallback(() => {
     service.getDatabase(id).then(
-      (data) => setState({ status: "ready", data }),
+      (data) =>
+        setState({
+          status: "ready",
+          data: {
+            ...data,
+            views: data.views.map((v) =>
+              pending.current.has(v.id) ? { ...v, config: pending.current.get(v.id)! } : v,
+            ),
+          },
+        }),
       (failure) => setState({ status: "error", message: messageFor(failure) }),
     );
   }, [service, id]);
@@ -128,6 +107,13 @@ export function DatabaseView({ deps, id }: Props) {
   }, [events, load]);
 
   const data = state.status === "ready" ? state.data : null;
+  const activeView = data
+    ? (data.views.find((v) => v.id === activeId) ?? data.views[0])
+    : undefined;
+  const config = activeView?.config;
+  const view: ViewMode = config?.mode ?? "table";
+  const rules = useMemo(() => (config?.filters ?? []) as readonly FilterRule[], [config]);
+  const sort = (config?.sort ?? null) as SortRule | null;
   const rows = useMemo(
     () =>
       data ? sortRows(filterRows(data.rows, data.properties, rules), data.properties, sort) : [],
@@ -150,6 +136,74 @@ export function DatabaseView({ deps, id }: Props) {
       return false;
     }
   };
+
+  // Ao sair da tela, grava o que ainda estiver esperando a pausa.
+  useEffect(() => {
+    const waiting = timers.current;
+    const configs = pending.current;
+    return () => {
+      for (const [viewId, timer] of waiting) {
+        clearTimeout(timer);
+        const config = configs.get(viewId);
+        if (config) void service.updateView({ id: viewId, config }).catch(() => {});
+      }
+    };
+  }, [service]);
+
+  /** Muda a configuração da visão ativa na tela na hora e grava depois de uma pausa (evita uma gravação por tecla). */
+  const updateConfig = (change: Partial<ViewConfig>) => {
+    if (!activeView) return;
+    const viewId = activeView.id;
+    const next: ViewConfig = { ...activeView.config, ...change };
+    patch((d) => ({
+      ...d,
+      views: d.views.map((v) => (v.id === viewId ? { ...v, config: next } : v)),
+    }));
+    pending.current.set(viewId, next);
+    clearTimeout(timers.current.get(viewId));
+    timers.current.set(
+      viewId,
+      setTimeout(() => {
+        const config = pending.current.get(viewId);
+        pending.current.delete(viewId);
+        timers.current.delete(viewId);
+        if (config)
+          void attempt(async () => void (await service.updateView({ id: viewId, config })));
+      }, 500),
+    );
+  };
+
+  /** Nome livre para uma visão nova: "Quadro", "Quadro 2", "Quadro 3"... */
+  const freeName = (base: string) => {
+    const used = new Set((data?.views ?? []).map((v) => v.name));
+    if (!used.has(base)) return base;
+    let n = 2;
+    while (used.has(`${base} ${n}`)) n++;
+    return `${base} ${n}`;
+  };
+
+  const createView = (name: string, config: ViewConfig) =>
+    attempt(async () => {
+      const created = await service.addView({ databaseId: id, name: freeName(name), config });
+      patch((d) => ({ ...d, views: [...d.views, created] }));
+      setActiveId(created.id);
+    });
+
+  const renameView = (viewId: string, name: string) =>
+    attempt(async () => {
+      const updated = await service.updateView({ id: viewId, name });
+      patch((d) => ({ ...d, views: d.views.map((v) => (v.id === viewId ? updated : v)) }));
+    });
+
+  const deleteView = (viewId: string) =>
+    attempt(async () => {
+      await service.deleteView(viewId);
+      pending.current.delete(viewId);
+      clearTimeout(timers.current.get(viewId));
+      timers.current.delete(viewId);
+      patch((d) => ({ ...d, views: d.views.filter((v) => v.id !== viewId) }));
+      setActiveId(null);
+    });
 
   const replaceProperty = (property: Property) =>
     patch((d) => ({
@@ -270,34 +324,56 @@ export function DatabaseView({ deps, id }: Props) {
   const selectProperties = properties.filter((p) => p.type === "select");
   // A coluna do quadro: a escolhida, se ainda existir; senão a primeira de seleção.
   const groupProperty =
-    selectProperties.find((p) => p.id === groupById) ?? selectProperties[0] ?? null;
+    selectProperties.find((p) => p.id === config?.groupBy) ?? selectProperties[0] ?? null;
   const dateProperties = properties.filter((p) => p.type === "date");
   // A coluna do calendário: a escolhida, se ainda existir; senão a primeira de data.
-  const dateProperty = dateProperties.find((p) => p.id === dateById) ?? dateProperties[0] ?? null;
+  const dateProperty =
+    dateProperties.find((p) => p.id === config?.dateProperty) ?? dateProperties[0] ?? null;
   return (
     <section className="database" aria-label="Base de dados">
       <TitleField key={state.data.title} title={state.data.title} onRename={renameDatabase} />
 
       <div className="db-toolbar">
-        <div role="tablist" aria-label="Forma de exibição" className="db-views">
-          {VIEW_MODES.map(([mode, label]) => (
+        <div role="tablist" aria-label="Visões" className="db-views">
+          {state.data.views.map((v) => (
             <button
-              key={mode}
+              key={v.id}
               type="button"
               role="tab"
-              aria-selected={view === mode}
-              onClick={() => setView(mode)}
+              aria-selected={v.id === activeView?.id}
+              onClick={() => setActiveId(v.id)}
             >
-              {label}
+              {v.name}
             </button>
           ))}
+          <NewViewButton
+            onCreate={(mode) =>
+              void createView(VIEW_MODES.find(([m]) => m === mode)![1], {
+                mode,
+                filters: [],
+                sort: null,
+              })
+            }
+          />
+          {activeView && (
+            <ViewOptionsButton
+              view={activeView}
+              canDelete={state.data.views.length > 1}
+              onRename={(name) => renameView(activeView.id, name)}
+              onMode={(mode) => updateConfig({ mode })}
+              onDuplicate={() =>
+                void createView(`${activeView.name} (cópia)`, { ...activeView.config })
+              }
+              onDelete={() => deleteView(activeView.id)}
+            />
+          )}
         </div>
         {view === "board" && groupProperty && (
           <Choice
             label="Agrupar por"
             value={groupProperty.id}
             options={selectProperties.map((p) => ({ id: p.id, label: p.name }))}
-            onChange={setGroupById}
+            onChange={(groupBy) => updateConfig({ groupBy })}
           />
         )}
         {view === "calendar" && dateProperty && dateProperties.length > 1 && (
@@ -305,11 +381,19 @@ export function DatabaseView({ deps, id }: Props) {
             label="Mostrar por"
             value={dateProperty.id}
             options={dateProperties.map((p) => ({ id: p.id, label: p.name }))}
-            onChange={setDateById}
+            onChange={(dateProperty) => updateConfig({ dateProperty })}
           />
         )}
-        <FilterButton properties={properties} rules={rules} onChange={setRules} />
-        <SortButton properties={properties} sort={sort} onChange={setSort} />
+        <FilterButton
+          properties={properties}
+          rules={rules}
+          onChange={(filters) => updateConfig({ filters: filters as ViewConfig["filters"] })}
+        />
+        <SortButton
+          properties={properties}
+          sort={sort}
+          onChange={(sort) => updateConfig({ sort })}
+        />
       </div>
 
       {error && (
@@ -352,6 +436,8 @@ export function DatabaseView({ deps, id }: Props) {
         dateProperty ? (
           <DatabaseCalendar
             dateProperty={dateProperty}
+            scale={config?.scale ?? "month"}
+            onScaleChange={(scale) => updateConfig({ scale })}
             rows={rows}
             onOpen={(rowId) => actions.openPage(rowId, allPages)}
             onMoveDate={(rowId, iso) => void setCell(rowId, dateProperty, iso)}

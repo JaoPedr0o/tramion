@@ -1052,7 +1052,8 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.clear(title);
       await user.type(title, "Comprar pão{Enter}");
 
-      await vi.waitFor(() => expect(fake.notes.get("n2")?.title).toBe("Comprar pão"));
+      const rowId = (await stored(fake)).rows[0]!.id;
+      await vi.waitFor(() => expect(fake.notes.get(rowId)?.title).toBe("Comprar pão"));
       expect(rowTitles()).toEqual(["Comprar pão"]);
     });
 
@@ -1060,7 +1061,8 @@ describe("módulo de notas (a tela inteira)", () => {
       const { user, fake } = setup();
       await newDatabase(user);
       await addRow(user);
-      const before = fake.notes.get("n2")!.updatedAt;
+      const rowId = (await stored(fake)).rows[0]!.id;
+      const before = fake.notes.get(rowId)!.updatedAt;
 
       const title = main().getByRole("textbox", {
         name: "Título de Sem título",
@@ -1069,7 +1071,7 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.keyboard("{Enter}");
 
       expect(title.value).toBe("Sem título");
-      expect(fake.notes.get("n2")!.updatedAt).toBe(before);
+      expect(fake.notes.get(rowId)!.updatedAt).toBe(before);
     });
 
     it("filtra por título e por coluna, combina regras e avisa quando nada passa", async () => {
@@ -1162,7 +1164,8 @@ describe("módulo de notas (a tela inteira)", () => {
 
       await user.click(main().getByRole("button", { name: "Excluir Sem título" }));
 
-      await vi.waitFor(() => expect(fake.notes.get("n2")?.deletedAt).not.toBeNull());
+      const rowId = [...fake.notes.values()].find((n) => n.parentId === "n1")!.id;
+      await vi.waitFor(() => expect(fake.notes.get(rowId)?.deletedAt).toBeTypeOf("number"));
       await vi.waitFor(() =>
         expect(main().getByText("Esta base ainda não tem linhas.")).toBeTruthy(),
       );
@@ -1221,8 +1224,19 @@ describe("módulo de notas (a tela inteira)", () => {
     const cellsOfFirstRow = async (fake: Fake) =>
       Object.values((await fake.gateway.getDatabase("n1")).rows[0]!.cells);
     const column = (name: string) => within(main().getByRole("region", { name }));
-    const showBoard = async (user: User) =>
-      await user.click(main().getByRole("tab", { name: "Quadro" }));
+    /** Abre a visão com esse nome; se ela ainda não existe, cria uma visão nova com essa forma de exibição. */
+    const showMode = async (user: User, label: string) => {
+      const existing = main().queryByRole("tab", { name: label });
+      if (existing) return await user.click(existing);
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: label,
+        }),
+      );
+      await main().findByRole("tab", { name: label, selected: true });
+    };
+    const showBoard = (user: User) => showMode(user, "Quadro");
 
     it("sem coluna de seleção, o quadro explica o que falta", async () => {
       const { user } = setup();
@@ -1346,8 +1360,7 @@ describe("módulo de notas (a tela inteira)", () => {
         expect(Object.values(data.rows[0]!.cells)).toHaveLength(2);
       });
     }
-    const showView = async (user: User, name: string) =>
-      await user.click(main().getByRole("tab", { name }));
+    const showView = (user: User, name: string) => showMode(user, name);
     const rowDate = async (fake: Fake, title: string) => {
       const data = await fake.gateway.getDatabase("n1");
       const date = data.properties.find((p) => p.type === "date")!;
@@ -1385,7 +1398,7 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(
         within(main().getByRole("list", { name: "Galeria" })).getAllByRole("listitem").length,
       ).toBeGreaterThan(0);
-      expect(main().queryByText("integral")).toBeNull(); // "Pão" está filtrado fora
+      expect(main().getByText("integral")).toBeTruthy(); // a galeria é outra visão: não herda o filtro da lista
 
       await user.click(main().getByRole("button", { name: "+ Nova linha" }));
       await vi.waitFor(async () =>
@@ -1406,15 +1419,6 @@ describe("módulo de notas (a tela inteira)", () => {
         "value",
         "Leite",
       );
-    });
-
-    it("lista, galeria e calendário lembram a forma de exibição por base", async () => {
-      const { user, fake } = setup();
-      await datedBase(user, fake);
-
-      await showView(user, "Galeria");
-
-      expect(localStorage.getItem("tramion.databaseView.n1")).toBe("gallery");
     });
 
     it("calendário: mostra o mês de hoje, a linha no dia dela e as sem data à parte", async () => {
@@ -1552,6 +1556,202 @@ describe("módulo de notas (a tela inteira)", () => {
       await user.click(main().getByRole("tab", { name: "Tabela" }));
 
       expect(main().getByRole("table", { name: "Linhas da base" })).toBeTruthy();
+    });
+
+    const savedViews = async (fake: Fake) => (await fake.gateway.getDatabase("n1")).views;
+
+    it("toda base nasce com a visão Tabela; '+' cria visões com nome livre (Quadro, Quadro 2)", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      expect(main().getByRole("tab", { name: "Tabela", selected: true })).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: "Quadro",
+        }),
+      );
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: "Quadro",
+        }),
+      );
+
+      expect(
+        main()
+          .getAllByRole("tab")
+          .map((tab) => tab.textContent),
+      ).toEqual(["Tabela", "Quadro", "Quadro 2"]);
+      expect((await savedViews(fake)).map((v) => v.config.mode)).toEqual([
+        "table",
+        "board",
+        "board",
+      ]);
+    });
+
+    it("filtros e ordenação ficam em cada visão: trocar de visão não mistura e tudo é salvo", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      for (const title of ["Pão", "Leite"]) {
+        await addRow(user);
+        const inputs = main().getAllByRole("textbox", {
+          name: /^Título de /,
+        }) as HTMLInputElement[];
+        const last = inputs[inputs.length - 1]!;
+        await user.clear(last);
+        await user.type(last, `${title}{Enter}`);
+        await vi.waitFor(() => expect(rowTitles()).toContain(title));
+      }
+      await user.click(main().getByRole("button", { name: "Filtrar" }));
+      const panel = dialog("Filtrar");
+      await user.click(panel.getByRole("button", { name: "Adicionar filtro" }));
+      await user.type(panel.getByRole("textbox", { name: "Valor do filtro 1" }), "leite");
+      await user.keyboard("{Escape}");
+      expect(rowTitles()).toEqual(["Leite"]);
+
+      await showMode(user, "Lista"); // visão nova: sem filtros
+      expect(
+        within(main().getByRole("list", { name: "Lista" })).getAllByRole("listitem"),
+      ).toHaveLength(2);
+
+      await showMode(user, "Tabela"); // a primeira visão continua filtrada
+      expect(rowTitles()).toEqual(["Leite"]);
+      expect(main().getByRole("button", { name: "Filtrar" }).textContent).toBe("Filtrar (1)");
+
+      await settle(); // a gravação espera uma pausa
+      const views = await savedViews(fake);
+      expect(views[0]!.config.filters).toEqual([
+        { property: "title", operator: "contains", value: "leite" },
+      ]);
+      expect(views[1]!.config.filters).toEqual([]);
+    });
+
+    it("a ordenação também é salva na visão", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      await user.click(main().getByRole("button", { name: "Ordenar" }));
+      const panel = dialog("Ordenar");
+      await user.click(panel.getByRole("button", { name: "Ordenar por" }));
+      await user.click(screen.getByRole("option", { name: "Título" }));
+      await user.click(panel.getByRole("button", { name: "Direção da ordenação" }));
+      await user.click(screen.getByRole("option", { name: "Decrescente" }));
+      await settle();
+
+      expect((await savedViews(fake))[0]!.config.sort).toEqual({
+        property: "title",
+        direction: "desc",
+      });
+    });
+
+    it("renomear, mudar a forma de exibição e duplicar a visão", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+
+      await user.click(main().getByRole("button", { name: "Opções da visão" }));
+      const options = dialog("Opções da visão");
+      const name = options.getByRole("textbox", { name: "Nome da visão" });
+      await user.clear(name);
+      await user.type(name, "Minhas tarefas{Enter}");
+      await main().findByRole("tab", { name: "Minhas tarefas" });
+
+      await user.click(options.getByRole("button", { name: "Exibir como" }));
+      await user.click(screen.getByRole("option", { name: "Galeria" }));
+      expect(main().getByRole("list", { name: "Galeria" })).toBeTruthy();
+
+      await user.click(options.getByRole("button", { name: "Duplicar visão" }));
+      await main().findByRole("tab", { name: "Minhas tarefas (cópia)", selected: true });
+      await settle();
+      const views = await savedViews(fake);
+      expect(views.map((v) => [v.name, v.config.mode])).toEqual([
+        ["Minhas tarefas", "gallery"],
+        ["Minhas tarefas (cópia)", "gallery"],
+      ]);
+    });
+
+    it("exclui uma visão, mas nunca a última", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await showMode(user, "Lista");
+
+      await user.click(main().getByRole("button", { name: "Opções da visão" }));
+      await user.click(dialog("Opções da visão").getByRole("button", { name: "Excluir visão" }));
+
+      await vi.waitFor(async () => expect(await savedViews(fake)).toHaveLength(1));
+      expect(main().getByRole("tab", { name: "Tabela", selected: true })).toBeTruthy();
+      expect(main().queryByRole("tab", { name: "Lista" })).toBeNull();
+
+      await user.click(main().getByRole("button", { name: "Opções da visão" }));
+      expect(
+        dialog("Opções da visão")
+          .getByRole("button", { name: "Excluir visão" })
+          .hasAttribute("disabled"),
+      ).toBe(true);
+    });
+
+    it("calendário em semana: título, navegação por semana e escala salva na visão", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake); // hoje = domingo, 15 de novembro de 2026
+      await showView(user, "Calendário");
+
+      await user.click(main().getByRole("tab", { name: "Semana" }));
+      expect(main().getByRole("heading", { name: "15 a 21 de novembro de 2026" })).toBeTruthy();
+      expect(main().getAllByRole("cell")).toHaveLength(7);
+      expect(main().queryByRole("button", { name: "Pão" })).toBeNull(); // o dia 5 não está nesta semana
+
+      await user.click(main().getByRole("button", { name: "Próxima semana" }));
+      expect(main().getByRole("heading", { name: "22 a 28 de novembro de 2026" })).toBeTruthy();
+      await user.click(main().getByRole("button", { name: "Semana anterior" }));
+      await user.click(main().getByRole("button", { name: "Semana anterior" }));
+      await user.click(main().getByRole("button", { name: "Semana anterior" }));
+      await user.click(main().getByRole("button", { name: "Semana anterior" }));
+      expect(main().getByRole("heading", { name: "25 a 31 de outubro de 2026" })).toBeTruthy();
+
+      await user.click(main().getByRole("button", { name: "Hoje" }));
+      await user.click(main().getByRole("tab", { name: "Mês" }));
+      expect(main().getByRole("heading", { name: "novembro de 2026" })).toBeTruthy();
+
+      await user.click(main().getByRole("tab", { name: "Semana" }));
+      await settle();
+      const calendar = (await savedViews(fake)).find((v) => v.config.mode === "calendar")!;
+      expect(calendar.config.scale).toBe("week");
+    });
+
+    it("'+' do dia, na semana, cria a linha com a data do dia", async () => {
+      const { user, fake } = setup();
+      await datedBase(user, fake);
+      await showView(user, "Calendário");
+      await user.click(main().getByRole("tab", { name: "Semana" }));
+
+      await user.click(main().getByRole("button", { name: "Novo item em 18 de novembro de 2026" }));
+
+      await vi.waitFor(async () =>
+        expect((await fake.gateway.getDatabase("n1")).rows).toHaveLength(3),
+      );
+      expect(
+        within(main().getByRole("cell", { name: "18 de novembro de 2026" })).getByRole("button", {
+          name: "Sem título",
+        }),
+      ).toBeTruthy();
+    });
+
+    it("falha ao criar visão mostra o motivo", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      vi.spyOn(fake.gateway, "addView").mockRejectedValue(
+        new NotesError("notes.limit-reached", "x"),
+      );
+
+      await user.click(main().getByRole("button", { name: "Nova visão" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Nova visão" })).getByRole("button", {
+          name: "Lista",
+        }),
+      );
+
+      expect((await main().findByRole("alert")).textContent).toContain("Limite atingido");
     });
 
     it("pelo menu da página, o ícone de base aparece na árvore e abrir outra página sai da tabela", async () => {

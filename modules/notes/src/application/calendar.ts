@@ -124,3 +124,37 @@ export function groupByDate(
   }
   return { byDate, undated };
 }
+
+/** A data `days` dias depois (ou antes, se negativo). */
+export function addDays(iso: IsoDate, days: number): IsoDate {
+  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  return isoOf(year, month - 1, day + days);
+}
+
+/** Os 7 dias (domingo a sábado) da semana que contém a data. */
+export function weekOf(iso: IsoDate): CalendarDay[] {
+  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  const target = monthOf(iso);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(iso, index - weekday);
+    const parsed = monthOf(date);
+    return {
+      iso: date,
+      day: Number(date.slice(8, 10)),
+      inMonth: parsed.year === target.year && parsed.month === target.month,
+    };
+  });
+}
+
+/** "15 a 21 de novembro de 2026", ou "29 de novembro a 5 de dezembro de 2026" quando a semana cruza o mês. */
+export function weekLabel(week: readonly CalendarDay[]): string {
+  const first = week[0]!.iso;
+  const last = week[week.length - 1]!.iso;
+  const [fy, fm, fd] = first.split("-").map(Number) as [number, number, number];
+  const [ly, lm, ld] = last.split("-").map(Number) as [number, number, number];
+  if (fy === ly && fm === lm) return `${fd} a ${ld} de ${MONTH_NAMES[lm - 1]} de ${ly}`;
+  if (fy === ly)
+    return `${fd} de ${MONTH_NAMES[fm - 1]} a ${ld} de ${MONTH_NAMES[lm - 1]} de ${ly}`;
+  return `${fd} de ${MONTH_NAMES[fm - 1]} de ${fy} a ${ld} de ${MONTH_NAMES[lm - 1]} de ${ly}`;
+}

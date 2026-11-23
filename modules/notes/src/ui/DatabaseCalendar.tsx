@@ -2,15 +2,18 @@ import { useMemo, useRef, useState } from "react";
 import {
   WEEKDAY_NAMES,
   WEEKDAY_SHORT,
+  addDays,
   addMonths,
   groupByDate,
+  isoOf,
   longDate,
   monthGrid,
   monthLabel,
   monthOf,
   todayIso,
+  weekLabel,
+  weekOf,
   type IsoDate,
-  type MonthCursor,
 } from "../application/calendar.ts";
 import type { DatabaseRow, Property } from "../domain/database.ts";
 import { PageGlyph } from "./PageGlyph.tsx";
@@ -26,6 +29,9 @@ interface Props {
   onMoveDate(rowId: string, iso: IsoDate | null): void;
   /** Cria uma linha nova já na data indicada. */
   onAdd(iso: IsoDate): void;
+  /** Escala: o mês inteiro ou uma semana. */
+  scale: "month" | "week";
+  onScaleChange(scale: "month" | "week"): void;
   /** O dia de "hoje" (os testes passam um fixo). */
   today?: IsoDate;
 }
@@ -96,13 +102,32 @@ function ChangeDateButton({
 }
 
 /** O calendário do mês: cada linha aparece no dia da coluna de data; arrastar muda a data. */
-export function DatabaseCalendar({ dateProperty, rows, onOpen, onMoveDate, onAdd, today }: Props) {
+export function DatabaseCalendar({
+  dateProperty,
+  rows,
+  onOpen,
+  onMoveDate,
+  onAdd,
+  scale,
+  onScaleChange,
+  today,
+}: Props) {
   const todayDate = today ?? todayIso();
-  const [cursor, setCursor] = useState<MonthCursor>(() => monthOf(todayDate));
+  // O dia de referência: o mês ou a semana mostrados são os que contêm essa data.
+  const [anchor, setAnchor] = useState<IsoDate>(todayDate);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<IsoDate | null>(null);
 
-  const weeks = useMemo(() => monthGrid(cursor), [cursor]);
+  const weeks = useMemo(
+    () => (scale === "week" ? [weekOf(anchor)] : monthGrid(monthOf(anchor))),
+    [scale, anchor],
+  );
+  const step = (direction: 1 | -1) =>
+    setAnchor((current) => {
+      if (scale === "week") return addDays(current, 7 * direction);
+      const next = addMonths(monthOf(current), direction);
+      return isoOf(next.year, next.month, 1);
+    });
   const { byDate, undated } = useMemo(
     () => groupByDate(rows, dateProperty.id),
     [rows, dateProperty],
@@ -131,14 +156,14 @@ export function DatabaseCalendar({ dateProperty, rows, onOpen, onMoveDate, onAdd
     </li>
   );
 
-  const label = monthLabel(cursor);
+  const label = scale === "week" ? weekLabel(weeks[0]!) : monthLabel(monthOf(anchor));
   return (
     <div className="calendar">
       <div className="calendar__bar">
         <button
           type="button"
-          aria-label="Mês anterior"
-          onClick={() => setCursor((current) => addMonths(current, -1))}
+          aria-label={scale === "week" ? "Semana anterior" : "Mês anterior"}
+          onClick={() => step(-1)}
         >
           ‹
         </button>
@@ -147,17 +172,38 @@ export function DatabaseCalendar({ dateProperty, rows, onOpen, onMoveDate, onAdd
         </h2>
         <button
           type="button"
-          aria-label="Próximo mês"
-          onClick={() => setCursor((current) => addMonths(current, 1))}
+          aria-label={scale === "week" ? "Próxima semana" : "Próximo mês"}
+          onClick={() => step(1)}
         >
           ›
         </button>
-        <button type="button" onClick={() => setCursor(monthOf(todayDate))}>
+        <button type="button" onClick={() => setAnchor(todayDate)}>
           Hoje
         </button>
+        <div role="tablist" aria-label="Escala do calendário" className="calendar__scale">
+          {(
+            [
+              ["month", "Mês"],
+              ["week", "Semana"],
+            ] as const
+          ).map(([value, text]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={scale === value}
+              onClick={() => onScaleChange(value)}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <table className="calendar__grid" aria-label={`Calendário de ${label}`}>
+      <table
+        className={scale === "week" ? "calendar__grid calendar__grid--week" : "calendar__grid"}
+        aria-label={`Calendário de ${label}`}
+      >
         <thead>
           <tr>
             {WEEKDAY_SHORT.map((short, index) => (

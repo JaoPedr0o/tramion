@@ -99,6 +99,13 @@ fn a_lista_de_tarefas_tem_colunas_opcoes_e_linhas_preenchidas() {
     );
     assert_eq!(data.properties[0].options.as_array().unwrap().len(), 3);
     assert_eq!(data.rows.len(), 5);
+    assert_eq!(
+        data.views
+            .iter()
+            .map(|v| v.name.as_str())
+            .collect::<Vec<_>>(),
+        ["Tabela", "Por status", "Calendário"]
+    );
     assert!(
         data.rows.iter().all(|row| row.cells.len() == 3),
         "toda linha vem preenchida"

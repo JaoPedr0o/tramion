@@ -5,6 +5,8 @@ import type {
   Property,
   PropertyChange,
   SetCell,
+  View,
+  ViewConfig,
 } from "../domain/database.ts";
 import type {
   MoveNote,
@@ -44,6 +46,9 @@ export interface NotesService {
   deleteProperty(id: string): Promise<void>;
   createRow(input: { databaseId: string; title: string }): Promise<Note>;
   setCell(input: SetCell): Promise<void>;
+  addView(input: { databaseId: string; name: string; config: ViewConfig }): Promise<View>;
+  updateView(input: { id: string; name?: string; config?: ViewConfig }): Promise<View>;
+  deleteView(id: string): Promise<void>;
   renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }
 
@@ -138,6 +143,9 @@ export function createNotesService(deps: {
     },
 
     setCell: (input) => gateway.setCell(input),
+    addView: (input) => gateway.addView(input),
+    updateView: (input) => gateway.updateView(input),
+    deleteView: (id) => gateway.deleteView(id),
 
     async renameNote(input) {
       const note = await gateway.renameNote(input);

@@ -30,7 +30,11 @@ pub enum NotesError {
     PropertyInvalid,
     /// O valor não serve para o tipo da coluna (ou a linha não pertence à base).
     CellInvalid,
-    /// Limite de colunas da base atingido.
+    /// A visão não existe.
+    ViewNotFound,
+    /// O nome ou a configuração da visão não são válidos (ou é a última visão da base, que não pode ser apagada).
+    ViewInvalid,
+    /// Limite de colunas ou de visões da base atingido.
     LimitReached {
         max: usize,
     },
@@ -73,6 +77,8 @@ impl NotesError {
             NotesError::PropertyNotFound => "notes.property-not-found",
             NotesError::PropertyInvalid => "notes.property-invalid",
             NotesError::CellInvalid => "notes.cell-invalid",
+            NotesError::ViewNotFound => "notes.view-not-found",
+            NotesError::ViewInvalid => "notes.view-invalid",
             NotesError::LimitReached { .. } => "notes.limit-reached",
             NotesError::AssetTooLarge { .. } => "notes.asset-too-large",
             NotesError::AssetTypeNotAllowed => "notes.asset-type-not-allowed",
@@ -105,7 +111,9 @@ impl fmt::Display for NotesError {
             NotesError::PropertyNotFound => write!(f, "coluna não encontrada"),
             NotesError::PropertyInvalid => write!(f, "a coluna não é válida"),
             NotesError::CellInvalid => write!(f, "o valor não serve para esta coluna"),
-            NotesError::LimitReached { max } => write!(f, "limite de {max} colunas atingido"),
+            NotesError::ViewNotFound => write!(f, "visão não encontrada"),
+            NotesError::ViewInvalid => write!(f, "a visão não é válida"),
+            NotesError::LimitReached { max } => write!(f, "limite de {max} atingido"),
             NotesError::AssetTooLarge { max } => {
                 write!(f, "o arquivo excede o máximo de {max} bytes")
             }

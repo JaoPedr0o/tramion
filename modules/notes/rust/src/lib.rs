@@ -56,6 +56,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 8,
             sql: include_str!("../migrations/0008_notes_meta.sql"),
         },
+        Migration {
+            version: 9,
+            sql: include_str!("../migrations/0009_database_views.sql"),
+        },
     ],
 };
 
@@ -75,6 +79,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::purge,
             commands::empty_trash,
             commands::search,
+            commands::add_view,
+            commands::update_view,
+            commands::delete_view,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

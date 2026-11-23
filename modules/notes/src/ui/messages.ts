@@ -9,8 +9,11 @@ const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.not-database": "Esta página não é uma base de dados.",
   "notes.property-not-found": "Esta coluna não existe mais.",
   "notes.property-invalid": "O nome, o tipo ou as opções desta coluna não são válidos.",
+  "notes.view-not-found": "Esta visão não existe mais.",
+  "notes.view-invalid":
+    "O nome ou a configuração desta visão não são válidos (a última visão de uma base não pode ser apagada).",
   "notes.cell-invalid": "Este valor não serve para esta coluna.",
-  "notes.limit-reached": "Limite de colunas atingido (máximo de 50).",
+  "notes.limit-reached": "Limite atingido (máximo de 50 colunas e 20 visões por base).",
   "notes.url-invalid": "Este endereço não é um link http ou https válido.",
   "notes.asset-too-large": "O arquivo é grande demais (máximo de 50 MB).",
   "notes.asset-type-not-allowed":

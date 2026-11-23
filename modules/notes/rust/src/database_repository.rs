@@ -1,6 +1,6 @@
 //! SQL das bases de dados (colunas e células). Sem regras de negócio: quem valida é `database.rs`.
 
-use crate::model::Property;
+use crate::model::{Property, View};
 use tramion_infra_sqlite::rusqlite::{Connection, OptionalExtension, Result, Row, params};
 
 /// Linha crua da base: `(id, título, símbolo, versão)`.
@@ -152,4 +152,72 @@ pub fn rows_of(conn: &Connection, database_id: &str) -> Result<Vec<RowSummary>> 
         Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
     })?
     .collect()
+}
+
+// ───────── Visões ─────────
+
+const VIEW_COLUMNS: &str = "id, database_id, name, config, position";
+
+fn view_from_row(row: &Row<'_>) -> Result<View> {
+    let config: String = row.get(3)?;
+    Ok(View {
+        id: row.get(0)?,
+        database_id: row.get(1)?,
+        name: row.get(2)?,
+        // O `CHECK (json_valid(...))` da migração garante que isto é JSON.
+        config: serde_json::from_str(&config).unwrap_or(serde_json::Value::Null),
+        position: row.get(4)?,
+    })
+}
+
+pub fn insert_view(conn: &Connection, database_id: &str, name: &str, config: &str) -> Result<View> {
+    conn.query_row(
+        &format!(
+            "INSERT INTO notes_view (database_id, name, config, position)
+             VALUES (?1, ?2, ?3,
+                     (SELECT COALESCE(MAX(position) + 1, 0) FROM notes_view WHERE database_id = ?1))
+          RETURNING {VIEW_COLUMNS}"
+        ),
+        params![database_id, name, config],
+        view_from_row,
+    )
+}
+
+pub fn find_view(conn: &Connection, id: &str) -> Result<Option<View>> {
+    conn.query_row(
+        &format!("SELECT {VIEW_COLUMNS} FROM notes_view WHERE id = ?1"),
+        [id],
+        view_from_row,
+    )
+    .optional()
+}
+
+pub fn list_views(conn: &Connection, database_id: &str) -> Result<Vec<View>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {VIEW_COLUMNS} FROM notes_view WHERE database_id = ?1 ORDER BY position, id"
+    ))?;
+    stmt.query_map([database_id], view_from_row)?.collect()
+}
+
+pub fn count_views(conn: &Connection, database_id: &str) -> Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM notes_view WHERE database_id = ?1",
+        [database_id],
+        |row| row.get(0),
+    )
+}
+
+pub fn update_view(conn: &Connection, id: &str, name: &str, config: &str) -> Result<Option<View>> {
+    conn.query_row(
+        &format!(
+            "UPDATE notes_view SET name = ?2, config = ?3 WHERE id = ?1 RETURNING {VIEW_COLUMNS}"
+        ),
+        params![id, name, config],
+        view_from_row,
+    )
+    .optional()
+}
+
+pub fn delete_view(conn: &Connection, id: &str) -> Result<usize> {
+    conn.execute("DELETE FROM notes_view WHERE id = ?1", [id])
 }

@@ -2,7 +2,14 @@
 import { vi } from "vitest";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { NotesError } from "./domain/errors.ts";
-import type { CellValue, DatabaseData, Property, PropertyType } from "./domain/database.ts";
+import type {
+  CellValue,
+  DatabaseData,
+  Property,
+  PropertyType,
+  View,
+  ViewConfig,
+} from "./domain/database.ts";
 import type { Note, NoteSummary, TrashSummary } from "./domain/note.ts";
 
 export function aNote(overrides: Partial<Note> = {}): Note {
@@ -55,7 +62,13 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     emptyTrash: vi.fn(async () => []),
     search: vi.fn(async () => []),
     createDatabase: vi.fn(async () => aNote()),
-    getDatabase: vi.fn(async () => ({ id: "n1", title: "Base", properties: [], rows: [] })),
+    getDatabase: vi.fn(async () => ({
+      id: "n1",
+      title: "Base",
+      properties: [],
+      views: [],
+      rows: [],
+    })),
     addProperty: vi.fn(async () => {
       throw new Error("addProperty não configurado no stub");
     }),
@@ -65,6 +78,13 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     deleteProperty: vi.fn(async () => {}),
     createRow: vi.fn(async () => aNote()),
     setCell: vi.fn(async () => {}),
+    addView: vi.fn(async () => {
+      throw new Error("addView não configurado no stub");
+    }),
+    updateView: vi.fn(async () => {
+      throw new Error("updateView não configurado no stub");
+    }),
+    deleteView: vi.fn(async () => {}),
     renameNote: vi.fn(async () => aNote()),
     ...overrides,
   };
@@ -83,6 +103,7 @@ export function createFakeGateway() {
   const databases = new Set<string>();
   const properties = new Map<string, Property>();
   const cells = new Map<string, CellValue>(); // chave: `${linha}|${coluna}`
+  const views = new Map<string, View>();
   const tick = () => ++clock;
 
   const summary = (n: Note): NoteSummary => ({
@@ -144,6 +165,9 @@ export function createFakeGateway() {
     | "deleteProperty"
     | "createRow"
     | "setCell"
+    | "addView"
+    | "updateView"
+    | "deleteView"
     | "renameNote";
   const gateway: Omit<NotesGateway, DatabaseMethod> = {
     async list() {
@@ -345,6 +369,9 @@ export function createFakeGateway() {
       for (const [propertyId, property] of [...properties]) {
         if (!notes.has(property.databaseId)) properties.delete(propertyId);
       }
+      for (const [viewId, view] of [...views]) {
+        if (!notes.has(view.databaseId)) views.delete(viewId);
+      }
       for (const key of [...cells.keys()]) {
         const [rowId, propertyId] = key.split("|");
         if (!notes.has(rowId!) || !properties.has(propertyId!)) cells.delete(key);
@@ -402,6 +429,14 @@ export function createFakeGateway() {
     async createDatabase({ title, parentId }) {
       const note = await gateway.create({ title, body: "", parentId });
       databases.add(note.id);
+      const view: View = {
+        id: `v${++seq}`,
+        databaseId: note.id,
+        name: "Tabela",
+        config: { mode: "table", filters: [], sort: null },
+        position: 0,
+      };
+      views.set(view.id, view);
       return note;
     },
 
@@ -412,6 +447,9 @@ export function createFakeGateway() {
         title: base.title,
         properties: [...properties.values()]
           .filter((p) => p.databaseId === id)
+          .sort((a, b) => a.position - b.position),
+        views: [...views.values()]
+          .filter((v) => v.databaseId === id)
           .sort((a, b) => a.position - b.position),
         rows: activeChildren(id).map((row) => ({
           id: row.id,
@@ -494,6 +532,44 @@ export function createFakeGateway() {
         throw new NotesError("notes.cell-invalid", "valor");
       }
       cells.set(cellKey(noteId, propertyId), value!);
+    },
+
+    async addView({ databaseId, name, config }) {
+      mustDatabase(databaseId);
+      const clean = name.trim();
+      if (!clean) throw new NotesError("notes.view-invalid", "nome");
+      const own = [...views.values()].filter((v) => v.databaseId === databaseId);
+      if (own.length >= 20) throw new NotesError("notes.limit-reached", "limite");
+      const view: View = {
+        id: `v${++seq}`,
+        databaseId,
+        name: clean,
+        config: config as ViewConfig,
+        position: own.length === 0 ? 0 : Math.max(...own.map((v) => v.position)) + 1,
+      };
+      views.set(view.id, view);
+      return view;
+    },
+
+    async updateView({ id, name, config }) {
+      const current = views.get(id);
+      if (!current) throw new NotesError("notes.view-not-found", "visão");
+      mustDatabase(current.databaseId);
+      const cleanName = name === undefined ? current.name : name.trim();
+      if (!cleanName) throw new NotesError("notes.view-invalid", "nome");
+      const next: View = { ...current, name: cleanName, config: config ?? current.config };
+      views.set(id, next);
+      return next;
+    },
+
+    async deleteView(id) {
+      const current = views.get(id);
+      if (!current) throw new NotesError("notes.view-not-found", "visão");
+      mustDatabase(current.databaseId);
+      if ([...views.values()].filter((v) => v.databaseId === current.databaseId).length <= 1) {
+        throw new NotesError("notes.view-invalid", "última visão");
+      }
+      views.delete(id);
     },
 
     async renameNote({ id, title, expectedUpdatedAt }) {

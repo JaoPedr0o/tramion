@@ -65,6 +65,9 @@ function memoryGateway(overrides: Partial<NotesGateway> = {}): NotesGateway {
     deleteProperty: unused,
     createRow: unused,
     setCell: unused,
+    addView: unused,
+    updateView: unused,
+    deleteView: unused,
     renameNote: unused,
     ...overrides,
   };

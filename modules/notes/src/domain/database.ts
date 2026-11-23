@@ -56,11 +56,52 @@ export interface DatabaseRow {
   readonly cells: Readonly<Record<string, CellValue>>;
 }
 
+/** Formas de exibição de uma visão. */
+export type ViewMode = "table" | "board" | "list" | "gallery" | "calendar";
+
+export const VIEW_MODES: ReadonlyArray<readonly [ViewMode, string]> = [
+  ["table", "Tabela"],
+  ["board", "Quadro"],
+  ["list", "Lista"],
+  ["gallery", "Galeria"],
+  ["calendar", "Calendário"],
+];
+
+/** Uma regra de filtro (os mesmos campos de `FilterRule`, da camada de aplicação). */
+export interface ViewFilter {
+  readonly property: string;
+  readonly operator: string;
+  readonly value: string;
+}
+
+/** O que uma visão guarda: forma de exibição, filtros, ordenação e as colunas de agrupamento e de data. */
+export interface ViewConfig {
+  readonly mode: ViewMode;
+  readonly filters: readonly ViewFilter[];
+  readonly sort: { readonly property: string; readonly direction: "asc" | "desc" } | null;
+  /** Coluna de seleção do quadro; `null` = a primeira. */
+  readonly groupBy?: string | null;
+  /** Coluna de data do calendário; `null` = a primeira. */
+  readonly dateProperty?: string | null;
+  /** Escala do calendário; `null` = mês. */
+  readonly scale?: "month" | "week" | null;
+}
+
+/** Uma visão salva de uma base: toda base tem pelo menos uma. */
+export interface View {
+  readonly id: string;
+  readonly databaseId: string;
+  readonly name: string;
+  readonly config: ViewConfig;
+  readonly position: number;
+}
+
 /** Tudo o que a tela da base precisa. */
 export interface DatabaseData {
   readonly id: string;
   readonly title: string;
   readonly properties: readonly Property[];
+  readonly views: readonly View[];
   readonly rows: readonly DatabaseRow[];
 }
 

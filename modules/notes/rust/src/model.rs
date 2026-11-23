@@ -111,12 +111,24 @@ pub struct DatabaseRow {
     pub cells: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
-/// Tudo o que a tela da base precisa: as colunas e as linhas ativas.
+/// Uma visão salva de uma base: nome e configuração (forma de exibição, filtros, ordenação...).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct View {
+    pub id: String,
+    pub database_id: String,
+    pub name: String,
+    pub config: serde_json::Value,
+    pub position: i64,
+}
+
+/// Tudo o que a tela da base precisa: as colunas, as visões e as linhas ativas.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DatabaseData {
     pub id: String,
     pub title: String,
     pub properties: Vec<Property>,
+    pub views: Vec<View>,
     pub rows: Vec<DatabaseRow>,
 }

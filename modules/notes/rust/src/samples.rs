@@ -139,6 +139,19 @@ fn tasks(conn: &Connection) -> Result<(), NotesError> {
             ("Prazo", "date", None),
         ],
     )?;
+    // Outras formas de ver as mesmas tarefas: um quadro por status e um calendário pelo prazo.
+    database::add_view(
+        conn,
+        &base_note.id,
+        "Por status",
+        &json!({ "mode": "board", "groupBy": c[0] }),
+    )?;
+    database::add_view(
+        conn,
+        &base_note.id,
+        "Calendário",
+        &json!({ "mode": "calendar", "dateProperty": c[2], "scale": "month" }),
+    )?;
     let rows = [
         ("Explorar as páginas de exemplo", "feito", "baixa", 0),
         ("Criar a minha primeira página", "em-andamento", "alta", 1),

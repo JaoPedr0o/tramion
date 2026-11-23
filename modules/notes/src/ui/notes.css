@@ -1824,3 +1824,33 @@
   padding: var(--space-3);
   color: var(--color-text-muted);
 }
+
+/* ───────── Visões salvas e escala do calendário ───────── */
+.db-views {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.calendar__scale {
+  display: flex;
+  gap: var(--space-0);
+  margin-left: auto;
+}
+
+.calendar__scale button {
+  padding: var(--space-0) var(--space-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.calendar__scale button[aria-selected="true"] {
+  background: var(--color-selected);
+}
+
+.calendar__grid--week .calendar__day {
+  height: 280px;
+}

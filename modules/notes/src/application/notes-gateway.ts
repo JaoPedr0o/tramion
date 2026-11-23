@@ -4,6 +4,8 @@ import type {
   Property,
   PropertyChange,
   SetCell,
+  View,
+  ViewConfig,
 } from "../domain/database.ts";
 import type {
   MoveNote,
@@ -55,6 +57,12 @@ export interface NotesGateway {
   createRow(input: { databaseId: string; title: string }): Promise<Note>;
   /** Define o valor de uma célula; `null` (ou valor vazio) a esvazia. */
   setCell(input: SetCell): Promise<void>;
+  /** Acrescenta uma visão salva (nome e configuração) no fim. */
+  addView(input: { databaseId: string; name: string; config: ViewConfig }): Promise<View>;
+  /** Renomeia a visão e/ou troca a configuração (o que estiver ausente fica como está). */
+  updateView(input: { id: string; name?: string; config?: ViewConfig }): Promise<View>;
+  /** Apaga a visão; a última visão de uma base não pode ser apagada. */
+  deleteView(id: string): Promise<void>;
   /** Troca só o título, respeitando a versão (como `update`). */
   renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }
