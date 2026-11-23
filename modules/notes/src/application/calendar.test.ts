@@ -56,6 +56,7 @@ describe("meses", () => {
     expect(monthLabel({ year: 2026, month: 10 })).toBe("novembro de 2026");
     expect(monthLabel({ year: 2026, month: 2 })).toBe("março de 2026");
     expect(longDate("2026-11-05")).toBe("5 de novembro de 2026");
+    expect(longDate("2026-11-05T14:30")).toBe("5 de novembro de 2026");
   });
 });
 
@@ -153,6 +154,19 @@ describe("groupByDate", () => {
     expect(byDate.get("2026-11-05")!.map((r) => r.id)).toEqual(["a", "c"]);
     expect(byDate.get("2026-11-06")!.map((r) => r.id)).toEqual(["d"]);
     expect(undated.map((r) => r.id)).toEqual(["b", "e", "f"]);
+  });
+
+  it("a hora não muda o dia em que a linha aparece", () => {
+    const rows = [
+      row("a", { prazo: "2026-11-05T09:00" }),
+      row("b", { prazo: "2026-11-05" }),
+      row("c", { prazo: "2026-11-05T25:00" }),
+    ];
+
+    const { byDate, undated } = groupByDate(rows, "prazo");
+
+    expect(byDate.get("2026-11-05")!.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(undated.map((r) => r.id)).toEqual(["c"]);
   });
 
   it("sem linhas, tudo vazio", () => {

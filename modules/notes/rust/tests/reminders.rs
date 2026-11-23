@@ -409,3 +409,27 @@ fn agenda_sem_lembretes_ou_com_data_invalida() {
         "notes.cell-invalid"
     );
 }
+
+#[test]
+fn prazo_com_hora_conta_pelo_dia() {
+    let db = db();
+    let t = tasks(&db, "Tarefas");
+    row(&db, &t, "Atrasada", Some("2026-11-14T09:00"));
+    row(&db, &t, "Hoje", Some("2026-11-15T18:30"));
+    row(&db, &t, "Amanhã", Some("2026-11-16T08:00"));
+    on(&db, &t);
+
+    let due = due_tasks(db.connection(), TODAY).unwrap();
+    assert_eq!(
+        due.iter().map(|d| d.title.as_str()).collect::<Vec<_>>(),
+        ["Atrasada", "Hoje"]
+    );
+    assert!(due[0].overdue);
+    assert!(!due[1].overdue);
+    assert_eq!(due[1].date, "2026-11-15T18:30");
+
+    let next = upcoming_tasks(db.connection(), TODAY, 1).unwrap();
+    assert_eq!(next.len(), 1);
+    assert_eq!(next[0].title, "Amanhã");
+    assert_eq!(next[0].date, "2026-11-16T08:00");
+}

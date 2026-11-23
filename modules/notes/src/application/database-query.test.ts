@@ -121,6 +121,29 @@ describe("filterRows", () => {
     expect(run(rule("prazo", "after", "2024-02-01"))).toEqual(["1"]);
   });
 
+  it("data com hora: filtros, ordenação e exibição olham o dia", () => {
+    const rows = [
+      row("1", "A", { prazo: "2024-03-10T18:00" }),
+      row("2", "B", { prazo: "2024-03-10" }),
+      row("3", "C", { prazo: "2024-03-09T23:59" }),
+      row("4", "D", { prazo: "2024-03-10T08:00" }),
+    ];
+    const ids = (list: readonly DatabaseRow[]) => list.map((r) => r.id);
+    const f = (operator: FilterRule["operator"], value: string) =>
+      ids(filterRows(rows, PROPS, [{ property: "prazo", operator, value }]));
+    expect(f("on", "2024-03-10")).toEqual(["1", "2", "4"]);
+    expect(f("before", "2024-03-10")).toEqual(["3"]);
+    expect(f("after", "2024-03-09")).toEqual(["1", "2", "4"]);
+    expect(ids(sortRows(rows, PROPS, { property: "prazo", direction: "asc" }))).toEqual([
+      "3",
+      "2",
+      "4",
+      "1",
+    ]);
+    expect(displayValue(prop("prazo", "date"), "2024-03-10T18:00")).toBe("2024-03-10 18:00");
+    expect(displayValue(prop("prazo", "date"), "2024-03-10")).toBe("2024-03-10");
+  });
+
   it("seleção: é, não é (linha sem valor não 'é' nada, mas 'não é' vale com valor presente)", () => {
     expect(run(rule("status", "is", "a"))).toEqual(["1"]);
     expect(run(rule("status", "is-not", "a"))).toEqual(["2"]);
@@ -323,7 +346,7 @@ describe("aggregate (gráfico)", () => {
       { d: "2026-12-05" },
       { d: "2026-01-10" },
       { d: "2025-12-31" },
-      { d: "2026-01-02" },
+      { d: "2026-01-02T09:30" },
       {},
       { d: "texto" },
     ]);

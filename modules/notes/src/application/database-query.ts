@@ -1,4 +1,5 @@
 import { MONTH_NAMES } from "./calendar.ts";
+import { datePart, isDateValue } from "./date-time.ts";
 import type {
   CellValue,
   DatabaseRow,
@@ -131,13 +132,13 @@ function matches(
       return Number(value) > Number(rule.value);
     case "lt":
       return Number(value) < Number(rule.value);
-    // Datas no formato AAAA-MM-DD comparam corretamente como texto.
+    // Datas comparam como texto pelo dia (AAAA-MM-DD); a hora opcional da célula não conta.
     case "before":
-      return String(value) < rule.value;
+      return datePart(String(value)) < rule.value;
     case "on":
-      return String(value) === rule.value;
+      return datePart(String(value)) === rule.value;
     case "after":
-      return String(value) > rule.value;
+      return datePart(String(value)) > rule.value;
     case "is":
       return value === rule.value;
     case "is-not":
@@ -212,6 +213,8 @@ export function displayValue(property: Property, value: CellValue | undefined): 
   const nameOf = (id: string) => property.options.find((o) => o.id === id)?.name ?? id;
   if (property.type === "select") return nameOf(value as string);
   if (property.type === "multi_select") return (value as readonly string[]).map(nameOf).join(", ");
+  // Com hora: "2026-11-24 14:30" (só data fica como está).
+  if (property.type === "date" && isDateValue(value)) return value.replace("T", " ");
   return String(value);
 }
 
@@ -315,7 +318,7 @@ export function aggregate(
       for (const option of chosen) add(option.id, option.name, option.color, row);
     } else if (property.type === "checkbox") {
       add(value === true ? "on" : "off", value === true ? "Marcado" : "Desmarcado", null, row);
-    } else if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    } else if (isDateValue(value)) {
       const month = value.slice(0, 7);
       const name = MONTH_NAMES[Number(month.slice(5, 7)) - 1]!;
       add(month, `${name} de ${month.slice(0, 4)}`, null, row);

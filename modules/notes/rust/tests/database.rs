@@ -611,3 +611,33 @@ fn renomear_linha_respeita_a_versao_e_valida_o_titulo() {
         "notes.in-trash"
     );
 }
+
+#[test]
+fn data_aceita_hora_opcional() {
+    let db = db();
+    let base = base(&db);
+    let r = row(&db, &base, "L");
+    let date = property(&db, &base, "Prazo", "date");
+    let set = |v: Value| database::set_cell(db.connection(), &r, &date, &v);
+
+    set(json!("2026-11-24T14:30")).unwrap();
+    assert_eq!(cell(&db, &base, &r, &date), Some(json!("2026-11-24T14:30")));
+    set(json!("2026-11-24T00:00")).unwrap();
+    set(json!("2026-11-24T23:59")).unwrap();
+    // Só data continua valendo.
+    set(json!("2026-11-24")).unwrap();
+
+    for bad in [
+        "2026-11-24T24:00",
+        "2026-11-24T12:60",
+        "2026-11-24T1:30",
+        "2026-11-24T14:30:00",
+        "2026-11-24T",
+        "2026-11-24 14:30",
+        "2026-02-30T10:00",
+        "2026-11-24T1a:30",
+        "2026-11-24Té:30",
+    ] {
+        assert_eq!(code(set(json!(bad))), "notes.cell-invalid", "{bad}");
+    }
+}

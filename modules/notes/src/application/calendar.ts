@@ -1,4 +1,5 @@
 import type { DatabaseRow } from "../domain/database.ts";
+import { datePart, isDateValue } from "./date-time.ts";
 
 /** Data no formato `AAAA-MM-DD`, o mesmo das células de data. */
 export type IsoDate = string;
@@ -62,7 +63,7 @@ export function todayIso(now: Date = new Date()): IsoDate {
 
 /** O mês que contém uma data `AAAA-MM-DD`. */
 export function monthOf(iso: IsoDate): MonthCursor {
-  const [year, month] = iso.split("-").map(Number) as [number, number];
+  const [year, month] = datePart(iso).split("-").map(Number) as [number, number];
   return { year, month: month - 1 };
 }
 
@@ -101,7 +102,7 @@ export function monthGrid({ year, month }: MonthCursor): CalendarDay[][] {
 
 /** "5 de novembro de 2026" (para nomes acessíveis). */
 export function longDate(iso: IsoDate): string {
-  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  const [year, month, day] = datePart(iso).split("-").map(Number) as [number, number, number];
   return `${day} de ${MONTH_NAMES[month - 1]} de ${year}`;
 }
 
@@ -114,10 +115,12 @@ export function groupByDate(
   const undated: DatabaseRow[] = [];
   for (const row of rows) {
     const value = row.cells[propertyId];
-    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const list = byDate.get(value) ?? [];
+    // A hora (se houver) não muda o dia em que a linha aparece.
+    if (isDateValue(value)) {
+      const day = datePart(value);
+      const list = byDate.get(day) ?? [];
       list.push(row);
-      byDate.set(value, list);
+      byDate.set(day, list);
     } else {
       undated.push(row);
     }
@@ -127,13 +130,13 @@ export function groupByDate(
 
 /** A data `days` dias depois (ou antes, se negativo). */
 export function addDays(iso: IsoDate, days: number): IsoDate {
-  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  const [year, month, day] = datePart(iso).split("-").map(Number) as [number, number, number];
   return isoOf(year, month - 1, day + days);
 }
 
 /** Os 7 dias (domingo a sábado) da semana que contém a data. */
 export function weekOf(iso: IsoDate): CalendarDay[] {
-  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  const [year, month, day] = datePart(iso).split("-").map(Number) as [number, number, number];
   const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   const target = monthOf(iso);
   return Array.from({ length: 7 }, (_, index) => {

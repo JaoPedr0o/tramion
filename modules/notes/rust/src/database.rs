@@ -141,6 +141,29 @@ fn is_valid_date(text: &str) -> bool {
     (1..=days).contains(&day)
 }
 
+/// Hora no formato `HH:MM` (00:00 a 23:59).
+fn is_valid_time(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    bytes.len() == 5
+        && bytes[2] == b':'
+        && bytes[..2].iter().chain(&bytes[3..]).all(u8::is_ascii_digit)
+        && text[..2].parse::<u32>().is_ok_and(|hour| hour < 24)
+        && text[3..].parse::<u32>().is_ok_and(|minute| minute < 60)
+}
+
+/// Valor de uma célula de data: `AAAA-MM-DD` ou, com hora local opcional, `AAAA-MM-DDTHH:MM`.
+fn is_valid_date_value(text: &str) -> bool {
+    match text.split_once('T') {
+        None => is_valid_date(text),
+        Some((date, time)) => is_valid_date(date) && is_valid_time(time),
+    }
+}
+
+/// A parte da data (`AAAA-MM-DD`) de um valor de data, com ou sem hora.
+fn date_part(value: &str) -> &str {
+    value.get(..10).unwrap_or(value)
+}
+
 /// Confere o valor contra a coluna. `Ok(None)` = célula vazia (deve ser apagada); `Ok(Some(json))` = gravar.
 fn normalize_cell(property: &Property, value: &Value) -> Result<Option<String>, NotesError> {
     let invalid = || NotesError::CellInvalid;
@@ -160,7 +183,7 @@ fn normalize_cell(property: &Property, value: &Value) -> Result<Option<String>, 
         ("date", Value::String(text)) => {
             if text.is_empty() {
                 Ok(None)
-            } else if is_valid_date(text) {
+            } else if is_valid_date_value(text) {
                 Ok(Some(value.to_string()))
             } else {
                 Err(invalid())
@@ -672,7 +695,8 @@ fn scan_tasks(
             let Some(date) = dates.get(&row_id).and_then(Value::as_str) else {
                 continue;
             };
-            if !accept(date) {
+            // O prazo pode ter hora (`AAAA-MM-DDTHH:MM`): as janelas contam por dia, então comparam só a data.
+            if !accept(date_part(date)) {
                 continue;
             }
             let finished = match (done.get(&row_id), done_option) {
@@ -690,7 +714,7 @@ fn scan_tasks(
                 database_id: database_id.clone(),
                 database_title: database_title.clone(),
                 date: date.to_string(),
-                overdue: overdue(date),
+                overdue: overdue(date_part(date)),
             });
         }
     }

@@ -1,5 +1,6 @@
 // Auxiliares SÓ para testes (não fazem parte da API pública do módulo).
 import { vi } from "vitest";
+import { datePart, isDateValue } from "./application/date-time.ts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { NotesError } from "./domain/errors.ts";
 import type {
@@ -629,7 +630,8 @@ export function createFakeGateway() {
       case "url":
         return typeof value === "string";
       case "date":
-        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+        // Espelha o Rust: `AAAA-MM-DD` ou `AAAA-MM-DDTHH:MM`.
+        return isDateValue(value);
       case "number":
         return typeof value === "number";
       case "checkbox":
@@ -675,7 +677,8 @@ export function createFakeGateway() {
       if (!config.enabled || !base || base.deletedAt !== null) continue;
       for (const row of activeChildren(databaseId)) {
         const date = cells.get(cellKey(row.id, config.dateProperty));
-        if (typeof date !== "string" || !accept(date)) continue;
+        // O prazo pode ter hora: as janelas contam por dia (prefixo de 10 caracteres), como no Rust.
+        if (typeof date !== "string" || !accept(datePart(date))) continue;
         const mark = config.doneProperty
           ? cells.get(cellKey(row.id, config.doneProperty))
           : undefined;
@@ -688,7 +691,7 @@ export function createFakeGateway() {
           databaseId,
           databaseTitle: base.title,
           date,
-          overdue: overdue(date),
+          overdue: overdue(datePart(date)),
         });
       }
     }
