@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { PairedDevice, PairingOffer } from "../application/notes-platform.ts";
+import type { PairedDevice, PairingOffer, SyncReport } from "../application/notes-platform.ts";
 import { NotesError } from "../domain/errors.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { messageFor } from "./messages.ts";
@@ -33,6 +33,9 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
   const [now, setNow] = useState(() => Date.now());
   const [peers, setPeers] = useState<readonly PairedDevice[]>([]);
   const box = useRef<HTMLDivElement>(null);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
 
   // O foco vai para a janela ao abrir (para o Esc funcionar) e volta para onde estava ao fechar.
   useEffect(() => {
@@ -79,6 +82,43 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
       void platform.cancelPairing().catch(() => {});
     };
   }, [generate, refreshPeers, platform]);
+
+  /** Diz o que a sincronização fez e recarrega as páginas se algo mudou. */
+  const report = (reports: readonly SyncReport[]) => {
+    const failed = reports.filter((r) => !r.ok);
+    const applied = reports.reduce((sum, r) => sum + r.applied, 0);
+    const conflicts = reports.reduce((sum, r) => sum + r.conflicts, 0);
+    setError(
+      failed.length > 0 ? failed.map((r) => `${r.name}: ${r.error ?? "falhou"}`).join(" · ") : null,
+    );
+    if (reports.length - failed.length > 0) {
+      setResult(
+        `Sincronizado: ${applied === 1 ? "1 alteração recebida" : `${applied} alterações recebidas`}` +
+          (conflicts > 0 ? `, ${conflicts} em conflito (veja as cópias com “~conflito~”)` : "") +
+          ".",
+      );
+      if (applied > 0) store.reload();
+    } else if (reports.length === 0) {
+      setResult("Nenhum computador pareado para procurar.");
+    }
+  };
+
+  /** Roda uma sincronização, mostrando o resultado ou o motivo da falha. Devolve se deu certo. */
+  const run = async (action: () => Promise<readonly SyncReport[]>): Promise<boolean> => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const reports = await action();
+      report(reports);
+      return reports.length > 0 && reports.every((r) => r.ok);
+    } catch (failure) {
+      setError(reasonOf(failure));
+      return false;
+    } finally {
+      setBusy(false);
+      void refreshPeers();
+    }
+  };
 
   const expired = offer !== null && now >= offer.expiresAt;
   const close = () => store.closePairing();
@@ -140,6 +180,36 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
             </button>
           </p>
         ) : null}
+
+        <h3 className="pairing__subtitle">Conectar a um computador</h3>
+        <p className="pairing__hint">
+          No celular: cole aqui o código mostrado pelo computador (em “Parear celular”).
+        </p>
+        <div className="pairing__connect">
+          <input
+            aria-label="Código do computador"
+            placeholder="tramion-pair:1:…"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+          />
+          <button
+            type="button"
+            disabled={busy || code.trim() === ""}
+            onClick={() => {
+              void run(async () => [await platform.pairWithCode(code.trim())]).then((ok) => {
+                if (ok) setCode("");
+              });
+            }}
+          >
+            Conectar
+          </button>
+        </div>
+        {peers.some((peer) => peer.canDial) ? (
+          <button type="button" disabled={busy} onClick={() => void run(() => platform.syncNow())}>
+            Sincronizar agora
+          </button>
+        ) : null}
+        {result ? <p role="status">{result}</p> : null}
 
         <h3 className="pairing__subtitle">Aparelhos pareados</h3>
         {peers.length === 0 ? (

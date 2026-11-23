@@ -27,6 +27,8 @@ const COMMANDS: &[&str] = &[
     "sync_pair_cancel",
     "sync_peers",
     "sync_peer_remove",
+    "sync_pair_with",
+    "sync_now",
     "set_reminders",
     "due_tasks",
     "upcoming_tasks",

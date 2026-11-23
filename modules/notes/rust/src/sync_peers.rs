@@ -21,11 +21,13 @@ pub struct Peer {
     pub name: String,
     pub paired_at: i64,
     pub last_sync_at: Option<i64>,
+    /// Este aparelho sabe onde procurá-lo (então "Sincronizar agora" o alcança).
+    pub can_dial: bool,
 }
 
 pub fn list_peers(conn: &Connection) -> Result<Vec<Peer>, NotesError> {
     let mut stmt = conn
-        .prepare("SELECT device, name, paired_at, last_sync_at FROM notes_sync_peer ORDER BY paired_at, device")?;
+        .prepare("SELECT device, name, paired_at, last_sync_at, addrs <> '[]' FROM notes_sync_peer ORDER BY paired_at, device")?;
     let rows = stmt
         .query_map([], |r| {
             Ok(Peer {
@@ -33,6 +35,7 @@ pub fn list_peers(conn: &Connection) -> Result<Vec<Peer>, NotesError> {
                 name: r.get(1)?,
                 paired_at: r.get(2)?,
                 last_sync_at: r.get(3)?,
+                can_dial: r.get(4)?,
             })
         })?
         .collect::<Result<_, _>>()?;
@@ -79,6 +82,45 @@ pub fn add_peer(
         params![device, name, secret_hex],
     )?;
     Ok(())
+}
+
+/// Guarda o nome e os endereços de um aparelho pareado (o celular guarda onde achar o computador).
+pub fn set_peer_info(
+    conn: &Connection,
+    device: &str,
+    name: &str,
+    addrs: &[String],
+) -> Result<(), NotesError> {
+    let json = serde_json::to_string(addrs).map_err(|e| NotesError::Internal(e.to_string()))?;
+    conn.execute(
+        "UPDATE notes_sync_peer SET name = ?2, addrs = ?3 WHERE device = ?1",
+        params![device, name, json],
+    )?;
+    Ok(())
+}
+
+/// Um aparelho que este sabe procurar: id, segredo e endereços.
+pub type DialablePeer = (String, [u8; SECRET_LEN], Vec<String>);
+
+/// Aparelhos com endereço conhecido (os que este aparelho sabe procurar), com segredo e endereços.
+pub fn dialable_peers(conn: &Connection) -> Result<Vec<DialablePeer>, NotesError> {
+    let mut stmt = conn.prepare(
+        "SELECT device, secret, addrs FROM notes_sync_peer WHERE addrs <> '[]' ORDER BY paired_at, device",
+    )?;
+    let rows: Vec<(String, String, String)> = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .collect::<Result<_, _>>()?;
+    rows.into_iter()
+        .map(|(device, secret, addrs)| {
+            let secret =
+                secret_from_hex(&secret).map_err(|e| NotesError::Internal(e.to_string()))?;
+            Ok((
+                device,
+                secret,
+                serde_json::from_str(&addrs).unwrap_or_default(),
+            ))
+        })
+        .collect()
 }
 
 /// Desfaz o pareamento: o aparelho nunca mais completa o aperto de mão com o segredo antigo.

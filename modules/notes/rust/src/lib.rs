@@ -17,6 +17,7 @@ pub mod repository;
 pub mod samples;
 pub mod search;
 pub mod service;
+pub mod sync_client;
 pub mod sync_io;
 pub mod sync_peers;
 pub mod sync_server;
@@ -88,6 +89,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 14,
             sql: include_str!("../migrations/0014_sync_peers.sql"),
         },
+        Migration {
+            version: 15,
+            sql: include_str!("../migrations/0015_peer_addrs.sql"),
+        },
     ],
 };
 
@@ -125,6 +130,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::sync_pair_cancel,
             commands::sync_peers,
             commands::sync_peer_remove,
+            commands::sync_pair_with,
+            commands::sync_now,
             commands::set_reminders,
             commands::due_tasks,
             commands::upcoming_tasks,

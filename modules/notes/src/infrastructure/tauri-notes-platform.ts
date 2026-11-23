@@ -5,7 +5,12 @@ import {
   requestPermission,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
-import type { NotesPlatform, PairedDevice, PairingOffer } from "../application/notes-platform.ts";
+import type {
+  NotesPlatform,
+  PairedDevice,
+  PairingOffer,
+  SyncReport,
+} from "../application/notes-platform.ts";
 import { toNotesError } from "./notes-error.ts";
 
 /** Cumpre o contrato chamando o plugin Rust do módulo. */
@@ -62,6 +67,22 @@ export function createTauriNotesPlatform(): NotesPlatform {
     async removePeer(device) {
       try {
         await invoke("plugin:notes|sync_peer_remove", { device });
+      } catch (error) {
+        throw toNotesError(error);
+      }
+    },
+
+    async pairWithCode(code) {
+      try {
+        return await invoke<SyncReport>("plugin:notes|sync_pair_with", { code });
+      } catch (error) {
+        throw toNotesError(error);
+      }
+    },
+
+    async syncNow() {
+      try {
+        return await invoke<SyncReport[]>("plugin:notes|sync_now");
       } catch (error) {
         throw toNotesError(error);
       }

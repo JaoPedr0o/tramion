@@ -206,3 +206,120 @@ fn oferta_do_qr_tem_codigo_decodificavel_e_svg() {
     assert!(offer.svg.contains("<svg"));
     assert_eq!(offer.expires_at, 123);
 }
+
+// ───────── O lado do celular: parear por código e sincronizar ─────────
+
+use tramion_notes::sync_client::{pair_with_code, sync_all};
+
+/// Sobe o servidor do computador numa porta local e atende `n` conexões. Devolve o endereço.
+fn serve(
+    desktop: &'static SharedDatabase,
+    state: &'static SyncState,
+    connections: usize,
+) -> (String, thread::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap().to_string();
+    let handle = thread::spawn(move || {
+        for _ in 0..connections {
+            let (stream, _) = listener.accept().unwrap();
+            let _ = handle_connection(desktop, state, stream);
+        }
+    });
+    (addr, handle)
+}
+
+fn code_for(state: &SyncState, device: &str, addr: &str) -> String {
+    let (secret, _) = state.open_pairing(i64::MAX / 2 - 1).unwrap();
+    Pairing {
+        device: device.into(),
+        secret,
+        addrs: vec![addr.into()],
+    }
+    .encode()
+}
+
+#[test]
+fn celular_pareia_pelo_codigo_sincroniza_e_guarda_o_computador() {
+    let desktop = leak(shared("pc"));
+    let state = leak(SyncState::default());
+    let phone = shared("cel");
+    note(desktop, "Do computador");
+    note(&phone, "Do celular");
+    let (addr, server) = serve(desktop, state, 1);
+
+    let report = pair_with_code(&phone, &code_for(state, "pc", &addr)).unwrap();
+
+    server.join().unwrap();
+    assert!(report.ok);
+    assert_eq!(titles(&phone), ["Do celular", "Do computador"]);
+    assert_eq!(titles(desktop), titles(&phone));
+    let peers = list_peers(phone.lock().unwrap().connection()).unwrap();
+    assert_eq!(
+        (peers[0].device.as_str(), peers[0].name.as_str()),
+        ("pc", "Computador")
+    );
+}
+
+#[test]
+fn sincronizar_agora_usa_o_segredo_e_o_endereco_guardados() {
+    let desktop = leak(shared("pc"));
+    let state = leak(SyncState::default());
+    let phone = shared("cel");
+    let (addr, server) = serve(desktop, state, 2);
+    pair_with_code(&phone, &code_for(state, "pc", &addr)).unwrap();
+    note(&phone, "Escrita depois");
+
+    let reports = sync_all(&phone).unwrap();
+
+    server.join().unwrap();
+    assert_eq!(reports.len(), 1);
+    assert!(reports[0].ok, "{:?}", reports[0].error);
+    assert!(titles(desktop).contains(&"Escrita depois".to_string()));
+}
+
+#[test]
+fn computador_desligado_da_um_motivo_claro_e_nao_trava_os_outros() {
+    let desktop = leak(shared("pc"));
+    let state = leak(SyncState::default());
+    let phone = shared("cel");
+    let (addr, server) = serve(desktop, state, 1);
+    pair_with_code(&phone, &code_for(state, "pc", &addr)).unwrap();
+    server.join().unwrap(); // o "computador" parou de escutar
+
+    let reports = sync_all(&phone).unwrap();
+
+    assert_eq!(reports.len(), 1);
+    assert!(!reports[0].ok);
+    assert!(
+        reports[0]
+            .error
+            .as_ref()
+            .unwrap()
+            .contains("mesma rede Wi-Fi")
+    );
+}
+
+#[test]
+fn codigo_invalido_ou_sem_computador_falha_sem_gravar_nada() {
+    let phone = shared("cel");
+
+    assert!(pair_with_code(&phone, "https://exemplo.com").is_err());
+    let nobody = Pairing {
+        device: "pc".into(),
+        secret: "ab".repeat(32),
+        addrs: vec!["127.0.0.1:9".into()],
+    };
+    assert!(pair_with_code(&phone, &nobody.encode()).is_err());
+    assert!(
+        list_peers(phone.lock().unwrap().connection())
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn sem_aparelhos_pareados_sincronizar_agora_nao_faz_nada() {
+    let phone = shared("cel");
+
+    assert!(sync_all(&phone).unwrap().is_empty());
+}

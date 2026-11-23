@@ -27,6 +27,8 @@ permissions = [
   "allow-sync-pair-cancel",
   "allow-sync-peers",
   "allow-sync-peer-remove",
+  "allow-sync-pair-with",
+  "allow-sync-now",
   "allow-set-reminders",
   "allow-due-tasks",
   "allow-upcoming-tasks",

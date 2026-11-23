@@ -546,3 +546,33 @@ pub fn sync_peer_remove(
 ) -> Result<bool, CommandError> {
     with_db(&db, |conn| crate::sync_peers::remove_peer(conn, &device))
 }
+
+/// Celular: pareia com um computador pelo texto do QR e já sincroniza. A rede pode demorar, então roda fora da fila
+/// principal.
+#[tauri::command]
+pub async fn sync_pair_with<R: Runtime>(
+    app: AppHandle<R>,
+    code: String,
+) -> Result<crate::sync_client::SyncReport, CommandError> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let db = app.state::<SharedDatabase>();
+        crate::sync_client::pair_with_code(&db, &code)
+    })
+    .await
+    .map_err(|e| NotesError::Internal(e.to_string()))?;
+    Ok(result?)
+}
+
+/// Celular: sincroniza com todos os computadores pareados.
+#[tauri::command]
+pub async fn sync_now<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<Vec<crate::sync_client::SyncReport>, CommandError> {
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let db = app.state::<SharedDatabase>();
+        crate::sync_client::sync_all(&db)
+    })
+    .await
+    .map_err(|e| NotesError::Internal(e.to_string()))?;
+    Ok(result?)
+}

@@ -17,6 +17,19 @@ export interface PairedDevice {
   readonly name: string;
   readonly pairedAt: number;
   readonly lastSyncAt: number | null;
+  /** Este aparelho sabe onde procurá-lo (então "Sincronizar agora" o alcança). */
+  readonly canDial: boolean;
+}
+
+/** O resultado de sincronizar com um aparelho. */
+export interface SyncReport {
+  readonly device: string;
+  readonly name: string;
+  readonly ok: boolean;
+  /** Quantos registros foram gravados aqui. */
+  readonly applied: number;
+  readonly conflicts: number;
+  readonly error: string | null;
 }
 
 export interface NotesPlatform {
@@ -38,6 +51,10 @@ export interface NotesPlatform {
   listPeers(): Promise<PairedDevice[]>;
   /** Desfaz o pareamento de um aparelho. */
   removePeer(device: string): Promise<void>;
+  /** Celular: pareia com um computador pelo texto do QR e já sincroniza. */
+  pairWithCode(code: string): Promise<SyncReport>;
+  /** Celular: sincroniza com os computadores pareados (um relatório por aparelho). */
+  syncNow(): Promise<SyncReport[]>;
   /** Avisa quando o item "Captura rápida" da bandeja do sistema é escolhido; devolve como cancelar o aviso. */
   onQuickCapture(handler: () => void): () => void;
   /** Mostra uma notificação do sistema (pede a permissão na primeira vez; sem permissão, não faz nada). */

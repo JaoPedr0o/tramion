@@ -52,6 +52,15 @@ function setup() {
     cancelPairing: vi.fn<NotesPlatform["cancelPairing"]>(async () => {}),
     listPeers: vi.fn<NotesPlatform["listPeers"]>(async () => []),
     removePeer: vi.fn<NotesPlatform["removePeer"]>(async () => {}),
+    pairWithCode: vi.fn<NotesPlatform["pairWithCode"]>(async () => ({
+      device: "pc",
+      name: "Computador",
+      ok: true,
+      applied: 3,
+      conflicts: 0,
+      error: null,
+    })),
+    syncNow: vi.fn<NotesPlatform["syncNow"]>(async () => []),
     onQuickCapture: vi.fn<NotesPlatform["onQuickCapture"]>(() => () => {}),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
@@ -3208,7 +3217,7 @@ describe("módulo de notas (a tela inteira)", () => {
       const { user, platform } = setup();
       platform.listPeers
         .mockResolvedValueOnce([
-          { device: "cel", name: "Celular (ab12)", pairedAt: 1, lastSyncAt: null },
+          { device: "cel", name: "Celular (ab12)", pairedAt: 1, lastSyncAt: null, canDial: false },
         ])
         .mockResolvedValue([]);
       await open(user);
@@ -3241,6 +3250,106 @@ describe("módulo de notas (a tela inteira)", () => {
         "sem conexão com uma rede local",
       );
       expect(within(dialog()).queryByRole("img", { name: "Código QR de pareamento" })).toBeNull();
+    });
+
+    it("celular: colar o código conecta, mostra o resultado e limpa o campo", async () => {
+      const { user, platform } = setup();
+      await open(user);
+
+      await user.type(
+        within(dialog()).getByLabelText("Código do computador"),
+        "tramion-pair:1:abc",
+      );
+      await user.click(within(dialog()).getByRole("button", { name: "Conectar" }));
+
+      expect(platform.pairWithCode).toHaveBeenCalledWith("tramion-pair:1:abc");
+      expect((await within(dialog()).findByRole("status")).textContent).toContain(
+        "3 alterações recebidas",
+      );
+      expect(within(dialog()).getByLabelText("Código do computador")).toHaveProperty("value", "");
+    });
+
+    it("Conectar fica desativado sem código", async () => {
+      const { user } = setup();
+      await open(user);
+
+      expect(
+        within(dialog()).getByRole("button", { name: "Conectar" }).hasAttribute("disabled"),
+      ).toBe(true);
+    });
+
+    it("falha ao conectar mostra o motivo e mantém o código digitado", async () => {
+      const { user, platform } = setup();
+      platform.pairWithCode.mockRejectedValue(
+        new NotesError("notes.internal", "não foi possível alcançar o computador"),
+      );
+      await open(user);
+
+      await user.type(
+        within(dialog()).getByLabelText("Código do computador"),
+        "tramion-pair:1:abc",
+      );
+      await user.click(within(dialog()).getByRole("button", { name: "Conectar" }));
+
+      expect((await within(dialog()).findByRole("alert")).textContent).toContain(
+        "não foi possível alcançar",
+      );
+      expect(within(dialog()).getByLabelText("Código do computador")).toHaveProperty(
+        "value",
+        "tramion-pair:1:abc",
+      );
+    });
+
+    it("Sincronizar agora só aparece com computador conhecido e recarrega as páginas se algo mudou", async () => {
+      const { user, platform } = setup();
+      platform.listPeers.mockResolvedValue([
+        { device: "pc", name: "Computador", pairedAt: 1, lastSyncAt: 5, canDial: true },
+      ]);
+      platform.syncNow.mockResolvedValue([
+        { device: "pc", name: "Computador", ok: true, applied: 1, conflicts: 2, error: null },
+      ]);
+      await open(user);
+
+      await user.click(await within(dialog()).findByRole("button", { name: "Sincronizar agora" }));
+
+      const status = await within(dialog()).findByRole("status");
+      expect(status.textContent).toContain("1 alteração recebida");
+      expect(status.textContent).toContain("2 em conflito");
+    });
+
+    it("sem computador com endereço, não oferece Sincronizar agora", async () => {
+      const { user, platform } = setup();
+      platform.listPeers.mockResolvedValue([
+        { device: "cel", name: "Celular (ab12)", pairedAt: 1, lastSyncAt: null, canDial: false },
+      ]);
+      await open(user);
+      await within(dialog()).findByText(/Celular \(ab12\)/);
+
+      expect(within(dialog()).queryByRole("button", { name: "Sincronizar agora" })).toBeNull();
+    });
+
+    it("uma falha na sincronização aparece com o nome do computador", async () => {
+      const { user, platform } = setup();
+      platform.listPeers.mockResolvedValue([
+        { device: "pc", name: "Computador", pairedAt: 1, lastSyncAt: null, canDial: true },
+      ]);
+      platform.syncNow.mockResolvedValue([
+        {
+          device: "pc",
+          name: "Computador",
+          ok: false,
+          applied: 0,
+          conflicts: 0,
+          error: "sem rede",
+        },
+      ]);
+      await open(user);
+
+      await user.click(await within(dialog()).findByRole("button", { name: "Sincronizar agora" }));
+
+      expect((await within(dialog()).findByRole("alert")).textContent).toContain(
+        "Computador: sem rede",
+      );
     });
 
     it("QR expirado some e oferece gerar outro", async () => {
