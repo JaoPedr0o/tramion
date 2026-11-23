@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Os sons do pomodoro são achados pelo NOME em tempo de execução (o plugin de notificações monta a URI a partir do
+     canal), então nada no código os referencia; isto impede o encolhimento de recursos de removê-los no APK de lançamento. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/pomodoro_end,@raw/pomodoro_silent" />
