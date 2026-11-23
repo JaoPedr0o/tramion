@@ -5,6 +5,7 @@ import {
   IDLE,
   durationMsFor,
   endMessage,
+  formatHourMinute,
   isFinished,
   nextKind,
   pauseTimer,
@@ -352,6 +353,8 @@ export function createPomodoroStore({ gateway, platform, alarm, clock }: Pomodor
     today: () => dayOf(clock.now(), clock.timeZone),
     /** O dia local de um instante qualquer (mesmo fuso). */
     dayOf: (ms: number) => dayOf(ms, clock.timeZone),
+    /** "19:15" de um instante qualquer (mesmo fuso). */
+    hourOf: (ms: number) => formatHourMinute(ms, clock.timeZone),
   };
 }
 

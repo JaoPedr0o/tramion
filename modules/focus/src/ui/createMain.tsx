@@ -2,7 +2,9 @@ import { useState, type ComponentType } from "react";
 import type { HabitsStore } from "../application/habits-store.ts";
 import type { PomodoroStore } from "../application/pomodoro-store.ts";
 import { HabitsPanel } from "./HabitsPanel.tsx";
+import { FlameIcon } from "./icons.tsx";
 import { PomodoroPanel } from "./PomodoroPanel.tsx";
+import { MiniTomato } from "./Tomato.tsx";
 
 type Tab = "pomodoro" | "habits";
 
@@ -55,7 +57,12 @@ export function createMain(deps: { pomodoro: PomodoroStore; habits: HabitsStore 
                 }
               }}
             >
-              {item.label}
+              {item.id === "pomodoro" ? (
+                <MiniTomato filled />
+              ) : (
+                <FlameIcon width={20} height={20} />
+              )}
+              <span>{item.label}</span>
             </button>
           ))}
         </div>

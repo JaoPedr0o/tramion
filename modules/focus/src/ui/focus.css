@@ -1,11 +1,92 @@
-/* Módulo Foco. Tudo com o prefixo `focus`, usando só os tokens do app (tema claro e escuro vêm deles). */
+/* Módulo Foco. Tudo com o prefixo `focus`, usando os tokens do app (tema claro e escuro vêm deles).
+
+   Paleta própria do módulo (terracota do app + verde-sálvia, mais seis cores de destaque dos hábitos), definida por tema
+   abaixo. Contrastes conferidos: texto sobre o corpo do tomate, sobre o preenchimento dos hábitos e sobre as superfícies
+   tem pelo menos 4,5:1; o mapa de calor é uma rampa de UM matiz (terracota), do mais claro ao mais escuro no tema claro
+   e o inverso no escuro, para a intensidade nunca depender só da cor (há legenda, resumo e rótulo para leitor de tela). */
 
 .focus {
+  /* Tema claro */
+  --f-terra: #b4492a;
+  --f-on-terra: #fffaf3;
+  --f-sage: #46704f;
+  --f-on-sage: #f6fbf6;
+  --f-ring-terra: #b4492a;
+  --f-ring-sage: #46704f;
+  --f-leaf: #3f7a46;
+  --f-leaf-deep: #2c5a33;
+  --f-stem: #2c5a33;
+  --f-hue-1: #b4492a;
+  --f-hue-2: #3f7a46;
+  --f-hue-3: #3b6ea0;
+  --f-hue-4: #8f5f0e;
+  --f-hue-5: #86446f;
+  --f-hue-6: #28707a;
+  --f-on-hue: #fffaf3;
+  --f-heat-0: #ece6db;
+  --f-heat-1: #f0b9a4;
+  --f-heat-2: #e08a68;
+  --f-heat-3: #c75f3b;
+  --f-heat-4: #9c3a1c;
+  --f-shadow: 0 1px 2px rgba(31, 27, 22, 0.06), 0 6px 20px rgba(31, 27, 22, 0.06);
+
   --focus-pad: var(--space-4);
+  box-sizing: border-box;
   max-width: 640px;
   margin: 0 auto;
-  padding: var(--focus-pad) var(--focus-pad)
-    max(var(--focus-pad), var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  padding: var(--focus-pad) var(--focus-pad) var(--space-8);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .focus {
+    --f-terra: #b84a2d;
+    --f-on-terra: #fff6ee;
+    --f-sage: #447650;
+    --f-on-sage: #f2faf3;
+    --f-ring-terra: #e8825f;
+    --f-ring-sage: #8fc19a;
+    --f-leaf: #4d9156;
+    --f-leaf-deep: #357040;
+    --f-stem: #6fae78;
+    --f-hue-1: #e8825f;
+    --f-hue-2: #8fc19a;
+    --f-hue-3: #86b6e0;
+    --f-hue-4: #e3b45a;
+    --f-hue-5: #d79bc2;
+    --f-hue-6: #6fc7cf;
+    --f-on-hue: #161513;
+    --f-heat-0: #2a2724;
+    --f-heat-1: #5a3426;
+    --f-heat-2: #8c4a31;
+    --f-heat-3: #c4673f;
+    --f-heat-4: #f0916b;
+    --f-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+}
+
+:root[data-theme="dark"] .focus {
+  --f-terra: #b84a2d;
+  --f-on-terra: #fff6ee;
+  --f-sage: #447650;
+  --f-on-sage: #f2faf3;
+  --f-ring-terra: #e8825f;
+  --f-ring-sage: #8fc19a;
+  --f-leaf: #4d9156;
+  --f-leaf-deep: #357040;
+  --f-stem: #6fae78;
+  --f-hue-1: #e8825f;
+  --f-hue-2: #8fc19a;
+  --f-hue-3: #86b6e0;
+  --f-hue-4: #e3b45a;
+  --f-hue-5: #d79bc2;
+  --f-hue-6: #6fc7cf;
+  --f-on-hue: #161513;
+  --f-heat-0: #2a2724;
+  --f-heat-1: #5a3426;
+  --f-heat-2: #8c4a31;
+  --f-heat-3: #c4673f;
+  --f-heat-4: #f0916b;
+  --f-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .focus-topbar {
@@ -24,19 +105,43 @@
   white-space: nowrap;
 }
 
-/* Abas */
+.focus-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.focus-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* ───────── Abas: segmentadas no computador, rodapé fixo no celular ───────── */
 .focus__tabs {
   display: flex;
   gap: var(--space-1);
-  margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  width: fit-content;
+  margin: 0 auto var(--space-4);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--color-hover);
 }
 
 .focus__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-height: 44px;
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-4);
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 999px;
   background: none;
   color: var(--color-text-secondary);
   font: inherit;
@@ -49,8 +154,9 @@
 }
 
 .focus__tab[aria-selected="true"] {
+  background: var(--color-surface);
   color: var(--color-text);
-  border-bottom-color: var(--color-accent);
+  box-shadow: var(--f-shadow);
 }
 
 .focus__tab:focus-visible,
@@ -58,21 +164,25 @@
 .focus-link:focus-visible,
 .focus-habit__check:focus-visible,
 .focus-habit__day:focus-visible,
+.focus-stepper__btn:focus-visible,
+.focus-stepper__input:focus-visible,
+.focus-switch__main:focus-visible,
+.focus-chip:focus-visible,
 .focus-field input:focus-visible,
 .focus-field select:focus-visible,
-.focus-details summary:focus-visible {
+.focus-choice:has(input:focus-visible),
+.focus-check input:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-.focus-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-/* Botões (mesmo padrão dos diálogos recentes: peso 600 e alvo de 44 px) */
+/* ───────── Botões (peso 600 e alvo de 44 px, como os diálogos do app) ───────── */
 .focus-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
   min-height: 44px;
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border);
@@ -80,7 +190,9 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  font-size: 15px;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
 }
 
@@ -104,7 +216,29 @@
   filter: brightness(1.08);
 }
 
+.focus-btn--big {
+  min-height: 52px;
+  padding: 0 var(--space-6);
+  border-radius: 999px;
+  font-size: 16px;
+}
+
+.focus-btn--small {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+}
+
+/* "Ajustes": botão de verdade (ícone, rótulo e contorno), discreto mas inconfundível. */
+.focus-btn--ghost {
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
 .focus-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   min-height: 44px;
   padding: 0 var(--space-2);
   border: 0;
@@ -112,8 +246,12 @@
   color: var(--color-text-secondary);
   font: inherit;
   font-weight: 600;
-  text-decoration: underline;
   cursor: pointer;
+}
+
+.focus-link:hover {
+  color: var(--color-text);
+  text-decoration: underline;
 }
 
 .focus-actions {
@@ -122,14 +260,13 @@
   gap: var(--space-2);
 }
 
+.focus-actions--center {
+  justify-content: center;
+}
+
 .focus-error {
   margin: 0;
   color: var(--color-danger);
-}
-
-.focus-ok {
-  margin: 0;
-  color: var(--color-positive);
 }
 
 .focus-empty {
@@ -137,107 +274,502 @@
   color: var(--color-text-muted);
 }
 
-/* Pomodoro */
-.focus-pomodoro__kind {
+.focus-note {
   margin: 0;
   color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.focus-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--f-shadow);
+}
+
+/* ───────── Pomodoro ───────── */
+.focus-pomodoro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* O palco: fica terracota no foco e verde-sálvia nas pausas. */
+.focus-stage {
+  --f-body: var(--f-terra);
+  --f-on-body: var(--f-on-terra);
+  --f-ring: var(--f-ring-terra);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius-lg) * 2);
+  background: var(--color-surface);
+  box-shadow: var(--f-shadow);
+}
+
+.focus-stage[data-kind="break"],
+.focus-stage[data-kind="long-break"] {
+  --f-body: var(--f-sage);
+  --f-on-body: var(--f-on-sage);
+  --f-ring: var(--f-ring-sage);
+}
+
+.focus-stage__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: var(--space-2);
+}
+
+.focus-pomodoro__kind {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--f-ring) 14%, transparent);
+  color: var(--color-text);
+  font-size: 14px;
   font-weight: 600;
-  text-align: center;
+}
+
+.focus-pomodoro__kind::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  border-radius: 50%;
+  background: var(--f-ring);
+}
+
+/* Anel + tomate */
+.focus-ring {
+  position: relative;
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+}
+
+.focus-ring__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.focus-ring__track {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 9;
+}
+
+.focus-ring__progress {
+  fill: none;
+  stroke: var(--f-ring);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.focus-ring__progress[data-empty="true"] {
+  stroke-linecap: butt;
+}
+
+.focus-tomato__body {
+  fill: var(--f-body);
+}
+
+.focus-tomato__leaf {
+  fill: var(--f-leaf);
+}
+
+.focus-tomato__leaf--deep {
+  fill: var(--f-leaf-deep);
+}
+
+.focus-tomato__stem {
+  stroke: var(--f-stem);
+}
+
+.focus-ring__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 18%;
+  pointer-events: none;
 }
 
 .focus-pomodoro__clock {
   margin: 0;
+  color: var(--f-on-body);
   font-family: var(--font-display);
-  font-size: clamp(56px, 18vw, 96px);
-  line-height: 1.1;
-  text-align: center;
+  font-size: clamp(40px, 15vw, 60px);
+  font-weight: 600;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
-.focus-pomodoro__clock[data-idle="true"],
-.focus-pomodoro__clock[data-paused="true"] {
-  color: var(--color-text-muted);
+.focus-cycle {
+  display: flex;
+  gap: var(--space-2);
 }
 
-.focus-card > .focus-actions {
-  justify-content: center;
+.focus-mini-tomato__body {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.4;
+}
+
+.focus-mini-tomato__leaf {
+  fill: var(--color-text-muted);
+}
+
+.focus-mini-tomato[data-filled="true"] .focus-mini-tomato__body {
+  fill: var(--f-terra);
+  stroke: var(--f-terra);
+}
+
+.focus-mini-tomato[data-filled="true"] .focus-mini-tomato__leaf {
+  fill: var(--f-leaf);
+}
+
+/* O aviso de fim */
+.focus-finished-region:empty {
+  display: none;
 }
 
 .focus-finished {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
   align-items: center;
-  padding: var(--space-3);
+  gap: var(--space-2-5);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-lg);
   background: var(--color-accent-soft);
+  text-align: center;
 }
 
-.focus-finished p {
+.focus-finished__text {
   margin: 0;
   font-weight: 600;
 }
 
-.focus-pomodoro__today {
-  margin: 0;
-  color: var(--color-text-muted);
-  text-align: center;
+.focus-finished .focus-actions {
+  justify-content: center;
 }
 
-.focus-details summary {
-  min-height: 44px;
+/* Hoje */
+.focus-today {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.focus-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.focus-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--f-shadow);
+}
+
+.focus-stat__value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-stat__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.focus-sessions {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focus-session {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
+  min-height: 40px;
   color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-session__time {
+  min-width: 48px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.focus-session__bar {
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--f-terra);
+}
+
+/* ───────── Hábitos ───────── */
+.focus-habits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.focus-habits__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.focus-emptystate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+}
+
+.focus-habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focus-habit {
+  --habit: var(--f-hue-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--habit);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--f-shadow);
+}
+
+.focus-habit[data-hue="2"] {
+  --habit: var(--f-hue-2);
+}
+.focus-habit[data-hue="3"] {
+  --habit: var(--f-hue-3);
+}
+.focus-habit[data-hue="4"] {
+  --habit: var(--f-hue-4);
+}
+.focus-habit[data-hue="5"] {
+  --habit: var(--f-hue-5);
+}
+.focus-habit[data-hue="6"] {
+  --habit: var(--f-hue-6);
+}
+
+.focus-habit[data-archived="true"] {
+  opacity: 0.7;
+}
+
+.focus-habit__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.focus-habit__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--habit) 16%, transparent);
+  font-size: 22px;
+}
+
+.focus-habit__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-habit__name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.focus-habit__meta {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Sequência: selo com chama; só ganha cor quando há sequência. */
+.focus-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: 999px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-streak[data-active="true"] {
+  background: color-mix(in srgb, var(--habit) 18%, transparent);
+  color: var(--color-text);
+}
+
+.focus-streak[data-active="true"] svg {
+  color: var(--habit);
+}
+
+/* O botão grande de marcar o dia */
+.focus-habit__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2-5);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  border: 2px solid var(--habit);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.focus-settings {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) 0 var(--space-3);
+.focus-habit__check:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--habit) 12%, transparent);
 }
 
-/* Campos */
-.focus-field {
+.focus-habit__check:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.focus-habit__check[aria-pressed="true"] {
+  background: var(--habit);
+  color: var(--f-on-hue);
+}
+
+.focus-habit__checkmark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.focus-habit__check[aria-pressed="true"] .focus-habit__checkmark svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Faixa dos últimos 7 dias */
+.focus-habit__week {
   display: flex;
-  flex-direction: column;
   gap: var(--space-1);
-  font-weight: 600;
 }
 
-.focus-field input,
-.focus-field select {
-  min-height: 44px;
-  padding: 0 var(--space-2-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-weight: 400;
-}
-
-.focus-fieldset {
+.focus-habit__day {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  margin: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: 48px;
   padding: 0;
   border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
 }
 
-.focus-fieldset legend {
-  padding: 0;
-  margin-bottom: var(--space-1);
+.focus-habit__day:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.focus-habit__day:disabled {
+  cursor: default;
+}
+
+.focus-habit__dot {
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 50%;
+}
+
+.focus-habit__day[aria-pressed="true"] .focus-habit__dot {
+  border-color: var(--habit);
+  background: var(--habit);
+}
+
+.focus-habit__day[data-today="true"] .focus-habit__letter {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.focus-habit__letter {
+  font-size: 12px;
   font-weight: 600;
+}
+
+.focus-habit__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: calc(var(--space-1) * -1);
 }
 
 .focus-check {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2-5);
   min-height: 44px;
   cursor: pointer;
 }
@@ -248,173 +780,84 @@
   accent-color: var(--color-accent);
 }
 
-/* Hábitos */
-.focus-habits__head {
+/* Mapa de calor: cartão próprio */
+.focus-heatmap {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.focus-heatmap__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.focus-habits__head h2 {
+.focus-heatmap__summary {
   margin: 0;
-  font-size: 20px;
-}
-
-.focus-habit-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.focus-habit {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-}
-
-.focus-habit[data-archived="true"] {
-  opacity: 0.7;
-}
-
-.focus-habit__check {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border: 2px solid var(--color-border);
-  border-radius: 50%;
-  background: none;
-  color: var(--color-on-accent);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.focus-habit__check[aria-pressed="true"] {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-}
-
-.focus-habit__check:disabled,
-.focus-habit__day:disabled {
-  cursor: default;
-}
-
-.focus-habit__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.focus-habit__name {
-  margin: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.focus-habit__meta {
-  margin: var(--space-0) 0 var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: 13px;
-}
-
-.focus-habit__week {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-1);
-}
-
-.focus-habit__day {
-  min-height: 44px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: none;
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.focus-habit__day[aria-pressed="true"] {
-  border-color: transparent;
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.focus-habit__actions {
-  display: flex;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-
-/* Mapa de calor */
-.focus-heatmap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
 }
 
 .focus-heatmap__scroll {
   overflow-x: auto;
+  padding-bottom: var(--space-1);
 }
 
 .focus-heatmap__grid {
+  --cell: 14px;
   --gap: 3px;
-  min-width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  width: max-content;
 }
 
 .focus-heatmap__months {
   display: grid;
-  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--weeks), var(--cell));
   column-gap: var(--gap);
-  height: 14px;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
   font-size: 11px;
-  color: var(--color-text-muted);
 }
 
 .focus-heatmap__months span {
-  white-space: nowrap;
   overflow: visible;
+  white-space: nowrap;
 }
 
 .focus-heatmap__cells {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(7, auto);
-  grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-columns: var(--cell);
   gap: var(--gap);
 }
 
 .focus-heatmap__cell {
   display: inline-block;
-  aspect-ratio: 1;
-  border-radius: 2px;
-  background: var(--color-hover);
+  width: var(--cell, 14px);
+  height: var(--cell, 14px);
+  border-radius: 3px;
+  background: var(--f-heat-0);
 }
 
 .focus-heatmap__cell[data-level="1"] {
-  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  background: var(--f-heat-1);
 }
 .focus-heatmap__cell[data-level="2"] {
-  background: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: var(--f-heat-2);
 }
 .focus-heatmap__cell[data-level="3"] {
-  background: color-mix(in srgb, var(--color-accent) 78%, transparent);
+  background: var(--f-heat-3);
 }
 .focus-heatmap__cell[data-level="4"] {
-  background: var(--color-accent);
+  background: var(--f-heat-4);
 }
+
 .focus-heatmap__cell[data-future="true"] {
   background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-border);
 }
 
 .focus-heatmap__legend {
@@ -423,15 +866,256 @@
   justify-content: flex-end;
   gap: var(--space-1);
   margin: 0;
-  font-size: 11px;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
-.focus-heatmap__legend .focus-heatmap__cell {
-  width: 12px;
+.focus-heatmap__legend span:first-child {
+  margin-right: var(--space-1);
 }
 
-/* Janela de hábito: cabeçalho e rodapé fixos, miolo rolável */
+.focus-heatmap__legend span:last-child {
+  margin-left: var(--space-1);
+}
+
+/* ───────── Campos e controles das janelas ───────── */
+.focus-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+
+.focus-field input,
+.focus-field select {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.focus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.focus-chip {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.focus-chip[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.focus-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.focus-fieldset legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.focus-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.focus-choice[data-checked="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.focus-choice input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.focus-choice__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-choice__label {
+  font-weight: 600;
+}
+
+.focus-choice__hint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* Grupos dos ajustes */
+.focus-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.focus-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.focus-stepper__label {
+  font-weight: 600;
+}
+
+.focus-stepper__box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.focus-stepper__btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.focus-stepper__btn:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.focus-stepper__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.focus-stepper__input {
+  box-sizing: border-box;
+  width: 56px;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.focus-stepper__input::-webkit-outer-spin-button,
+.focus-stepper__input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.focus-stepper__unit {
+  min-width: 44px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.focus-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.focus-switch__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.focus-switch__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-switch__label {
+  font-weight: 600;
+}
+
+.focus-switch__hint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.focus-switch__track {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--color-text-muted);
+}
+
+.focus-switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.focus-switch__main[aria-checked="true"] .focus-switch__track {
+  background: var(--color-accent);
+}
+
+.focus-switch__main[aria-checked="true"] .focus-switch__thumb {
+  transform: translateX(20px);
+}
+
+/* ───────── Janelas ───────── */
 .focus-backdrop {
   position: fixed;
   inset: 0;
@@ -445,8 +1129,8 @@
 .focus-dialog {
   display: flex;
   flex-direction: column;
-  width: min(440px, calc(100vw - 2 * var(--space-4)));
-  max-height: min(640px, 100dvh - 2 * var(--space-4));
+  width: min(460px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(680px, 100dvh - 2 * var(--space-4));
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text);
@@ -468,7 +1152,15 @@
 
 .focus-dialog__header h2 {
   margin: 0;
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.focus-dialog__header p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .focus-dialog__body {
@@ -490,10 +1182,53 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* Celular: a janela vira uma folha de tela cheia, respeitando as barras do sistema. */
+/* ───────── Celular: tela estreita ───────── */
 @media (max-width: 719px) {
   .focus {
     --focus-pad: var(--space-3);
+    /* Espaço para o rodapé fixo das abas. */
+    padding-bottom: calc(76px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  }
+
+  .focus__tabs {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: auto;
+    margin: 0;
+    padding: var(--space-1) var(--space-3)
+      max(var(--space-1), var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+    padding-left: max(var(--space-3), var(--safe-left, env(safe-area-inset-left, 0px)));
+    padding-right: max(var(--space-3), var(--safe-right, env(safe-area-inset-right, 0px)));
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    background: var(--color-surface);
+  }
+
+  .focus__tab {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 56px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius);
+    font-size: 12px;
+  }
+
+  .focus__tab[aria-selected="true"] {
+    background: var(--color-accent-soft);
+    box-shadow: none;
+  }
+
+  .focus-stage {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+  }
+
+  .focus-btn--big {
+    padding: 0 var(--space-4);
   }
 
   .focus-backdrop {
@@ -525,12 +1260,46 @@
   }
 }
 
+/* ───────── Movimento (só sem `prefers-reduced-motion`) ───────── */
 @media (prefers-reduced-motion: no-preference) {
   .focus-btn,
   .focus-habit__check,
-  .focus-habit__day {
+  .focus-habit__day,
+  .focus-switch__track,
+  .focus-streak {
     transition:
       background var(--duration-fast) var(--ease),
-      border-color var(--duration-fast) var(--ease);
+      border-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease);
+  }
+
+  .focus-switch__thumb {
+    transition: transform var(--duration-fast) var(--ease);
+  }
+
+  /* O anel avança suave entre uma conferência do relógio e a seguinte. */
+  .focus-ring__progress {
+    transition: stroke-dasharray 600ms linear;
+  }
+
+  /* Ao marcar o dia: o círculo "pula" de leve e o selo da sequência também. */
+  .focus-habit[data-done="true"] .focus-habit__checkmark {
+    animation: focus-pop 260ms var(--ease);
+  }
+
+  .focus-habit[data-done="true"] .focus-streak[data-active="true"] svg {
+    animation: focus-pop 320ms var(--ease);
+  }
+
+  @keyframes focus-pop {
+    0% {
+      transform: scale(0.7);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 }

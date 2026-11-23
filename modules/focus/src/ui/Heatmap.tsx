@@ -29,7 +29,19 @@ export function Heatmap({ counts, total, today }: Props) {
   }, []);
 
   return (
-    <div className="focus-heatmap">
+    <section className="focus-card focus-heatmap" aria-labelledby="focus-heatmap-title">
+      <div className="focus-heatmap__head">
+        <h3 id="focus-heatmap-title" className="focus-section-title">
+          Últimos seis meses
+        </h3>
+        <p className="focus-heatmap__summary">
+          {marked === 0
+            ? "Nenhum dia marcado"
+            : marked === 1
+              ? "1 dia marcado"
+              : `${marked} dias marcados`}
+        </p>
+      </div>
       <div ref={scroller} className="focus-heatmap__scroll">
         <div
           role="img"
@@ -62,12 +74,12 @@ export function Heatmap({ counts, total, today }: Props) {
         </div>
       </div>
       <p className="focus-heatmap__legend" aria-hidden="true">
-        Menos
+        <span>Menos</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <span key={level} className="focus-heatmap__cell" data-level={level} />
         ))}
-        Mais
+        <span>Mais</span>
       </p>
-    </div>
+    </section>
   );
 }

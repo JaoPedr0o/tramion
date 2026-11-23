@@ -3,8 +3,9 @@ import { createEventBus, createModuleRegistry, createViewRegistry } from "@trami
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FocusError } from "../domain/errors.ts";
 import { createFocusModule } from "../module.ts";
-import { memoryGateway, platformStub } from "../test-support.ts";
+import { alarmStub, memoryGateway, platformStub } from "../test-support.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 // O Testing Library só sabe esperar com temporizadores falsos quando enxerga um objeto `jest`: este atalho o
@@ -18,11 +19,16 @@ const MIN = 60_000;
 
 function mount(gateway = memoryGateway({ now: () => Date.now() })) {
   const platform = platformStub();
+  const alarm = alarmStub();
   const views = createViewRegistry();
   const registry = createModuleRegistry({ events: createEventBus(), views });
   // O relógio do módulo é o do Date, que os temporizadores falsos controlam.
   registry.add(
-    createFocusModule(gateway, { platform, clock: { now: () => Date.now(), timeZone: "UTC" } }),
+    createFocusModule(gateway, {
+      platform,
+      alarm,
+      clock: { now: () => Date.now(), timeZone: "UTC" },
+    }),
   );
   registry.start();
   const view = views.list().find((v) => v.id === "focus")!;
@@ -34,7 +40,7 @@ function mount(gateway = memoryGateway({ now: () => Date.now() })) {
       <Main />
     </>,
   );
-  return { gateway, platform, view, Main, ...screen_ };
+  return { gateway, platform, alarm, view, Main, ...screen_ };
 }
 
 /** Deixa as promessas pendentes (gateway em memória) terminarem. */
@@ -65,7 +71,7 @@ describe("tela Foco", () => {
 
   describe("pomodoro", () => {
     it("inicia, mostra o tempo pelo relógio e registra a sessão ao fim", async () => {
-      const { gateway } = mount();
+      const { gateway, alarm } = mount();
       await settle();
       await user().click(screen.getByRole("button", { name: "Iniciar foco" }));
 
@@ -78,7 +84,12 @@ describe("tela Foco", () => {
       expect(within(status).getByText("Sessão de foco concluída.")).toBeTruthy();
       expect(gateway.sessions).toHaveLength(1);
       expect(gateway.sessions[0]).toMatchObject({ startedAt: T0, durationSec: 1500 });
-      expect(screen.getByText("Hoje: 1 sessão · 25 min")).toBeTruthy();
+      expect(screen.getByRole("group", { name: "Foco hoje: 25 min" })).toBeTruthy();
+      expect(screen.getByRole("group", { name: "Pomodoros hoje: 1" })).toBeTruthy();
+      expect(screen.getByRole("list", { name: "Últimas sessões de hoje" })).toBeTruthy();
+      expect(screen.getByText("12:00")).toBeTruthy();
+      // Com o app aberto no computador, o sino toca no fim.
+      expect(alarm.ring).toHaveBeenCalledTimes(1);
     });
 
     it("pausa, retoma e cancela sem registrar", async () => {
@@ -140,27 +151,137 @@ describe("tela Foco", () => {
       expect(screen.getByRole("button", { name: "Iniciar foco" })).toBeTruthy();
     });
 
-    it("ajustes: salva durações e a notificação, que só avisa se ligada", async () => {
+    it("mostra o ciclo com um tomatinho por sessão e o anel/tempo do estado parado", async () => {
+      mount();
+      await settle();
+      expect(screen.getByRole("img", { name: "Ciclo: 0 de 4 sessões de foco" })).toBeTruthy();
+      const u = user();
+      await u.click(screen.getByRole("button", { name: "Iniciar foco" }));
+      await advance(25 * MIN);
+      expect(screen.getByRole("img", { name: "Ciclo: 1 de 4 sessões de foco" })).toBeTruthy();
+    });
+
+    it("'Ajustes' é um botão que abre uma janela; durações com + e −, e o salvar vale para o próximo cronômetro", async () => {
       const { gateway, platform } = mount();
       await settle();
       const u = user();
-      await u.click(screen.getByText("Ajustes do pomodoro"));
-      const focusField = screen.getByLabelText("Foco (minutos)");
+      await u.click(screen.getByRole("button", { name: "Ajustes" }));
+      const dialog = screen.getByRole("dialog", { name: "Ajustes do pomodoro" });
+
+      await u.click(within(dialog).getByRole("button", { name: "Aumentar foco" }));
+      await u.click(within(dialog).getByRole("button", { name: "Aumentar foco" }));
+      await u.click(within(dialog).getByRole("button", { name: "Diminuir pausa" }));
+      const focusField = within(dialog).getByLabelText("Foco");
+      expect((focusField as HTMLInputElement).value).toBe("27");
       await u.clear(focusField);
       await u.type(focusField, "50");
       await u.click(
-        screen.getByRole("checkbox", { name: "Avisar no fim com uma notificação do sistema" }),
+        within(dialog).getByRole("switch", {
+          name: /Avisar no fim com uma notificação do sistema/,
+        }),
       );
-      await u.click(screen.getByRole("button", { name: "Salvar ajustes" }));
+      await u.click(within(dialog).getByRole("button", { name: "Salvar ajustes" }));
       await settle();
 
-      expect(gateway.settings).toMatchObject({ focusMin: 50, notify: true });
-      expect(screen.getByText("Ajustes salvos.")).toBeTruthy();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(gateway.settings).toMatchObject({
+        focusMin: 50,
+        breakMin: 4,
+        notify: true,
+        sound: true,
+      });
       expect(screen.getByRole("timer").textContent).toBe("50:00");
 
       await u.click(screen.getByRole("button", { name: "Iniciar foco" }));
       await advance(50 * MIN);
       expect(platform.notify).toHaveBeenCalledTimes(1);
+    });
+
+    it("nos ajustes dá para desligar o som, ouvir o sino e ligar a pausa longa (que muda os tomatinhos)", async () => {
+      const { gateway, alarm } = mount();
+      await settle();
+      const u = user();
+      await u.click(screen.getByRole("button", { name: "Ajustes" }));
+      const dialog = screen.getByRole("dialog");
+
+      await u.click(within(dialog).getByRole("button", { name: "Ouvir" }));
+      expect(alarm.ring).toHaveBeenCalledTimes(1);
+
+      const sound = within(dialog).getByRole("switch", { name: /Som ao terminar/ });
+      expect(sound.getAttribute("aria-checked")).toBe("true");
+      await u.click(sound);
+      expect(sound.getAttribute("aria-checked")).toBe("false");
+
+      expect(within(dialog).queryByLabelText("A cada")).toBeNull();
+      await u.click(within(dialog).getByRole("switch", { name: /Pausa longa de vez em quando/ }));
+      await u.click(
+        within(dialog).getByRole("button", { name: "Aumentar sessões da pausa longa" }),
+      );
+      await u.click(within(dialog).getByRole("button", { name: "Salvar ajustes" }));
+      await settle();
+
+      expect(gateway.settings).toMatchObject({ sound: false, longBreakEvery: 5 });
+      expect(screen.getByRole("img", { name: "Ciclo: 0 de 5 sessões de foco" })).toBeTruthy();
+    });
+
+    it("ajustes inválidos mostram a mensagem e a janela continua aberta; Esc cancela sem salvar", async () => {
+      const { gateway } = mount();
+      await settle();
+      const u = user();
+      await u.click(screen.getByRole("button", { name: "Ajustes" }));
+      gateway.saveSettings = async () => {
+        throw new FocusError("focus.settings-invalid", "fora");
+      };
+      await u.click(screen.getByRole("button", { name: "Salvar ajustes" }));
+      await settle();
+      expect(screen.getByRole("alert").textContent).toBe(
+        "Os ajustes estão fora dos limites permitidos.",
+      );
+      await u.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("ao reabrir o app com o pomodoro já terminado, mostra o estado final e registra a sessão", async () => {
+      const gateway = memoryGateway({ now: () => Date.now() });
+      await gateway.saveTimer({
+        timer: {
+          phase: "running",
+          kind: "focus",
+          startedAt: T0 - 60 * MIN,
+          durationMs: 25 * MIN,
+          endsAt: T0 - 35 * MIN,
+          noteId: null,
+        },
+        cycle: 0,
+      });
+      mount(gateway);
+      await settle();
+      expect(
+        within(screen.getByRole("status")).getByText("Sessão de foco concluída."),
+      ).toBeTruthy();
+      expect(gateway.sessions).toEqual([
+        expect.objectContaining({ startedAt: T0 - 60 * MIN, durationSec: 1500 }),
+      ]);
+    });
+
+    it("ao reabrir com o pomodoro rodando, a tela continua do tempo certo", async () => {
+      const gateway = memoryGateway({ now: () => Date.now() });
+      await gateway.saveTimer({
+        timer: {
+          phase: "running",
+          kind: "focus",
+          startedAt: T0 - 10 * MIN,
+          durationMs: 25 * MIN,
+          endsAt: T0 + 15 * MIN,
+          noteId: null,
+        },
+        cycle: 1,
+      });
+      mount(gateway);
+      await settle();
+      expect(screen.getByRole("timer").textContent).toBe("15:00");
+      expect(screen.getByRole("button", { name: "Pausar" })).toBeTruthy();
+      expect(screen.getByRole("img", { name: "Ciclo: 1 de 4 sessões de foco" })).toBeTruthy();
     });
   });
 
