@@ -63,6 +63,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 9,
             sql: include_str!("../migrations/0009_database_views.sql"),
         },
+        Migration {
+            version: 10,
+            sql: include_str!("../migrations/0010_reminders.sql"),
+        },
     ],
 };
 
@@ -89,6 +93,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::list_templates,
             commands::create_from_template,
             commands::save_markdown,
+            commands::set_reminders,
+            commands::due_tasks,
             commands::save_asset,
             commands::set_appearance,
             commands::report_error,

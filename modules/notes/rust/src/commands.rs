@@ -9,7 +9,8 @@ use crate::error::NotesError;
 use crate::exports;
 use crate::external;
 use crate::model::{
-    DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote, View,
+    DatabaseData, DueTask, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary,
+    UpdateNote, View,
 };
 use crate::search::{self, SearchHit};
 use crate::service;
@@ -397,4 +398,25 @@ pub async fn save_markdown<R: Runtime>(
         .map_err(|e| NotesError::Internal(e.to_string()))?;
     let path = exports::save_markdown(&dir, &title, &content)?;
     Ok(path.display().to_string())
+}
+
+/// Liga, troca ou desliga (`config` nulo) os lembretes de tarefas de uma base.
+#[tauri::command]
+pub async fn set_reminders(
+    db: State<'_, SharedDatabase>,
+    database_id: String,
+    config: Option<serde_json::Value>,
+) -> Result<Option<serde_json::Value>, CommandError> {
+    with_db(&db, |conn| {
+        database::set_reminders(conn, &database_id, config.as_ref())
+    })
+}
+
+/// As tarefas atrasadas ou que vencem em `today` (data local do usuário, `AAAA-MM-DD`).
+#[tauri::command]
+pub async fn due_tasks(
+    db: State<'_, SharedDatabase>,
+    today: String,
+) -> Result<Vec<DueTask>, CommandError> {
+    with_db(&db, |conn| database::due_tasks(conn, &today))
 }

@@ -11,6 +11,7 @@ import type {
   DatabaseData,
   Property,
   PropertyType,
+  ReminderConfig,
   SelectOption,
   ViewConfig,
   ViewMode,
@@ -27,6 +28,7 @@ import {
   FilterButton,
   NewViewButton,
   PropertyHeaderButton,
+  RemindersButton,
   SortButton,
   ViewOptionsButton,
 } from "./DatabaseControls.tsx";
@@ -203,6 +205,12 @@ export function DatabaseView({ deps, id }: Props) {
       timers.current.delete(viewId);
       patch((d) => ({ ...d, views: d.views.filter((v) => v.id !== viewId) }));
       setActiveId(null);
+    });
+
+  const saveReminders = (config: ReminderConfig | null) =>
+    attempt(async () => {
+      const saved = await service.setReminders({ databaseId: id, config });
+      patch((d) => ({ ...d, reminders: saved }));
     });
 
   const replaceProperty = (property: Property) =>
@@ -388,6 +396,11 @@ export function DatabaseView({ deps, id }: Props) {
           properties={properties}
           rules={rules}
           onChange={(filters) => updateConfig({ filters: filters as ViewConfig["filters"] })}
+        />
+        <RemindersButton
+          properties={properties}
+          config={state.data.reminders}
+          onChange={(config) => void saveReminders(config)}
         />
         <SortButton
           properties={properties}

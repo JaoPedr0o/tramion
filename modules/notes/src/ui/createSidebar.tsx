@@ -2,6 +2,7 @@ import { IconButton, PlusIcon, SearchIcon, TrashIcon } from "@tramion/ui";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { NoteSummary } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
+import { DueTasksButton } from "./DueTasksButton.tsx";
 import { MoveDialog } from "./MoveDialog.tsx";
 import { PageGlyph } from "./PageGlyph.tsx";
 import { PageTree } from "./PageTree.tsx";
@@ -49,6 +50,7 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
           <span className="sidebar-row__title">Buscar</span>
           <kbd className="sidebar-search__keys">Ctrl K</kbd>
         </button>
+        <DueTasksButton deps={deps} pages={list} />
         <TemplatesButton deps={deps} pages={list} />
         <button type="button" className="sidebar-row" onClick={() => importInput.current?.click()}>
           <span className="sidebar-row__icon" aria-hidden="true">

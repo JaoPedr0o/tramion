@@ -14,6 +14,7 @@ import {
   VIEW_MODES,
   type Property,
   type PropertyType,
+  type ReminderConfig,
   type View,
   type ViewMode,
 } from "../domain/database.ts";
@@ -445,5 +446,121 @@ function ViewOptions({
         Excluir visão
       </button>
     </div>
+  );
+}
+
+// ───────── Lembretes de tarefas ─────────
+
+/** A configuração com que os lembretes começam: a primeira coluna de data e uma coluna de conclusão provável. */
+export function defaultReminderConfig(properties: readonly Property[]): ReminderConfig | null {
+  const date = properties.find((p) => p.type === "date");
+  if (!date) return null;
+  const box = properties.find((p) => p.type === "checkbox");
+  if (box) return { enabled: true, dateProperty: date.id, doneProperty: box.id, doneOption: null };
+  for (const select of properties.filter((p) => p.type === "select")) {
+    const option = select.options.find((o) => /feit|conclu|pront|done/i.test(o.name));
+    if (option) {
+      return {
+        enabled: true,
+        dateProperty: date.id,
+        doneProperty: select.id,
+        doneOption: option.id,
+      };
+    }
+  }
+  return { enabled: true, dateProperty: date.id, doneProperty: null, doneOption: null };
+}
+
+/** Como a conclusão aparece na lista de escolhas: nada, uma caixa marcada ou uma opção de seleção. */
+function doneChoices(properties: readonly Property[]) {
+  return [
+    { id: "none", label: "Nunca (toda tarefa vencida conta)" },
+    ...properties
+      .filter((p) => p.type === "checkbox")
+      .map((p) => ({ id: `box:${p.id}`, label: `${p.name} marcada` })),
+    ...properties
+      .filter((p) => p.type === "select")
+      .flatMap((p) =>
+        p.options.map((o) => ({ id: `opt:${p.id}:${o.id}`, label: `${p.name} = ${o.name}` })),
+      ),
+  ];
+}
+
+const doneValue = (config: ReminderConfig): string =>
+  config.doneProperty === null
+    ? "none"
+    : config.doneOption === null
+      ? `box:${config.doneProperty}`
+      : `opt:${config.doneProperty}:${config.doneOption}`;
+
+/** "Lembretes": liga os avisos de tarefas da base, escolhe a coluna de prazo e quando a tarefa conta como concluída. */
+export function RemindersButton({
+  properties,
+  config,
+  onChange,
+}: {
+  properties: readonly Property[];
+  config: ReminderConfig | null;
+  onChange(config: ReminderConfig | null): void;
+}) {
+  const dates = properties.filter((p) => p.type === "date");
+  return (
+    <PopoverButton
+      label="Lembretes da base"
+      caption={config?.enabled ? "Lembretes: ligados" : "Lembretes"}
+    >
+      {() => (
+        <div className="db-form">
+          {dates.length === 0 ? (
+            <p className="popover__note">
+              Adicione uma coluna do tipo Data (o prazo) para receber lembretes das tarefas desta
+              base.
+            </p>
+          ) : (
+            <>
+              <label className="due__option">
+                <input
+                  type="checkbox"
+                  checked={config?.enabled ?? false}
+                  onChange={(event) => {
+                    const base = config ?? defaultReminderConfig(properties);
+                    if (base) onChange({ ...base, enabled: event.target.checked });
+                  }}
+                />
+                Lembrar das tarefas desta base
+              </label>
+              {config && (
+                <>
+                  <Choice
+                    label="Coluna do prazo"
+                    value={config.dateProperty}
+                    options={dates.map((p) => ({ id: p.id, label: p.name }))}
+                    onChange={(id) => onChange({ ...config, dateProperty: id })}
+                  />
+                  <Choice
+                    label="Tarefa concluída quando"
+                    value={doneValue(config)}
+                    options={doneChoices(properties)}
+                    onChange={(id) => {
+                      if (id === "none") {
+                        onChange({ ...config, doneProperty: null, doneOption: null });
+                      } else if (id.startsWith("box:")) {
+                        onChange({ ...config, doneProperty: id.slice(4), doneOption: null });
+                      } else {
+                        const [, property, option] = id.split(":") as [string, string, string];
+                        onChange({ ...config, doneProperty: property, doneOption: option });
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={() => onChange(null)}>
+                    Remover os lembretes desta base
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </PopoverButton>
   );
 }

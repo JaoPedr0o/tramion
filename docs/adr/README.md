@@ -22,3 +22,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0015](0015-nome-identidade-visual-e-instalacao.md)        | Nome, identidade visual e instalação                              | Aceita |
 | [0016](0016-paginas-de-exemplo.md)                         | Páginas de exemplo na primeira abertura                           | Aceita |
 | [0017](0017-design-papel-e-tinta.md)                       | Design "papel e tinta"                                            | Aceita |
+| [0018](0018-busca-visoes-modelos-markdown-e-lembretes.md)  | Busca, visões salvas, modelos, Markdown e lembretes               | Aceita |

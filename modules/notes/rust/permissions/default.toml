@@ -20,6 +20,8 @@ permissions = [
   "allow-list-templates",
   "allow-create-from-template",
   "allow-save-markdown",
+  "allow-set-reminders",
+  "allow-due-tasks",
   "allow-save-asset",
   "allow-set-appearance",
   "allow-report-error",

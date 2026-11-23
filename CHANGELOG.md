@@ -16,6 +16,12 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 ### Adicionado
 
 - Visões lista, galeria e calendário nas bases de dados, botão Esvaziar lixeira e páginas de exemplo na primeira abertura.
+- Busca global (`Ctrl + K`) no título e no texto das páginas, sem diferenciar acento nem maiúscula.
+- Visões salvas por base (nome, forma de exibição, filtros, ordenação) e calendário semanal.
+- Duplicar página (com subpáginas e bases) e cinco modelos de página.
+- Exportar a página como Markdown (pasta Downloads) e importar um arquivo Markdown.
+- Lembretes de tarefas: configuração por base, painel "Lembretes" na barra lateral e aviso diário do sistema.
+  Veja o [ADR 0018](docs/adr/0018-busca-visoes-modelos-markdown-e-lembretes.md).
 
 ## [0.1.0] - 2026-11-23
 

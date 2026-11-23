@@ -5,8 +5,10 @@ import { NotesError } from "./domain/errors.ts";
 import type {
   CellValue,
   DatabaseData,
+  DueTask,
   Property,
   PropertyType,
+  ReminderConfig,
   View,
   ViewConfig,
 } from "./domain/database.ts";
@@ -70,6 +72,7 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
       title: "Base",
       properties: [],
       views: [],
+      reminders: null,
       rows: [],
     })),
     addProperty: vi.fn(async () => {
@@ -88,6 +91,8 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
       throw new Error("updateView não configurado no stub");
     }),
     deleteView: vi.fn(async () => {}),
+    setReminders: vi.fn(async () => null),
+    dueTasks: vi.fn(async () => []),
     renameNote: vi.fn(async () => aNote()),
     ...overrides,
   };
@@ -107,6 +112,7 @@ export function createFakeGateway() {
   const properties = new Map<string, Property>();
   const cells = new Map<string, CellValue>(); // chave: `${linha}|${coluna}`
   const views = new Map<string, View>();
+  const reminders = new Map<string, ReminderConfig>();
   const tick = () => ++clock;
 
   const summary = (n: Note): NoteSummary => ({
@@ -171,6 +177,8 @@ export function createFakeGateway() {
     | "addView"
     | "updateView"
     | "deleteView"
+    | "setReminders"
+    | "dueTasks"
     | "renameNote";
   const gateway: Omit<NotesGateway, DatabaseMethod> = {
     async list() {
@@ -422,6 +430,9 @@ export function createFakeGateway() {
       for (const [viewId, view] of [...views]) {
         if (!notes.has(view.databaseId)) views.delete(viewId);
       }
+      for (const databaseId of [...reminders.keys()]) {
+        if (!notes.has(databaseId)) reminders.delete(databaseId);
+      }
       for (const key of [...cells.keys()]) {
         const [rowId, propertyId] = key.split("|");
         if (!notes.has(rowId!) || !properties.has(propertyId!)) cells.delete(key);
@@ -501,6 +512,7 @@ export function createFakeGateway() {
         views: [...views.values()]
           .filter((v) => v.databaseId === id)
           .sort((a, b) => a.position - b.position),
+        reminders: reminders.get(id) ?? null,
         rows: activeChildren(id).map((row) => ({
           id: row.id,
           title: row.title,
@@ -620,6 +632,65 @@ export function createFakeGateway() {
         throw new NotesError("notes.view-invalid", "última visão");
       }
       views.delete(id);
+    },
+
+    async setReminders({ databaseId, config }) {
+      mustDatabase(databaseId);
+      if (config === null) {
+        reminders.delete(databaseId);
+        return null;
+      }
+      const own = (id: string | null) => {
+        const property = id === null ? undefined : properties.get(id);
+        return property && property.databaseId === databaseId ? property : undefined;
+      };
+      const date = own(config.dateProperty);
+      if (date?.type !== "date") throw new NotesError("notes.property-invalid", "prazo");
+      const done = own(config.doneProperty);
+      if (config.doneProperty !== null && !done)
+        throw new NotesError("notes.property-invalid", "conclusão");
+      if (done && done.type !== "checkbox" && done.type !== "select") {
+        throw new NotesError("notes.property-invalid", "tipo");
+      }
+      if (done?.type === "select" && !done.options.some((o) => o.id === config.doneOption)) {
+        throw new NotesError("notes.property-invalid", "opção");
+      }
+      const clean: ReminderConfig = {
+        enabled: config.enabled,
+        dateProperty: config.dateProperty,
+        doneProperty: config.doneProperty,
+        doneOption: done?.type === "select" ? config.doneOption : null,
+      };
+      reminders.set(databaseId, clean);
+      return clean;
+    },
+
+    async dueTasks(today) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new NotesError("notes.cell-invalid", "data");
+      const due: DueTask[] = [];
+      for (const [databaseId, config] of reminders) {
+        const base = notes.get(databaseId);
+        if (!config.enabled || !base || base.deletedAt !== null) continue;
+        for (const row of activeChildren(databaseId)) {
+          const date = cells.get(cellKey(row.id, config.dateProperty));
+          if (typeof date !== "string" || date > today) continue;
+          const mark = config.doneProperty
+            ? cells.get(cellKey(row.id, config.doneProperty))
+            : undefined;
+          const finished = config.doneOption === null ? mark === true : mark === config.doneOption;
+          if (finished) continue;
+          due.push({
+            id: row.id,
+            title: row.title,
+            icon: row.icon,
+            databaseId,
+            databaseTitle: base.title,
+            date,
+            overdue: date < today,
+          });
+        }
+      }
+      return due.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
     },
 
     async renameNote({ id, title, expectedUpdatedAt }) {

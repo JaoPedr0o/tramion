@@ -164,6 +164,17 @@ fn tasks(conn: &Connection) -> Result<(), NotesError> {
         "Calendário",
         &json!({ "mode": "calendar", "dateProperty": c[2], "scale": "month" }),
     )?;
+    // Lembretes ligados: o que está atrasado ou vence hoje e não está "Feito" aparece em Lembretes.
+    database::set_reminders(
+        conn,
+        &base_note.id,
+        Some(&json!({
+            "enabled": true,
+            "dateProperty": c[2],
+            "doneProperty": c[0],
+            "doneOption": "feito"
+        })),
+    )?;
     let rows = [
         ("Explorar as páginas de exemplo", "feito", "baixa", 0),
         ("Criar a minha primeira página", "em-andamento", "alta", 1),

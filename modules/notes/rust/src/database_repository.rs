@@ -221,3 +221,43 @@ pub fn update_view(conn: &Connection, id: &str, name: &str, config: &str) -> Res
 pub fn delete_view(conn: &Connection, id: &str) -> Result<usize> {
     conn.execute("DELETE FROM notes_view WHERE id = ?1", [id])
 }
+
+// ───────── Lembretes ─────────
+
+pub fn find_reminder(conn: &Connection, database_id: &str) -> Result<Option<String>> {
+    conn.query_row(
+        "SELECT config FROM notes_reminder WHERE database_id = ?1",
+        [database_id],
+        |row| row.get(0),
+    )
+    .optional()
+}
+
+pub fn upsert_reminder(conn: &Connection, database_id: &str, config: &str) -> Result<()> {
+    conn.execute(
+        "INSERT INTO notes_reminder (database_id, config) VALUES (?1, ?2)
+         ON CONFLICT (database_id) DO UPDATE SET config = excluded.config",
+        params![database_id, config],
+    )?;
+    Ok(())
+}
+
+pub fn delete_reminder(conn: &Connection, database_id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM notes_reminder WHERE database_id = ?1",
+        [database_id],
+    )?;
+    Ok(())
+}
+
+/// Bases ATIVAS com lembretes: `(id da base, título, configuração em JSON)`.
+pub fn list_active_reminders(conn: &Connection) -> Result<Vec<(String, String, String)>> {
+    let mut stmt = conn.prepare(
+        "SELECT r.database_id, n.title, r.config
+           FROM notes_reminder r JOIN notes_note n ON n.id = r.database_id
+          WHERE n.deleted_at IS NULL
+          ORDER BY n.title, n.id",
+    )?;
+    stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .collect()
+}

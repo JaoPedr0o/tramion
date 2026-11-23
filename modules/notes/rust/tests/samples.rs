@@ -99,6 +99,12 @@ fn a_lista_de_tarefas_tem_colunas_opcoes_e_linhas_preenchidas() {
     );
     assert_eq!(data.properties[0].options.as_array().unwrap().len(), 3);
     assert_eq!(data.rows.len(), 5);
+    let reminders = data
+        .reminders
+        .clone()
+        .expect("a lista de tarefas de exemplo tem lembretes");
+    assert_eq!(reminders["enabled"], true);
+    assert_eq!(reminders["doneOption"], "feito");
     assert_eq!(
         data.views
             .iter()

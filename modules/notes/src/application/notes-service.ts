@@ -1,9 +1,11 @@
 import type { AppEvents, EventBus } from "@tramion/contracts";
 import type {
   DatabaseData,
+  DueTask,
   NewProperty,
   Property,
   PropertyChange,
+  ReminderConfig,
   SetCell,
   View,
   ViewConfig,
@@ -54,6 +56,11 @@ export interface NotesService {
   addView(input: { databaseId: string; name: string; config: ViewConfig }): Promise<View>;
   updateView(input: { id: string; name?: string; config?: ViewConfig }): Promise<View>;
   deleteView(id: string): Promise<void>;
+  setReminders(input: {
+    databaseId: string;
+    config: ReminderConfig | null;
+  }): Promise<ReminderConfig | null>;
+  dueTasks(today: string): Promise<readonly DueTask[]>;
   renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }
 
@@ -166,6 +173,15 @@ export function createNotesService(deps: {
     addView: (input) => gateway.addView(input),
     updateView: (input) => gateway.updateView(input),
     deleteView: (id) => gateway.deleteView(id),
+
+    // Mudar os lembretes de uma base avisa como "página atualizada": quem mostra as tarefas pendentes se recarrega.
+    async setReminders(input) {
+      const saved = await gateway.setReminders(input);
+      events.emit("note.updated", { id: input.databaseId });
+      return saved;
+    },
+
+    dueTasks: (today) => gateway.dueTasks(today),
 
     async renameNote(input) {
       const note = await gateway.renameNote(input);

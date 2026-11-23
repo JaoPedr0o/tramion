@@ -96,12 +96,38 @@ export interface View {
   readonly position: number;
 }
 
+/** Configuração dos lembretes de tarefas de uma base. */
+export interface ReminderConfig {
+  readonly enabled: boolean;
+  /** Coluna de data que dá o prazo da tarefa. */
+  readonly dateProperty: string;
+  /** Coluna que diz se a tarefa foi concluída (caixa de seleção ou seleção); `null` = toda tarefa vencida conta. */
+  readonly doneProperty: string | null;
+  /** Para uma coluna de seleção: a opção que significa "concluída". */
+  readonly doneOption: string | null;
+}
+
+/** Uma tarefa que pede atenção: atrasada ou com prazo hoje, e ainda não concluída. */
+export interface DueTask {
+  readonly id: string;
+  readonly title: string;
+  readonly icon: string | null;
+  readonly databaseId: string;
+  readonly databaseTitle: string;
+  /** Prazo, `AAAA-MM-DD`. */
+  readonly date: string;
+  /** `true` se o prazo já passou; `false` = vence hoje. */
+  readonly overdue: boolean;
+}
+
 /** Tudo o que a tela da base precisa. */
 export interface DatabaseData {
   readonly id: string;
   readonly title: string;
   readonly properties: readonly Property[];
   readonly views: readonly View[];
+  /** Lembretes de tarefas desta base; `null` = não configurados. */
+  readonly reminders: ReminderConfig | null;
   readonly rows: readonly DatabaseRow[];
 }
 

@@ -51,6 +51,7 @@ O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotaç
 - **Ícone (emoji) e capa** em cada página (degradês, cores, imagem enviada ou por link).
 - Menu do bloco com **Transformar em**, cores e excluir.
 - Salvamento automático, com aviso de conflito se a página mudar em outro lugar.
+- **Busca global** (`Ctrl + K`) no título e no texto, sem diferenciar acento; **duplicar página**, **modelos** de página e **exportar/importar Markdown**.
 - **Lixeira** com restaurar, apagar de vez e **esvaziar lixeira**.
 - Tema **claro, escuro ou automático** e barra lateral recolhível (`Ctrl + \`).
 
@@ -58,8 +59,9 @@ O nome vem de _trama_: o que liga as ideias. A proposta é um espaço de anotaç
 
 - Uma base é uma coleção de páginas: cada **linha é uma página** completa (texto, blocos, ícone, capa).
 - **Colunas tipadas:** texto, número, seleção, seleção múltipla, data, caixa de seleção e link.
-- **Cinco formas de exibição:** tabela, quadro (Kanban), lista, galeria e calendário.
+- **Cinco formas de exibição:** tabela, quadro (Kanban), lista, galeria e calendário (mês e semana), com **várias visões salvas** por base.
 - **Filtros** (combinados) e **ordenação** em todas as formas de exibição; arrastar cartões no quadro e itens no calendário.
+- **Lembretes de tarefas:** o que está atrasado ou vence hoje aparece na barra lateral, com um aviso diário do sistema.
 - Páginas de **exemplo** na primeira abertura (guia, lista de tarefas, leituras e diário).
 
 ## Instalação
@@ -97,7 +99,7 @@ adicionados _por endereço_ são carregados do site de origem, como em qualquer 
    com o **+** do cabeçalho e troque a forma de exibição pelas abas _Tabela, Quadro, Lista, Galeria e Calendário_.
 4. **Organize:** arraste blocos pela alça, mova páginas pelo menu "⋯", favorite as mais usadas.
 
-**Atalhos:** `Ctrl + \` recolhe a barra lateral · `Ctrl + B` / `Ctrl + I` negrito e itálico · `Tab` / `Shift + Tab`
+**Atalhos:** `Ctrl + K` busca em todas as páginas · `Ctrl + \` recolhe a barra lateral · `Ctrl + B` / `Ctrl + I` negrito e itálico · `Tab` / `Shift + Tab`
 recuam itens de lista · `/` insere blocos · `@` menciona páginas.
 
 ## Desenvolvimento
@@ -158,11 +160,13 @@ As decisões estão registradas em [docs/adr](docs/adr/) (16 registros até agor
 - [x] Editor de blocos, subpáginas, menções, ícone e capa
 - [x] Bases de dados: tabela, quadro, lista, galeria e calendário
 - [x] Lixeira, páginas de exemplo, temas claro e escuro
-- [ ] **Notificações de tarefas** (lembretes de prazos)
-- [ ] Busca global (`Ctrl + K`)
-- [ ] Filtros e várias visões salvos por base; calendário semanal
-- [ ] Exportar e importar Markdown
-- [ ] Modelos de página e duplicar página
+- [x] Notificações de tarefas (lembretes de prazos, com aviso diário do sistema)
+- [x] Busca global (`Ctrl + K`)
+- [x] Filtros e várias visões salvos por base; calendário semanal
+- [x] Exportar e importar Markdown
+- [x] Modelos de página e duplicar página
+- [ ] Lembretes com o app fechado (ícone na bandeja)
+- [ ] Modelos criados pela pessoa e busca no conteúdo das bases
 - [ ] Validação e instaladores assinados para Windows e macOS
 
 ## Contribuindo

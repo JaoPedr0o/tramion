@@ -8,8 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@tramion/contracts": "workspace:*",
-    "@tramion/ui": "workspace:*",
     "@blocknote/code-block": "^0.57.0",
     "@blocknote/core": "^0.57.0",
     "@blocknote/mantine": "^0.57.0",
@@ -17,6 +15,9 @@
     "@mantine/core": "^9.8.2",
     "@mantine/hooks": "^9.8.2",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-notification": "^2.8.1",
+    "@tramion/contracts": "workspace:*",
+    "@tramion/ui": "workspace:*",
     "highlight.js": "^11.12.0",
     "react": "^19.1.0"
   },

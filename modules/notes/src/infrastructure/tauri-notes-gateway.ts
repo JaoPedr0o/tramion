@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { NotesGateway } from "../application/notes-gateway.ts";
-import type { DatabaseData, Property, View } from "../domain/database.ts";
+import type { DatabaseData, DueTask, Property, ReminderConfig, View } from "../domain/database.ts";
 import type { Note, NoteSummary, SearchHit, TemplateInfo, TrashSummary } from "../domain/note.ts";
 import { toNotesError } from "./notes-error.ts";
 
@@ -52,6 +52,9 @@ export function createTauriNotesGateway(): NotesGateway {
     updateView: ({ id, name, config }) =>
       call<View>("update_view", { id, name: name ?? null, config: config ?? null }),
     deleteView: (id) => call<void>("delete_view", { id }),
+    setReminders: ({ databaseId, config }) =>
+      call<ReminderConfig | null>("set_reminders", { databaseId, config }),
+    dueTasks: (today) => call<DueTask[]>("due_tasks", { today }),
     renameNote: ({ id, title, expectedUpdatedAt }) =>
       call<Note>("rename_note", { id, title, expectedUpdatedAt }),
   };

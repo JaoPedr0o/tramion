@@ -130,5 +130,22 @@ pub struct DatabaseData {
     pub title: String,
     pub properties: Vec<Property>,
     pub views: Vec<View>,
+    /// Configuração dos lembretes de tarefas desta base; `None` = sem lembretes configurados.
+    pub reminders: Option<serde_json::Value>,
     pub rows: Vec<DatabaseRow>,
+}
+
+/// Uma tarefa que pede atenção: está atrasada ou vence hoje e ainda não foi concluída.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DueTask {
+    pub id: String,
+    pub title: String,
+    pub icon: Option<String>,
+    pub database_id: String,
+    pub database_title: String,
+    /// Prazo, `AAAA-MM-DD`.
+    pub date: String,
+    /// `true` se o prazo já passou (`false` = vence hoje).
+    pub overdue: bool,
 }

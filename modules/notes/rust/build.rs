@@ -20,6 +20,8 @@ const COMMANDS: &[&str] = &[
     "list_templates",
     "create_from_template",
     "save_markdown",
+    "set_reminders",
+    "due_tasks",
     "save_asset",
     "set_appearance",
     "report_error",

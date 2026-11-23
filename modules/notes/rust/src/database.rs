@@ -9,11 +9,11 @@
 use crate::database_repository as repo;
 use crate::error::NotesError;
 use crate::external::validate_external_url;
-use crate::model::{DatabaseData, DatabaseRow, Note, Property, View};
+use crate::model::{DatabaseData, DatabaseRow, DueTask, Note, Property, View};
 use crate::repository;
 use crate::service::{ensure_active_parent, validate_title};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use tramion_infra_sqlite::rusqlite::Connection;
 
 pub const MAX_PROPERTIES: usize = 50;
@@ -260,6 +260,8 @@ pub fn get_database(conn: &Connection, id: &str) -> Result<DatabaseData, NotesEr
         title,
         properties,
         views: repo::list_views(conn, id)?,
+        reminders: repo::find_reminder(conn, id)?
+            .and_then(|config| serde_json::from_str::<Value>(&config).ok()),
         rows,
     })
 }
@@ -544,4 +546,157 @@ pub fn delete_view(conn: &Connection, id: &str) -> Result<(), NotesError> {
     }
     repo::delete_view(conn, id)?;
     Ok(())
+}
+
+// ───────── Lembretes de tarefas ─────────
+
+/// Confere a configuração dos lembretes de uma base e a devolve LIMPA:
+/// `{ enabled, dateProperty, doneProperty, doneOption }`.
+///
+/// - `dateProperty` é obrigatória e precisa ser uma coluna de DATA da base.
+/// - `doneProperty` (opcional) é uma coluna de caixa de seleção (marcada = concluída) ou de seleção (a opção
+///   `doneOption` = concluída; a opção é obrigatória e precisa existir na coluna).
+pub fn validate_reminders(
+    conn: &Connection,
+    database_id: &str,
+    config: &Value,
+) -> Result<Value, NotesError> {
+    let Value::Object(object) = config else {
+        return Err(NotesError::PropertyInvalid);
+    };
+    let enabled = object
+        .get("enabled")
+        .and_then(Value::as_bool)
+        .ok_or(NotesError::PropertyInvalid)?;
+    let own = |key: &str| -> Result<Option<Property>, NotesError> {
+        match object.get(key) {
+            None | Some(Value::Null) => Ok(None),
+            Some(Value::String(id)) => repo::find_property(conn, id)?
+                .filter(|p| p.database_id == database_id)
+                .map(Some)
+                .ok_or(NotesError::PropertyInvalid),
+            Some(_) => Err(NotesError::PropertyInvalid),
+        }
+    };
+
+    let date = own("dateProperty")?
+        .filter(|p| p.kind == "date")
+        .ok_or(NotesError::PropertyInvalid)?;
+    let done = own("doneProperty")?;
+    let mut done_option = Value::Null;
+    if let Some(done) = &done {
+        match done.kind.as_str() {
+            "checkbox" => {}
+            "select" => {
+                let option = object
+                    .get("doneOption")
+                    .and_then(Value::as_str)
+                    .ok_or(NotesError::PropertyInvalid)?;
+                if !option_ids(done).contains(option) {
+                    return Err(NotesError::PropertyInvalid);
+                }
+                done_option = Value::String(option.to_string());
+            }
+            _ => return Err(NotesError::PropertyInvalid),
+        }
+    }
+
+    Ok(serde_json::json!({
+        "enabled": enabled,
+        "dateProperty": date.id,
+        "doneProperty": done.map(|p| p.id),
+        "doneOption": done_option,
+    }))
+}
+
+/// Liga, troca ou desliga (`None`) os lembretes de tarefas de uma base.
+pub fn set_reminders(
+    conn: &Connection,
+    database_id: &str,
+    config: Option<&Value>,
+) -> Result<Option<Value>, NotesError> {
+    active_database(conn, database_id)?;
+    match config {
+        None => {
+            repo::delete_reminder(conn, database_id)?;
+            Ok(None)
+        }
+        Some(config) => {
+            let clean = validate_reminders(conn, database_id, config)?;
+            repo::upsert_reminder(conn, database_id, &clean.to_string())?;
+            Ok(Some(clean))
+        }
+    }
+}
+
+/// A data é `AAAA-MM-DD` válida? (Mesma regra das células de data.)
+fn is_iso_date(text: &str) -> bool {
+    text.len() == 10 && is_valid_date(text)
+}
+
+/// As tarefas que pedem atenção em `today` (`AAAA-MM-DD`, no relógio do usuário): linhas de bases com lembretes
+/// ligados cujo prazo é hoje ou já passou e que ainda não foram concluídas. Mais antigas primeiro.
+pub fn due_tasks(conn: &Connection, today: &str) -> Result<Vec<DueTask>, NotesError> {
+    if !is_iso_date(today) {
+        return Err(NotesError::CellInvalid);
+    }
+    let mut due: Vec<DueTask> = Vec::new();
+    for (database_id, database_title, raw) in repo::list_active_reminders(conn)? {
+        let Ok(config) = serde_json::from_str::<Value>(&raw) else {
+            continue;
+        };
+        if config.get("enabled").and_then(Value::as_bool) != Some(true) {
+            continue;
+        }
+        let Some(date_property) = config.get("dateProperty").and_then(Value::as_str) else {
+            continue;
+        };
+        let done_property = config.get("doneProperty").and_then(Value::as_str);
+        let done_option = config.get("doneOption").and_then(Value::as_str);
+
+        let value_of = |property: &str| -> Result<HashMap<String, Value>, NotesError> {
+            Ok(repo::cells_of_property(conn, property)?
+                .into_iter()
+                .filter_map(|(row, raw)| Some((row, serde_json::from_str::<Value>(&raw).ok()?)))
+                .collect())
+        };
+        let dates = value_of(date_property)?;
+        let done = match done_property {
+            Some(property) => value_of(property)?,
+            None => HashMap::new(),
+        };
+
+        for (row_id, title, icon, _) in repo::rows_of(conn, &database_id)? {
+            let Some(date) = dates.get(&row_id).and_then(Value::as_str) else {
+                continue;
+            };
+            if date > today {
+                continue;
+            }
+            let finished = match (done.get(&row_id), done_option) {
+                (Some(Value::Bool(true)), None) => true,
+                (Some(Value::String(chosen)), Some(option)) => chosen == option,
+                _ => false,
+            };
+            if finished {
+                continue;
+            }
+            due.push(DueTask {
+                id: row_id,
+                title,
+                icon,
+                database_id: database_id.clone(),
+                database_title: database_title.clone(),
+                date: date.to_string(),
+                overdue: date < today,
+            });
+        }
+    }
+    due.sort_by(|a, b| {
+        a.date
+            .cmp(&b.date)
+            .then(a.title.cmp(&b.title))
+            .then(a.id.cmp(&b.id))
+    });
+    Ok(due)
 }

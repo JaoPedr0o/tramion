@@ -99,6 +99,9 @@ pub fn duplicate(conn: &Connection, id: &str) -> Result<Vec<String>, NotesError>
                 &remap(&view.config.to_string(), &properties),
             )?;
         }
+        if let Some(config) = repo::find_reminder(&tx, old_id)? {
+            repo::upsert_reminder(&tx, new_db, &remap(&config, &properties))?;
+        }
         for (row, property, value) in repo::cells_of_database(&tx, old_id)? {
             if let (Some(new_row), Some(new_property)) = (ids.get(&row), properties.get(&property))
             {

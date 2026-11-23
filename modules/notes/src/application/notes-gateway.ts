@@ -1,8 +1,10 @@
 import type {
   DatabaseData,
+  DueTask,
   NewProperty,
   Property,
   PropertyChange,
+  ReminderConfig,
   SetCell,
   View,
   ViewConfig,
@@ -70,6 +72,13 @@ export interface NotesGateway {
   updateView(input: { id: string; name?: string; config?: ViewConfig }): Promise<View>;
   /** Apaga a visão; a última visão de uma base não pode ser apagada. */
   deleteView(id: string): Promise<void>;
+  /** Liga, troca ou desliga (`null`) os lembretes de tarefas de uma base; devolve a configuração gravada. */
+  setReminders(input: {
+    databaseId: string;
+    config: ReminderConfig | null;
+  }): Promise<ReminderConfig | null>;
+  /** As tarefas atrasadas ou que vencem em `today` (`AAAA-MM-DD`, data local), de bases com lembretes ligados. */
+  dueTasks(today: string): Promise<readonly DueTask[]>;
   /** Troca só o título, respeitando a versão (como `update`). */
   renameNote(input: { id: string; title: string; expectedUpdatedAt: number }): Promise<Note>;
 }

@@ -1,4 +1,9 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from "@tauri-apps/plugin-notification";
 import type { NotesPlatform } from "../application/notes-platform.ts";
 import { toNotesError } from "./notes-error.ts";
 
@@ -16,6 +21,15 @@ export function createTauriNotesPlatform(): NotesPlatform {
         return convertFileSrc(path);
       } catch (error) {
         throw toNotesError(error);
+      }
+    },
+
+    async notify(title, body) {
+      try {
+        const granted = (await isPermissionGranted()) || (await requestPermission()) === "granted";
+        if (granted) sendNotification({ title, body });
+      } catch {
+        // Sem notificações do sistema (ou sem permissão), o aviso continua dentro do app.
       }
     },
 

@@ -39,6 +39,7 @@ function setup() {
   const platform = {
     uploadAsset: vi.fn<(file: File) => Promise<string>>(async () => "asset://localhost/abc.png"),
     openExternal: vi.fn<(url: string) => Promise<void>>(async () => {}),
+    notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
     saveMarkdown: vi.fn<(title: string, content: string) => Promise<string>>(
       async (title) => `/home/u/Downloads/${title}.md`,
@@ -2132,6 +2133,278 @@ describe("módulo de notas (a tela inteira)", () => {
       );
 
       expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
+    });
+  });
+
+  describe("lembretes de tarefas", () => {
+    type Fake = ReturnType<typeof setup>["fake"];
+    const bell = () => sidebar().getByRole("button", { name: /^Lembretes/ });
+    const refresh = async () => {
+      await act(async () => {
+        window.dispatchEvent(new Event("focus"));
+        await vi.advanceTimersByTimeAsync(50);
+      });
+    };
+
+    /** Base "Tarefas" com Prazo (data) e Feita (caixa), uma tarefa por data, e lembretes ligados. */
+    async function seedTasks(fake: Fake, tasks: Array<[string, string]>, done: string[] = []) {
+      const base = await fake.gateway.createDatabase({ title: "Tarefas", parentId: null });
+      const date = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Prazo",
+        type: "date",
+      });
+      const box = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Feita",
+        type: "checkbox",
+      });
+      for (const [title, when] of tasks) {
+        const row = await fake.gateway.createRow({ databaseId: base.id, title });
+        await fake.gateway.setCell({ noteId: row.id, propertyId: date.id, value: when });
+        if (done.includes(title)) {
+          await fake.gateway.setCell({ noteId: row.id, propertyId: box.id, value: true });
+        }
+      }
+      await fake.gateway.setReminders({
+        databaseId: base.id,
+        config: { enabled: true, dateProperty: date.id, doneProperty: box.id, doneOption: null },
+      });
+      return base;
+    }
+    const at = (hours: number, minutes = 0) =>
+      vi.setSystemTime(new Date(2026, 10, 15, hours, minutes));
+
+    it("sem tarefas pendentes não há contagem; o painel avisa e mostra as preferências", async () => {
+      const { user } = setup();
+      at(8);
+
+      expect(bell().textContent).toBe("◔Lembretes");
+      await user.click(bell());
+
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+      expect(panel.getByText("Nenhuma tarefa pede atenção hoje.")).toBeTruthy();
+      expect(panel.getByLabelText("Avisar pelo sistema uma vez por dia")).toHaveProperty(
+        "checked",
+        true,
+      );
+      expect(panel.getByLabelText("Horário do aviso")).toHaveProperty("value", "09:00");
+    });
+
+    it("mostra a contagem e separa atrasadas e de hoje; futuras e concluídas ficam de fora", async () => {
+      const { user, fake } = setup();
+      at(8);
+      await seedTasks(
+        fake,
+        [
+          ["Atrasada", "2026-11-10"],
+          ["Vence agora", "2026-11-15"],
+          ["Futura", "2026-11-20"],
+          ["Concluída", "2026-11-01"],
+        ],
+        ["Concluída"],
+      );
+
+      await refresh();
+
+      expect(sidebar().getByRole("button", { name: "Lembretes (2)" })).toBeTruthy();
+      await user.click(bell());
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+      expect(
+        within(panel.getByRole("region", { name: "Atrasadas" })).getByText("Atrasada"),
+      ).toBeTruthy();
+      expect(
+        within(panel.getByRole("region", { name: "Hoje" })).getByText("Vence agora"),
+      ).toBeTruthy();
+      expect(panel.queryByText("Futura")).toBeNull();
+      expect(panel.queryByText("Concluída")).toBeNull();
+      expect(panel.getByText("Tarefas · 10 de novembro de 2026")).toBeTruthy();
+    });
+
+    it("clicar numa tarefa abre a página dela e fecha o painel", async () => {
+      const { user, fake } = setup();
+      at(8);
+      await seedTasks(fake, [["Pagar conta", "2026-11-15"]]);
+      await refresh();
+
+      await user.click(bell());
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Lembretes de tarefas" })).getByRole("button", {
+          name: /Pagar conta/,
+        }),
+      );
+
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Pagar conta",
+      );
+      expect(screen.queryByRole("dialog", { name: "Lembretes de tarefas" })).toBeNull();
+    });
+
+    it("o aviso do sistema sai uma única vez por dia, depois do horário, com o resumo", async () => {
+      const { fake, platform } = setup();
+      at(10);
+      await seedTasks(fake, [
+        ["Atrasada", "2026-11-10"],
+        ["Hoje", "2026-11-15"],
+      ]);
+
+      await refresh();
+      await refresh();
+      await refresh();
+
+      expect(platform.notify).toHaveBeenCalledTimes(1);
+      expect(platform.notify).toHaveBeenCalledWith(
+        "2 tarefas pedem atenção",
+        "1 atrasada · 1 vence hoje: Atrasada, Hoje",
+      );
+      expect(JSON.parse(localStorage.getItem("tramion.reminders")!).lastDigest).toBe("2026-11-15");
+    });
+
+    it("antes do horário não avisa; passando do horário, avisa", async () => {
+      const { fake, platform } = setup();
+      at(7);
+      await seedTasks(fake, [["Hoje", "2026-11-15"]]);
+
+      await refresh();
+      expect(platform.notify).not.toHaveBeenCalled();
+
+      at(9, 5);
+      await refresh();
+      expect(platform.notify).toHaveBeenCalledTimes(1);
+    });
+
+    it("com o aviso do sistema desligado, só a contagem aparece; mudar o horário é lembrado", async () => {
+      const { user, fake, platform } = setup();
+      at(10);
+      await user.click(bell());
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes de tarefas" }));
+
+      await user.click(panel.getByLabelText("Avisar pelo sistema uma vez por dia"));
+      expect(panel.getByLabelText("Horário do aviso")).toHaveProperty("disabled", true);
+      await seedTasks(fake, [["Hoje mesmo", "2026-11-15"]]);
+      await refresh();
+
+      expect(platform.notify).not.toHaveBeenCalled();
+      expect(sidebar().getByRole("button", { name: "Lembretes (1)" })).toBeTruthy();
+      expect(JSON.parse(localStorage.getItem("tramion.reminders")!).systemNotifications).toBe(
+        false,
+      );
+
+      await user.click(panel.getByLabelText("Avisar pelo sistema uma vez por dia"));
+      fireEvent.change(panel.getByLabelText("Horário do aviso"), { target: { value: "07:30" } });
+      expect(JSON.parse(localStorage.getItem("tramion.reminders")!).time).toBe("07:30");
+    });
+
+    it("falha ao conferir as tarefas não quebra a barra lateral", async () => {
+      const { fake } = setup();
+      at(10);
+      vi.spyOn(fake.gateway, "dueTasks").mockRejectedValue(new NotesError("notes.internal", "x"));
+
+      await refresh();
+
+      expect(bell()).toBeTruthy();
+    });
+
+    async function openSeededBase(
+      user: User,
+      fake: Fake,
+      events: ReturnType<typeof setup>["events"],
+    ) {
+      const base = await fake.gateway.createDatabase({ title: "Tarefas", parentId: null });
+      await fake.gateway.addProperty({ databaseId: base.id, name: "Prazo", type: "date" });
+      await fake.gateway.addProperty({ databaseId: base.id, name: "Feita", type: "checkbox" });
+      await fake.gateway.addProperty({ databaseId: base.id, name: "Início", type: "date" });
+      act(() => events.emit("note.created", { id: base.id }));
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Tarefas" }));
+      await main().findByRole("region", { name: "Base de dados" });
+      return base;
+    }
+
+    it("na base: liga os lembretes com padrão sensato (primeira data e a caixa) e dá para ajustar e remover", async () => {
+      const { user, fake, events } = setup();
+      const base = await openSeededBase(user, fake, events);
+
+      await user.click(main().getByRole("button", { name: "Lembretes da base" }));
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes da base" }));
+      await user.click(panel.getByLabelText("Lembrar das tarefas desta base"));
+
+      const saved = async () => (await fake.gateway.getDatabase(base.id)).reminders;
+      await vi.waitFor(async () => expect((await saved())?.enabled).toBe(true));
+      const properties = (await fake.gateway.getDatabase(base.id)).properties;
+      const id = (name: string) => properties.find((p) => p.name === name)!.id;
+      expect(await saved()).toEqual({
+        enabled: true,
+        dateProperty: id("Prazo"),
+        doneProperty: id("Feita"),
+        doneOption: null,
+      });
+      expect(main().getByRole("button", { name: "Lembretes da base" }).textContent).toBe(
+        "Lembretes: ligados",
+      );
+
+      await user.click(panel.getByRole("button", { name: "Coluna do prazo" }));
+      await user.click(screen.getByRole("option", { name: "Início" }));
+      await vi.waitFor(async () => expect((await saved())?.dateProperty).toBe(id("Início")));
+
+      await user.click(panel.getByRole("button", { name: "Tarefa concluída quando" }));
+      await user.click(screen.getByRole("option", { name: "Nunca (toda tarefa vencida conta)" }));
+      await vi.waitFor(async () => expect((await saved())?.doneProperty).toBeNull());
+
+      await user.click(panel.getByRole("button", { name: "Remover os lembretes desta base" }));
+      await vi.waitFor(async () => expect(await saved()).toBeNull());
+      expect(main().getByRole("button", { name: "Lembretes da base" }).textContent).toBe(
+        "Lembretes",
+      );
+    });
+
+    it("na base: desligar mantém a configuração mas para de avisar", async () => {
+      const { user, fake, events } = setup();
+      const base = await openSeededBase(user, fake, events);
+      await user.click(main().getByRole("button", { name: "Lembretes da base" }));
+      const panel = within(screen.getByRole("dialog", { name: "Lembretes da base" }));
+      await user.click(panel.getByLabelText("Lembrar das tarefas desta base"));
+      await vi.waitFor(async () =>
+        expect((await fake.gateway.getDatabase(base.id)).reminders?.enabled).toBe(true),
+      );
+
+      await user.click(panel.getByLabelText("Lembrar das tarefas desta base"));
+
+      await vi.waitFor(async () =>
+        expect((await fake.gateway.getDatabase(base.id)).reminders?.enabled).toBe(false),
+      );
+      expect((await fake.gateway.getDatabase(base.id)).reminders?.dateProperty).toBeTruthy();
+    });
+
+    it("base sem coluna de data explica o que falta", async () => {
+      const { user, fake, events } = setup();
+      const base = await fake.gateway.createDatabase({ title: "Sem datas", parentId: null });
+      act(() => events.emit("note.created", { id: base.id }));
+      const pagesTree = await sidebar().findByRole("tree", { name: "Páginas" });
+      await user.click(await within(pagesTree).findByRole("treeitem", { name: "Sem datas" }));
+      await main().findByRole("region", { name: "Base de dados" });
+
+      await user.click(main().getByRole("button", { name: "Lembretes da base" }));
+
+      expect(screen.getByText(/Adicione uma coluna do tipo Data/)).toBeTruthy();
+    });
+
+    it("falha ao gravar os lembretes mostra o motivo", async () => {
+      const { user, fake, events } = setup();
+      await openSeededBase(user, fake, events);
+      vi.spyOn(fake.gateway, "setReminders").mockRejectedValue(
+        new NotesError("notes.property-invalid", "x"),
+      );
+
+      await user.click(main().getByRole("button", { name: "Lembretes da base" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Lembretes da base" })).getByLabelText(
+          "Lembrar das tarefas desta base",
+        ),
+      );
+
+      expect((await main().findByRole("alert")).textContent).toContain("não são válidos");
     });
   });
 });

@@ -10,6 +10,7 @@ use tramion_infra_sqlite::{Database, OpenOptions, SharedDatabase};
 pub fn run() {
     tauri::Builder::default()
         // Cada módulo entra como plugin: traz seus próprios comandos e permissões.
+        .plugin(tauri_plugin_notification::init())
         .plugin(tramion_notes::init())
         .setup(|app| {
             // Os dados ficam na pasta de dados do app (no Linux, ~/.local/share/<identifier>),
