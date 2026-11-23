@@ -880,3 +880,41 @@
   gap: var(--space-2);
   padding: var(--space-3) var(--space-1);
 }
+
+/* ───────── Bloco de código: seletor de linguagem ───────── */
+/* O editor deixa o seletor invisível até o mouse ficar um tempo em cima; aqui ele fica sempre visível. */
+.bn-block-content[data-content-type="codeBlock"] > div > select {
+  top: var(--space-2);
+  left: var(--space-3);
+  z-index: 2;
+  padding: 2px var(--space-3) 2px var(--space-2);
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: var(--radius);
+  background-color: rgb(255 255 255 / 8%);
+  color: #fff;
+  font-size: 12px;
+  opacity: 0.85;
+  transition: none;
+}
+
+.bn-block-content[data-content-type="codeBlock"] > div > select:hover,
+.bn-block-content[data-content-type="codeBlock"] > div > select:focus-visible {
+  background-color: rgb(255 255 255 / 18%);
+  opacity: 1;
+}
+
+.bn-block-content[data-content-type="codeBlock"] > div > select option {
+  background: #161616;
+  color: #fff;
+}
+
+/* Espaço acima do código para o seletor não ficar por cima do texto. */
+.bn-block-content[data-content-type="codeBlock"] > pre {
+  padding-top: 44px;
+}
+
+.emoji-picker__emoji,
+.page-icon,
+.page-glyph {
+  font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
