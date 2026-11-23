@@ -4,6 +4,7 @@ import { createEventBus, createViewRegistry } from "@tramion/core";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NotesPlatform } from "../application/notes-platform.ts";
 import { NotesError } from "../domain/errors.ts";
 import { createNotesModule } from "../module.ts";
 import { StubBlockEditor } from "../test-block-editor.tsx";
@@ -39,6 +40,10 @@ function setup() {
   const platform = {
     uploadAsset: vi.fn<(file: File) => Promise<string>>(async () => "asset://localhost/abc.png"),
     openExternal: vi.fn<(url: string) => Promise<void>>(async () => {}),
+    exportAll: vi.fn<NotesPlatform["exportAll"]>(async (files) => ({
+      folder: "/home/u/Downloads/Tramion",
+      written: files.length,
+    })),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
     saveMarkdown: vi.fn<(title: string, content: string) => Promise<string>>(
@@ -3000,6 +3005,67 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(
         await main().findByText(/adicione uma coluna do tipo Seleção, Caixa de seleção ou Data/),
       ).toBeTruthy();
+    });
+  });
+
+  describe("exportar tudo", () => {
+    const button = () => sidebar().getByRole("button", { name: "Exportar tudo (Markdown)" });
+
+    it("fica desativado sem páginas", () => {
+      setup();
+
+      expect(button().hasAttribute("disabled")).toBe(true);
+    });
+
+    it("exporta todas as páginas espelhando a hierarquia e avisa a pasta", async () => {
+      const { user, platform } = setup();
+      await parentWithChild(user); // Pai com a subpágina Filha
+      await newPageTitled(user, "Solta");
+
+      await user.click(button());
+
+      await vi.waitFor(() => expect(platform.exportAll).toHaveBeenCalledTimes(1));
+      const files = platform.exportAll.mock.calls[0]![0];
+      expect(files.map((f) => f.path.join("/")).sort()).toEqual(["Pai", "Pai/Filha", "Solta"]);
+      expect(
+        files.find((f) => f.path.join("/") === "Pai/Filha")!.content.startsWith("# Filha\n"),
+      ).toBe(true);
+      expect(
+        await main().findByText("3 páginas exportadas para /home/u/Downloads/Tramion"),
+      ).toBeTruthy();
+    });
+
+    it("uma base de dados vai como tabela, e a linha dela como página dentro da pasta", async () => {
+      const { user, fake, platform, events } = setup();
+      const base = await fake.gateway.createDatabase({ title: "Pedidos", parentId: null });
+      const coluna = await fake.gateway.addProperty({
+        databaseId: base.id,
+        name: "Obs",
+        type: "text",
+      });
+      const linha = await fake.gateway.createRow({ databaseId: base.id, title: "Pedido 1" });
+      await fake.gateway.setCell({ noteId: linha.id, propertyId: coluna.id, value: "urgente" });
+      act(() => events.emit("note.created", { id: base.id }));
+      await sidebar().findByRole("tree", { name: "Páginas" });
+
+      await user.click(button());
+
+      await vi.waitFor(() => expect(platform.exportAll).toHaveBeenCalled());
+      const files = platform.exportAll.mock.calls[0]![0];
+      const table = files.find((f) => f.path.join("/") === "Pedidos")!;
+      expect(table.content).toContain("| Título | Obs |");
+      expect(table.content).toContain("| Pedido 1 | urgente |");
+      expect(files.map((f) => f.path.join("/")).sort()).toEqual(["Pedidos", "Pedidos/Pedido 1"]);
+    });
+
+    it("falha ao gravar mostra o motivo", async () => {
+      const { user, platform } = setup();
+      platform.exportAll.mockRejectedValue(new NotesError("notes.content-too-large", "x"));
+      await newPageTitled(user, "Uma");
+
+      await user.click(button());
+
+      expect((await main().findByRole("alert")).textContent).toContain("grande demais");
     });
   });
 });

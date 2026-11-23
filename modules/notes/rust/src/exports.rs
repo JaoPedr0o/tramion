@@ -62,3 +62,93 @@ pub fn save_markdown(dir: &Path, title: &str, content: &str) -> Result<PathBuf, 
     fs::write(&path, content).map_err(|e| NotesError::Internal(e.to_string()))?;
     Ok(path)
 }
+
+// ───────── Exportar tudo para uma pasta ─────────
+
+/// Máximo de arquivos de uma exportação completa.
+pub const MAX_EXPORT_FILES: usize = 5_000;
+/// Máximo de bytes somados de uma exportação completa (200 MB).
+pub const MAX_EXPORT_TOTAL_BYTES: usize = 200_000_000;
+
+/// Um arquivo da exportação: o caminho em partes (pastas e, por último, o nome sem `.md`) e o conteúdo.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ExportFile {
+    pub path: Vec<String>,
+    pub content: String,
+}
+
+/// O que a exportação fez.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportReport {
+    pub folder: String,
+    pub written: usize,
+}
+
+/// Nome seguro de uma PASTA (as mesmas regras do nome de arquivo, sem a extensão).
+fn safe_dir_name(part: &str) -> String {
+    let file = safe_file_name(part);
+    file.strip_suffix(".md").unwrap_or(&file).to_string()
+}
+
+/// Grava a árvore de arquivos Markdown dentro de `root`, sem nunca sair dela. Cada parte do caminho passa por nome
+/// seguro; nomes que ficam iguais na mesma pasta (sem diferenciar maiúsculas) ganham " (2)", " (3)"... Arquivos que já
+/// existem de uma exportação anterior são SUBSTITUÍDOS (é assim que o espelho se atualiza); nada é apagado.
+pub fn export_tree(root: &Path, files: &[ExportFile]) -> Result<ExportReport, NotesError> {
+    if files.len() > MAX_EXPORT_FILES
+        || files.iter().map(|f| f.content.len()).sum::<usize>() > MAX_EXPORT_TOTAL_BYTES
+        || files.iter().any(|f| f.content.len() > MAX_EXPORT_BYTES)
+    {
+        return Err(NotesError::ContentTooLarge {
+            max: MAX_EXPORT_TOTAL_BYTES,
+        });
+    }
+    fs::create_dir_all(root).map_err(|e| NotesError::Internal(e.to_string()))?;
+
+    // Nomes já usados nesta exportação, por pasta (em minúsculas), para não sobrescrever um arquivo com outro.
+    let mut used: std::collections::HashMap<PathBuf, std::collections::HashSet<String>> =
+        std::collections::HashMap::new();
+    let mut claim = |dir: &Path, name: String, is_file: bool| -> String {
+        let taken = used.entry(dir.to_path_buf()).or_default();
+        let suffix = if is_file { ".md" } else { "" };
+        let mut candidate = name.clone();
+        let mut n = 1;
+        while !taken.insert(format!("{}{suffix}", candidate.to_lowercase())) {
+            n += 1;
+            candidate = format!("{name} ({n})");
+        }
+        candidate
+    };
+
+    let mut folders: std::collections::HashMap<(PathBuf, String), String> =
+        std::collections::HashMap::new();
+    let mut written = 0;
+    for file in files {
+        let Some((last, dirs)) = file.path.split_last() else {
+            continue;
+        };
+        let mut dir = root.to_path_buf();
+        for part in dirs {
+            // A mesma pasta (mesmo pai e mesmo nome de origem) tem sempre o mesmo nome final.
+            let key = (dir.clone(), part.clone());
+            let name = match folders.get(&key) {
+                Some(name) => name.clone(),
+                None => {
+                    let name = claim(&dir, safe_dir_name(part), false);
+                    folders.insert(key, name.clone());
+                    name
+                }
+            };
+            dir.push(name);
+        }
+        fs::create_dir_all(&dir).map_err(|e| NotesError::Internal(e.to_string()))?;
+        let name = claim(&dir, safe_dir_name(last), true);
+        fs::write(dir.join(format!("{name}.md")), &file.content)
+            .map_err(|e| NotesError::Internal(e.to_string()))?;
+        written += 1;
+    }
+    Ok(ExportReport {
+        folder: root.display().to_string(),
+        written,
+    })
+}

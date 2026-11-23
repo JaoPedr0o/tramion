@@ -80,6 +80,17 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
           </span>
           <span className="sidebar-row__title">Importar Markdown</span>
         </button>
+        <button
+          type="button"
+          className="sidebar-row"
+          disabled={list.length === 0}
+          onClick={() => void actions.exportAll(list)}
+        >
+          <span className="sidebar-row__icon" aria-hidden="true">
+            <PlusIcon />
+          </span>
+          <span className="sidebar-row__title">Exportar tudo (Markdown)</span>
+        </button>
         <input
           ref={importInput}
           type="file"

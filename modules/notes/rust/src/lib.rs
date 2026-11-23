@@ -105,6 +105,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::save_as_template,
             commands::delete_template,
             commands::save_markdown,
+            commands::export_all,
             commands::set_reminders,
             commands::due_tasks,
             commands::upcoming_tasks,

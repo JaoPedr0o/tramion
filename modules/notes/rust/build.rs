@@ -22,6 +22,7 @@ const COMMANDS: &[&str] = &[
     "save_as_template",
     "delete_template",
     "save_markdown",
+    "export_all",
     "set_reminders",
     "due_tasks",
     "upcoming_tasks",

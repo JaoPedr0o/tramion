@@ -10,6 +10,10 @@ export interface NotesPlatform {
   openExternal(url: string): Promise<void>;
   /** Grava o Markdown de uma página na pasta Downloads (nome seguro, sem sobrescrever) e devolve o caminho. */
   saveMarkdown(title: string, content: string): Promise<string>;
+  /** Grava todas as páginas (já em Markdown) na pasta Downloads/Tramion e devolve a pasta e quantos arquivos foram gravados. */
+  exportAll(
+    files: readonly { path: readonly string[]; content: string }[],
+  ): Promise<{ folder: string; written: number }>;
   /** Mostra uma notificação do sistema (pede a permissão na primeira vez; sem permissão, não faz nada). */
   notify(title: string, body: string): Promise<void>;
   /** Registra no terminal do app um erro da interface (para não sumir quando a tela quebra). */

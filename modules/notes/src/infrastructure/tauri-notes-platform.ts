@@ -24,6 +24,16 @@ export function createTauriNotesPlatform(): NotesPlatform {
       }
     },
 
+    async exportAll(files) {
+      try {
+        return await invoke<{ folder: string; written: number }>("plugin:notes|export_all", {
+          files,
+        });
+      } catch (error) {
+        throw toNotesError(error);
+      }
+    },
+
     async notify(title, body) {
       try {
         const granted = (await isPermissionGranted()) || (await requestPermission()) === "granted";

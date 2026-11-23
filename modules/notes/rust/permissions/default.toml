@@ -22,6 +22,7 @@ permissions = [
   "allow-save-as-template",
   "allow-delete-template",
   "allow-save-markdown",
+  "allow-export-all",
   "allow-set-reminders",
   "allow-due-tasks",
   "allow-upcoming-tasks",

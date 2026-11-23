@@ -1,5 +1,6 @@
 import type { NavigationStore } from "../application/navigation-store.ts";
 import type { NotesService } from "../application/notes-service.ts";
+import { planExport } from "../application/export-plan.ts";
 import { ancestorsOf } from "../application/page-tree.ts";
 import { displayValue } from "../application/database-query.ts";
 import {
@@ -33,6 +34,29 @@ export function createPageActions(
     }
   };
 
+  /** O Markdown de uma página inteira: título em `#` e o texto (ou, numa base de dados, a tabela de linhas). */
+  const markdownOf = async (page: NoteSummary, pages: readonly NoteSummary[]): Promise<string> => {
+    const titleOf = (id: string) => pages.find((p) => p.id === id)?.title ?? null;
+    let body: string;
+    if (page.isDatabase) {
+      const data = await service.getDatabase(page.id);
+      body = tableToMarkdownText(
+        ["Título", ...data.properties.map((p) => p.name)],
+        data.rows.map((row) => [
+          row.title,
+          ...data.properties.map((p) => displayValue(p, row.cells[p.id])),
+        ]),
+      );
+    } else {
+      const note = await service.get(page.id);
+      body = blocksToMarkdown(
+        parseContent(note.content, note.body) as unknown as MdBlock[],
+        titleOf,
+      );
+    }
+    return `# ${page.title}\n\n${body}`.trimEnd() + "\n";
+  };
+
   const ancestorIds = (pages: readonly NoteSummary[], id: string) =>
     ancestorsOf(pages, id).map((ancestor) => ancestor.id);
 
@@ -62,27 +86,26 @@ export function createPageActions(
     exportMarkdown: (page: NoteSummary, pages: readonly NoteSummary[]) =>
       guard(async () => {
         await store.flush();
-        const titleOf = (id: string) => pages.find((p) => p.id === id)?.title ?? null;
-        let body: string;
-        if (page.isDatabase) {
-          const data = await service.getDatabase(page.id);
-          body = tableToMarkdownText(
-            ["Título", ...data.properties.map((p) => p.name)],
-            data.rows.map((row) => [
-              row.title,
-              ...data.properties.map((p) => displayValue(p, row.cells[p.id])),
-            ]),
-          );
-        } else {
-          const note = await service.get(page.id);
-          body = blocksToMarkdown(
-            parseContent(note.content, note.body) as unknown as MdBlock[],
-            titleOf,
-          );
-        }
-        const text = `# ${page.title}\n\n${body}`.trimEnd() + "\n";
-        const path = await platform.saveMarkdown(page.title, text);
+        const path = await platform.saveMarkdown(page.title, await markdownOf(page, pages));
         store.notify(`Exportado para ${path}`);
+      }),
+
+    /**
+     * Exporta TODAS as páginas como Markdown na pasta Downloads/Tramion, espelhando a hierarquia (uma pasta por página com
+     * subpáginas). Substitui os arquivos de uma exportação anterior e nunca apaga nada, então serve de espelho dos dados.
+     */
+    exportAll: (pages: readonly NoteSummary[]) =>
+      guard(async () => {
+        await store.flush();
+        const files: { path: readonly string[]; content: string }[] = [];
+        for (const entry of planExport(pages)) {
+          const page = pages.find((p) => p.id === entry.id)!;
+          files.push({ path: entry.path, content: await markdownOf(page, pages) });
+        }
+        const { folder, written } = await platform.exportAll(files);
+        store.notify(
+          `${written === 1 ? "1 página exportada" : `${written} páginas exportadas`} para ${folder}`,
+        );
       }),
 
     /** Cria uma página nova a partir de um arquivo Markdown (o primeiro título vira o título da página) e a abre. */

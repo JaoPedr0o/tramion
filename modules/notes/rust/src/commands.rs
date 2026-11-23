@@ -500,3 +500,18 @@ pub async fn delete_template(
         templates::delete_user_template(conn, &template_id)
     })
 }
+
+/// Grava todas as páginas (já em Markdown) na pasta `Downloads/Tramion`, espelhando a hierarquia. Substitui os arquivos
+/// de uma exportação anterior e nunca apaga nada.
+#[tauri::command]
+pub async fn export_all<R: Runtime>(
+    app: AppHandle<R>,
+    files: Vec<exports::ExportFile>,
+) -> Result<exports::ExportReport, CommandError> {
+    let root = app
+        .path()
+        .download_dir()
+        .map_err(|e| NotesError::Internal(e.to_string()))?
+        .join("Tramion");
+    Ok(exports::export_tree(&root, &files)?)
+}
