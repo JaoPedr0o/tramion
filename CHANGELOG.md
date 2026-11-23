@@ -4,6 +4,19 @@ Todas as mudanças relevantes do Tramion são registradas aqui. O formato segue 
 [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Alterado
+
+- Novo design "papel e tinta": rampa neutra quente (papel no claro, grafite no escuro), um único acento terracota,
+  serifa só em títulos grandes, marca e ícone chapados e um ponto de acento marcando o item ativo. Contraste mínimo
+  de 4,5:1 em todos os textos. Veja o [ADR 0017](docs/adr/0017-design-papel-e-tinta.md).
+- O guia das páginas de exemplo passou a se chamar "Guia rápido".
+
+### Adicionado
+
+- Visões lista, galeria e calendário nas bases de dados, botão Esvaziar lixeira e páginas de exemplo na primeira abertura.
+
 ## [0.1.0] - 2026-11-23
 
 Primeira versão pública.

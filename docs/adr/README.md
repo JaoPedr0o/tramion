@@ -21,3 +21,4 @@ Decisões não são apagadas: se mudarem, uma nova ADR a substitui e a antiga é
 | [0014](0014-bases-de-dados.md)                             | Bases de dados (tabela)                                           | Aceita |
 | [0015](0015-nome-identidade-visual-e-instalacao.md)        | Nome, identidade visual e instalação                              | Aceita |
 | [0016](0016-paginas-de-exemplo.md)                         | Páginas de exemplo na primeira abertura                           | Aceita |
+| [0017](0017-design-papel-e-tinta.md)                       | Design "papel e tinta"                                            | Aceita |

@@ -69,9 +69,9 @@ fn o_guia_tem_conteudo_valido_texto_para_busca_e_capa() {
     assert_eq!(blocks[0]["type"], "heading");
     assert!(blocks.iter().any(|b| b["type"] == "checkListItem"));
     assert!(blocks.iter().all(|b| b["children"].is_array()));
-    assert!(note.body.contains("Bem-vindo ao Tramion"));
+    assert!(note.body.contains("Guia rápido"));
     assert!(note.body.contains("Primeiros passos"));
-    assert_eq!(note.cover.as_deref(), Some("gradient:lavanda"));
+    assert_eq!(note.cover.as_deref(), Some("color:#d8cbb6"));
 }
 
 #[test]

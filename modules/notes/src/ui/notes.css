@@ -12,7 +12,7 @@
   padding: 0 var(--space-2);
   color: var(--color-text-muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .sidebar-section-header {
@@ -132,7 +132,7 @@
 }
 
 .page-tree__chevron svg {
-  transition: transform 0.1s ease;
+  transition: transform var(--duration-fast) var(--ease);
 }
 
 .page-tree__item[aria-expanded="true"] > .page-tree__chevron svg {
@@ -290,7 +290,7 @@
   padding: 0;
   font-family: var(--font-display);
   font-size: var(--font-size-title);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
@@ -693,7 +693,7 @@
   display: flex;
   gap: var(--space-1);
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--duration-fast) var(--ease);
 }
 
 .page-cover:hover .page-cover__actions,
@@ -750,7 +750,7 @@
   gap: var(--space-1);
   margin-top: var(--space-3);
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--duration-fast) var(--ease);
 }
 
 .page-header:hover .page-header__actions,
@@ -791,7 +791,7 @@
   margin: var(--space-2) 0 var(--space-1);
   color: var(--color-text-muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .popover__note {
@@ -1008,7 +1008,7 @@
   margin: 0 0 var(--space-3);
   font-family: var(--font-display);
   font-size: var(--font-size-title);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
 }
 
@@ -1393,19 +1393,31 @@
 /* ───────── Identidade Tramion ───────── */
 /* Títulos dentro da página, na mesma serifa suave do título da página. */
 .bn-block-content[data-content-type="heading"] {
-  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: -0.005em;
 }
 
 /* Citação com uma barra na cor da marca. */
 .bn-block-content[data-content-type="quote"] blockquote {
-  border-left: 3px solid var(--color-accent);
+  border-left: 3px solid var(--color-text-muted);
 }
 
-/* Página selecionada na árvore: realce na cor da marca. */
+/* Assinatura da marca: um pequeno ponto de acento (o "íon") marca o que está ativo. A seleção em si é uma
+   mudança de superfície neutra. */
 .page-tree__item[aria-selected="true"] {
-  background: var(--color-accent-soft);
+  position: relative;
+}
+
+.page-tree__item[aria-selected="true"]::before {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  content: "";
 }
 
 /* Tela inicial, quando nenhuma página está aberta. */
@@ -1424,16 +1436,12 @@
   margin: var(--space-2) 0 0;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 500;
 }
 
 .notes-empty p {
   margin: 0;
-}
-
-.notes-empty .logo {
-  filter: drop-shadow(0 10px 24px rgb(106 88 236 / 40%));
 }
 
 /* ───────── Lixeira: esvaziar ───────── */
@@ -1544,9 +1552,8 @@
 }
 
 .db-gallery__title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .db-gallery__details {
@@ -1579,11 +1586,9 @@
 .calendar__title {
   min-width: 11em;
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 500;
   text-align: center;
-  text-transform: capitalize;
 }
 
 .calendar__grid {
@@ -1596,7 +1601,6 @@
   padding: var(--space-1);
   color: var(--color-text-muted);
   font-weight: 500;
-  text-transform: capitalize;
 }
 
 .calendar__day {
@@ -1612,10 +1616,19 @@
 }
 
 .calendar__day--today .calendar__number {
-  padding: 0 var(--space-1);
-  border-radius: var(--radius);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.calendar__day--today .calendar__number::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--space-1);
+  border-radius: 50%;
   background: var(--color-accent);
-  color: var(--color-bg);
+  vertical-align: middle;
+  content: "";
 }
 
 .calendar__day--over {
@@ -1654,7 +1667,8 @@
   align-items: center;
   justify-content: space-between;
   border-radius: var(--radius);
-  background: var(--color-accent-soft);
+  background: var(--color-hover);
+  box-shadow: inset 0 0 0 1px var(--color-border);
   cursor: grab;
 }
 
@@ -1695,4 +1709,13 @@
   margin: 0 0 var(--space-1);
   color: var(--color-text-muted);
   font-size: 13px;
+}
+
+/* Números com largura fixa (colunas alinhadas). */
+.db-table td,
+.db-title-cell__input,
+.calendar__number,
+.board__count,
+.db-list__value {
+  font-variant-numeric: tabular-nums;
 }

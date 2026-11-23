@@ -162,7 +162,7 @@ export function DatabaseCalendar({ dateProperty, rows, onOpen, onMoveDate, onAdd
           <tr>
             {WEEKDAY_SHORT.map((short, index) => (
               <th scope="col" key={short} abbr={WEEKDAY_NAMES[index]}>
-                {short}
+                {short.charAt(0).toUpperCase() + short.slice(1)}
               </th>
             ))}
           </tr>

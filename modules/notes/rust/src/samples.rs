@@ -211,9 +211,9 @@ pub fn create_samples(conn: &Connection) -> Result<(), NotesError> {
         conn,
         "Comece por aqui",
         "👋",
-        Some("gradient:lavanda"),
+        Some("color:#d8cbb6"),
         &[
-            heading(1, "Bem-vindo ao Tramion"),
+            heading(1, "Guia rápido"),
             paragraph(
                 "Este é um espaço só seu: tudo fica guardado no seu computador. Estas páginas de exemplo mostram o que dá para fazer. Edite, apague ou crie as suas.",
             ),
@@ -253,7 +253,7 @@ pub fn create_samples(conn: &Connection) -> Result<(), NotesError> {
         conn,
         "Diário",
         "📓",
-        Some("gradient:pessego"),
+        Some("color:#cdd5c4"),
         &[
             heading(1, "Diário"),
             paragraph("Um espaço para escrever sobre o dia, sem pressa e sem formato."),

@@ -2,7 +2,6 @@
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   height: 100vh;
-  transition: grid-template-columns 0.15s ease;
 }
 
 .shell[data-sidebar="collapsed"] {
@@ -14,7 +13,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  background: var(--sidebar-background, var(--color-sidebar));
+  background: var(--color-sidebar);
   box-shadow: inset -1px 0 0 var(--color-border);
 }
 
@@ -42,9 +41,7 @@
 }
 
 .shell__workspace-name {
-  font-family: var(--font-display);
-  font-size: 15px;
-  letter-spacing: 0.01em;
+  font-size: 14px;
   flex: 1;
   min-width: 0;
   overflow: hidden;

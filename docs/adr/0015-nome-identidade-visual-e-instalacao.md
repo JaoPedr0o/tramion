@@ -1,6 +1,6 @@
 # 0015. Nome, identidade visual e instalação
 
-**Status:** Aceita
+**Status:** Aceita (a identidade visual dos itens 3 e 4 foi substituída pelo [ADR 0017](0017-design-papel-e-tinta.md))
 
 ## Contexto
 

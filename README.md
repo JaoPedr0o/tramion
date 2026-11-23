@@ -13,7 +13,7 @@ com cinco formas de exibição, e nenhum servidor, cadastro ou internet.
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-2024-000000?logo=rust&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)
-![Local-first](https://img.shields.io/badge/local--first-sem%20nuvem-6a58ec)
+![Local-first](https://img.shields.io/badge/local--first-sem%20nuvem-b4492a)
 
 [Funcionalidades](#funcionalidades) ·
 [Instalação](#instalação) ·
