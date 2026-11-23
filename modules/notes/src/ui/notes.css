@@ -2484,3 +2484,63 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* ───────── Parear celular ───────── */
+.pairing {
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.pairing__title {
+  margin: 0 0 var(--space-1);
+  font-size: 18px;
+}
+
+.pairing__subtitle {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 14px;
+}
+
+.pairing__hint,
+.pairing__expiry,
+.pairing__empty,
+.pairing__warning {
+  margin: var(--space-1) 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.pairing__qr {
+  display: block;
+  width: 240px;
+  height: 240px;
+  margin: var(--space-2) auto;
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.pairing__manual code {
+  display: block;
+  margin-top: var(--space-1);
+  overflow-wrap: anywhere;
+  user-select: all;
+  font-size: 12px;
+}
+
+.pairing__peers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pairing__peers li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.pairing__peers small {
+  color: var(--color-text-muted);
+}

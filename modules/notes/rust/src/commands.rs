@@ -515,3 +515,34 @@ pub async fn export_all<R: Runtime>(
         .join("Tramion");
     Ok(exports::export_tree(&root, &files)?)
 }
+
+/// Abre um pareamento novo: devolve o QR (e o código para digitar) que o celular lê. Vale 5 minutos e um único uso.
+#[tauri::command]
+pub async fn sync_pair_start<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<crate::sync_server::PairingOffer, CommandError> {
+    Ok(crate::sync_server::start_pairing(&app)?)
+}
+
+/// Fecha o pareamento aberto (o QR deixa de valer).
+#[tauri::command]
+pub fn sync_pair_cancel(state: State<'_, crate::sync_server::SyncState>) {
+    state.cancel_pairing();
+}
+
+/// Os aparelhos pareados (sem os segredos).
+#[tauri::command]
+pub fn sync_peers(
+    db: State<'_, SharedDatabase>,
+) -> Result<Vec<crate::sync_peers::Peer>, CommandError> {
+    with_db(&db, crate::sync_peers::list_peers)
+}
+
+/// Desfaz o pareamento de um aparelho: ele nunca mais conecta com o segredo antigo.
+#[tauri::command]
+pub fn sync_peer_remove(
+    db: State<'_, SharedDatabase>,
+    device: String,
+) -> Result<bool, CommandError> {
+    with_db(&db, |conn| crate::sync_peers::remove_peer(conn, &device))
+}

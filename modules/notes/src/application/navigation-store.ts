@@ -23,6 +23,8 @@ export interface NavigationState {
   readonly reloadToken: number;
   /** A janelinha de captura rápida está aberta. */
   readonly captureOpen: boolean;
+  /** A janela de parear o celular está aberta. */
+  readonly pairingOpen: boolean;
 }
 
 export interface NavigationStore {
@@ -50,6 +52,8 @@ export interface NavigationStore {
   reload(): void;
   showCapture(): void;
   closeCapture(): void;
+  showPairing(): void;
+  closePairing(): void;
   clearNotice(): void;
   /** O editor aberto registra como salvar o que estiver pendente; devolve como desregistrar. */
   registerFlush(flush: () => Promise<void>): () => void;
@@ -70,6 +74,7 @@ export function createNavigationStore(): NavigationStore {
     historyFor: null,
     reloadToken: 0,
     captureOpen: false,
+    pairingOpen: false,
   };
   const listeners = new Set<() => void>();
   let pendingFlush: (() => Promise<void>) | null = null;
@@ -138,6 +143,14 @@ export function createNavigationStore(): NavigationStore {
 
     showCapture() {
       update({ captureOpen: true });
+    },
+
+    showPairing() {
+      update({ pairingOpen: true });
+    },
+
+    closePairing() {
+      if (state.pairingOpen) update({ pairingOpen: false });
     },
 
     closeCapture() {

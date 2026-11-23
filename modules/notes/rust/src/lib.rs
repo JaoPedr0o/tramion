@@ -23,8 +23,8 @@ pub mod sync_server;
 pub mod templates;
 pub mod versions;
 
-use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
+use tauri::{Manager, Runtime};
 use tramion_infra_sqlite::{Migration, ModuleMigrations};
 
 /// As migrações deste módulo. O SQL é embutido no binário em tempo de compilação.
@@ -94,6 +94,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
 /// O plugin do Tauri deste módulo. A interface o chama por `plugin:notes|<comando>`.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("notes")
+        .setup(|app, _| {
+            app.manage(sync_server::SyncState::default());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::create,
             commands::get,
@@ -117,6 +121,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::delete_template,
             commands::save_markdown,
             commands::export_all,
+            commands::sync_pair_start,
+            commands::sync_pair_cancel,
+            commands::sync_peers,
+            commands::sync_peer_remove,
             commands::set_reminders,
             commands::due_tasks,
             commands::upcoming_tasks,

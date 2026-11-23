@@ -51,6 +51,9 @@ pub fn run() {
 
             app.manage::<SharedDatabase>(Mutex::new(db));
 
+            // Já há aparelhos pareados: o servidor de sincronização sobe junto com o app.
+            tramion_notes::sync_server::start_if_paired(app.handle());
+
             // Bandeja do sistema (melhor esforço): com ela, fechar a janela só a esconde.
             let tray_ok = match tray::build(app) {
                 Ok(()) => true,

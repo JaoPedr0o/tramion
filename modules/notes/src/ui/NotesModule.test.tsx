@@ -44,6 +44,14 @@ function setup() {
       folder: "/home/u/Downloads/Tramion",
       written: files.length,
     })),
+    startPairing: vi.fn<NotesPlatform["startPairing"]>(async () => ({
+      code: "tramion-pair:1:{}",
+      svg: "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    })),
+    cancelPairing: vi.fn<NotesPlatform["cancelPairing"]>(async () => {}),
+    listPeers: vi.fn<NotesPlatform["listPeers"]>(async () => []),
+    removePeer: vi.fn<NotesPlatform["removePeer"]>(async () => {}),
     onQuickCapture: vi.fn<NotesPlatform["onQuickCapture"]>(() => () => {}),
     notify: vi.fn<(title: string, body: string) => Promise<void>>(async () => {}),
     reportError: vi.fn<(message: string) => Promise<void>>(async () => {}),
@@ -3162,6 +3170,92 @@ describe("módulo de notas (a tela inteira)", () => {
       expect((await main().findByRole("alert")).textContent).toContain("Algo deu errado");
       expect(screen.getByRole("dialog", { name: "Captura rápida" })).toBeTruthy();
       expect(field()).toHaveProperty("value", "Não pode perder");
+    });
+  });
+
+  describe("parear celular", () => {
+    const dialog = () => screen.getByRole("dialog", { name: "Parear celular" });
+    const open = async (user: ReturnType<typeof setup>["user"]) =>
+      user.click(sidebar().getByRole("button", { name: "Parear celular" }));
+
+    it("abre pelo botão da barra lateral, mostra o QR e o código e avisa a validade e o uso único", async () => {
+      const { user, platform } = setup();
+
+      await open(user);
+
+      expect(
+        await within(dialog()).findByRole("img", { name: "Código QR de pareamento" }),
+      ).toBeTruthy();
+      expect(platform.startPairing).toHaveBeenCalledTimes(1);
+      expect(within(dialog()).getByText(/funciona uma única vez/)).toBeTruthy();
+      expect(within(dialog()).getByLabelText("Código de pareamento").textContent).toBe(
+        "tramion-pair:1:{}",
+      );
+    });
+
+    it("fechar cancela o pareamento (o QR deixa de valer)", async () => {
+      const { user, platform } = setup();
+      await open(user);
+      await within(dialog()).findByRole("img", { name: "Código QR de pareamento" });
+
+      await user.keyboard("{Escape}");
+
+      expect(screen.queryByRole("dialog", { name: "Parear celular" })).toBeNull();
+      expect(platform.cancelPairing).toHaveBeenCalled();
+    });
+
+    it("lista os aparelhos pareados e remove um", async () => {
+      const { user, platform } = setup();
+      platform.listPeers
+        .mockResolvedValueOnce([
+          { device: "cel", name: "Celular (ab12)", pairedAt: 1, lastSyncAt: null },
+        ])
+        .mockResolvedValue([]);
+      await open(user);
+
+      expect(await within(dialog()).findByText(/Celular \(ab12\)/)).toBeTruthy();
+      expect(within(dialog()).getByText(/ainda não sincronizou/)).toBeTruthy();
+      await user.click(within(dialog()).getByRole("button", { name: "Remover Celular (ab12)" }));
+
+      expect(platform.removePeer).toHaveBeenCalledWith("cel");
+      expect(await within(dialog()).findByText("Nenhum aparelho pareado.")).toBeTruthy();
+    });
+
+    it("sem aparelhos, avisa", async () => {
+      const { user } = setup();
+
+      await open(user);
+
+      expect(await within(dialog()).findByText("Nenhum aparelho pareado.")).toBeTruthy();
+    });
+
+    it("sem rede local mostra o motivo real e nenhum QR", async () => {
+      const { user, platform } = setup();
+      platform.startPairing.mockRejectedValue(
+        new NotesError("notes.internal", "sem conexão com uma rede local (Wi-Fi ou cabo)"),
+      );
+
+      await open(user);
+
+      expect((await within(dialog()).findByRole("alert")).textContent).toContain(
+        "sem conexão com uma rede local",
+      );
+      expect(within(dialog()).queryByRole("img", { name: "Código QR de pareamento" })).toBeNull();
+    });
+
+    it("QR expirado some e oferece gerar outro", async () => {
+      const { user, platform } = setup();
+      platform.startPairing
+        .mockResolvedValueOnce({ code: "velho", svg: "<svg/>", expiresAt: Date.now() - 1 })
+        .mockResolvedValueOnce({ code: "novo", svg: "<svg/>", expiresAt: Date.now() + 60_000 });
+      await open(user);
+
+      await user.click(await within(dialog()).findByRole("button", { name: "Gerar novo código" }));
+
+      expect(platform.startPairing).toHaveBeenCalledTimes(2);
+      expect((await within(dialog()).findByLabelText("Código de pareamento")).textContent).toBe(
+        "novo",
+      );
     });
   });
 });
