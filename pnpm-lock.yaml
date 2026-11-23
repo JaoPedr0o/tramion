@@ -232,6 +232,9 @@ importers:
       '@tramion/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@tramion/focus':
+        specifier: workspace:*
+        version: link:../../modules/focus
       '@tramion/notes':
         specifier: workspace:*
         version: link:../../modules/notes
@@ -263,6 +266,37 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.3.8
+
+  modules/focus:
+    dependencies:
+      '@tauri-apps/api':
+        specifier: ^2
+        version: 2.12.5
+      '@tauri-apps/plugin-notification':
+        specifier: ^2.8.1
+        version: 2.8.1
+      '@tramion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@tramion/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      react:
+        specifier: ^19.1.0
+        version: 19.3.1
+    devDependencies:
+      '@tramion/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      react-dom:
+        specifier: ^19.3.1
+        version: 19.3.1(react@19.3.1)
 
   modules/notes:
     dependencies:

@@ -13,6 +13,7 @@
   "dependencies": {
     "@tramion/contracts": "workspace:*",
     "@tramion/core": "workspace:*",
+    "@tramion/focus": "workspace:*",
     "@tramion/notes": "workspace:*",
     "@tramion/ui": "workspace:*",
     "@fontsource-variable/fraunces": "^5.3.0",
