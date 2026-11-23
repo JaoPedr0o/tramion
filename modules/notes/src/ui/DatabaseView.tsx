@@ -28,6 +28,7 @@ import { DatabaseGallery } from "./DatabaseGallery.tsx";
 import { DatabaseList } from "./DatabaseList.tsx";
 import {
   AddPropertyButton,
+  defaultReminderConfig,
   FilterButton,
   NewViewButton,
   PropertyHeaderButton,
@@ -222,6 +223,18 @@ export function DatabaseView({ deps, id }: Props) {
   const setCell = (rowId: string, property: Property, value: CellValue | null) =>
     attempt(async () => {
       await service.setCell({ noteId: rowId, propertyId: property.id, value });
+      // Escolher uma hora é pedir um aviso: se a base ainda não tem lembretes configurados, liga com esta coluna de data
+      // como prazo. (Quem desligou os lembretes de propósito tem a configuração guardada como desligada e não é afetado.)
+      if (
+        property.type === "date" &&
+        typeof value === "string" &&
+        value.includes("T") &&
+        data &&
+        data.reminders === null
+      ) {
+        const base = defaultReminderConfig(data.properties);
+        if (base) await saveReminders({ ...base, dateProperty: property.id });
+      }
       patch((d) => ({
         ...d,
         rows: d.rows.map((row) => {

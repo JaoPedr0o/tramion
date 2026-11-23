@@ -1033,6 +1033,61 @@ describe("módulo de notas (a tela inteira)", () => {
       );
     });
 
+    it("escolher uma hora liga os lembretes da base (era o motivo de o aviso nunca ser agendado)", async () => {
+      const { user, fake } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Prazo", "Data");
+      await addRow(user);
+      await user.type(main().getByLabelText("Prazo — Sem título"), "2024-05-17");
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual(["2024-05-17"]),
+      );
+      // Só com a data (sem hora) nada é ligado.
+      expect((await stored(fake)).reminders).toBeNull();
+
+      await user.click(
+        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+      );
+      const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
+      await user.type(within(dialog).getByLabelText("Hora"), "18:52");
+      await user.click(within(dialog).getByRole("button", { name: "Definir hora" }));
+
+      await vi.waitFor(async () => expect((await stored(fake)).reminders?.enabled).toBe(true));
+      expect(await main().findByText("Lembretes: ligados")).toBeTruthy();
+    });
+
+    it("quem desligou os lembretes da base não tem a escolha desfeita ao pôr uma hora", async () => {
+      const { user, fake, events } = setup();
+      await newDatabase(user);
+      await addColumn(user, "Prazo", "Data");
+      await addRow(user);
+      const data = await stored(fake);
+      const date = data.properties.find((p) => p.type === "date")!;
+      await fake.gateway.setReminders({
+        databaseId: data.id,
+        config: { enabled: false, dateProperty: date.id, doneProperty: null, doneOption: null },
+      });
+      // A tela recarrega a base (como quando outro aparelho muda a configuração) e passa a saber que está desligada.
+      act(() => events.emit("note.updated", { id: data.id }));
+      await settle();
+      await user.type(main().getByLabelText("Prazo — Sem título"), "2024-05-17");
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual(["2024-05-17"]),
+      );
+
+      await user.click(
+        main().getByRole("button", { name: "Escolher a hora de Prazo — Sem título" }),
+      );
+      const dialog = await screen.findByRole("dialog", { name: "Hora de Prazo" });
+      await user.type(within(dialog).getByLabelText("Hora"), "18:52");
+      await user.click(within(dialog).getByRole("button", { name: "Definir hora" }));
+
+      await vi.waitFor(async () =>
+        expect(Object.values((await stored(fake)).rows[0]!.cells)).toEqual(["2024-05-17T18:52"]),
+      );
+      expect((await stored(fake)).reminders?.enabled).toBe(false);
+    });
+
     it("data: escolhe a hora (opcional), mantém a hora ao trocar o dia e tira a hora", async () => {
       const { user, fake } = setup();
       await newDatabase(user);
