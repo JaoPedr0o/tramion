@@ -224,4 +224,52 @@ describe("Menu", () => {
     expect(style.top).not.toBe("");
     expect(style.bottom).toBe("");
   });
+
+  describe("posição dentro da janela", () => {
+    const menuBox = () => screen.getByRole("menu");
+    /** O jsdom não mede nada: devolve as medidas combinadas para o botão e para o menu. */
+    function measure(trigger: DOMRect, menu: DOMRect) {
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.getAttribute("role") === "menu" ? menu : trigger;
+      });
+    }
+    const box = (left: number, right: number): DOMRect =>
+      ({ left, right, top: 100, bottom: 130, width: right - left, height: 30 }) as DOMRect;
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it("menu que sairia pela esquerda da janela é puxado para dentro", async () => {
+      Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true });
+      measure(box(190, 215), box(-5, 215)); // alinhado pela direita do botão, 220 de largura
+      const { open } = setup();
+
+      await open();
+
+      expect(menuBox().style.left).toBe("8px");
+      expect(menuBox().style.right).toBe("");
+    });
+
+    it("menu que sairia pela direita da janela é puxado para dentro", async () => {
+      Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true });
+      measure(box(960, 990), box(780, 1010));
+      const { open } = setup();
+
+      await open();
+
+      expect(menuBox().style.right).toBe("8px");
+    });
+
+    it("menu que cabe na janela não é movido", async () => {
+      Object.defineProperty(window, "innerWidth", { value: 1000, configurable: true });
+      measure(box(400, 430), box(210, 430));
+      const { open } = setup();
+
+      await open();
+
+      expect(menuBox().style.right).toBe("570px"); // 1000 - 430: continua alinhado ao botão
+      expect(menuBox().style.left).toBe("");
+    });
+  });
 });

@@ -74,6 +74,20 @@ Rode `pnpm install` e `pnpm check`.
 O app grava em `~/.local/share/dev.aesthetic.notes/` (banco `aesthetic-notes.db` e pasta `backups/`).
 Em desenvolvimento, apagar essa pasta recria o banco do zero.
 
+## Instalar no computador (Linux, via contêiner)
+
+Dentro do contêiner `aun`, a partir de `apps/desktop`:
+
+```sh
+pnpm tauri build --bundles deb        # gera o pacote em target/release/bundle/deb/
+sudo dpkg -i ../../target/release/bundle/deb/Aesthetic\ Notes_*_amd64.deb
+distrobox-export --app aesthetic-notes   # cria o atalho no menu de aplicativos do sistema
+```
+
+Para atualizar, repita os dois primeiros comandos (o atalho continua valendo). Para remover: `distrobox-export --app
+aesthetic-notes --delete` e `sudo apt remove aesthetic-notes`. Os dados em `~/.local/share/dev.aesthetic.notes/` não
+são apagados. Ver o ADR 0015.
+
 ## Núcleo (`@aesthetic/core`)
 
 - `createEventBus<E>()`: barramento tipado e síncrono (ADR 0007).

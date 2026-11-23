@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { IconButton } from "./IconButton.tsx";
 import "./menu.css";
@@ -51,6 +58,28 @@ export function Menu({ label, icon, items, align = "end", className, tabIndex }:
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const open = position !== null;
+
+  // Depois de desenhado (com a largura real), o menu é puxado para dentro da janela: numa barra lateral estreita,
+  // um menu alinhado pela direita do botão sairia pela esquerda da tela.
+  useLayoutEffect(() => {
+    if (!open || !menu.current) return;
+    const rect = menu.current.getBoundingClientRect();
+    const margin = 8;
+    const overflowLeft = rect.left < margin;
+    const overflowRight = rect.right > window.innerWidth - margin;
+    if (!overflowLeft && !overflowRight) return;
+    setPosition((current) => {
+      if (!current) return current;
+      // Mantém só a posição vertical e fixa o lado que estourou.
+      const vertical: Position =
+        current.top !== undefined
+          ? { top: current.top }
+          : current.bottom !== undefined
+            ? { bottom: current.bottom }
+            : {};
+      return overflowLeft ? { ...vertical, left: margin } : { ...vertical, right: margin };
+    });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
