@@ -1,3 +1,4 @@
+import { CHANGE_EVENTS } from "../application/change-events.ts";
 import { useCallback, useEffect, useState } from "react";
 import { longDate, todayIso } from "../application/calendar.ts";
 import { splitDue } from "../application/reminders.ts";
@@ -11,15 +12,6 @@ import { usePages } from "./useNoteList.ts";
 const AGENDA_DAYS = 7;
 /** Quantas páginas recentes aparecem. */
 const RECENT_COUNT = 8;
-
-const CHANGE_EVENTS = [
-  "note.created",
-  "note.updated",
-  "note.moved",
-  "note.deleted",
-  "note.restored",
-  "note.purged",
-] as const;
 
 /**
  * A página "Hoje": o que pede atenção agora (atrasadas e de hoje), a agenda dos próximos dias, as páginas editadas

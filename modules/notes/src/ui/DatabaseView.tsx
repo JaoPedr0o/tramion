@@ -1,3 +1,4 @@
+import { CHANGE_EVENTS } from "../application/change-events.ts";
 import { TrashIcon } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -97,16 +98,7 @@ export function DatabaseView({ deps, id }: Props) {
   // Recarrega quando páginas mudam (criar, excluir, renomear linhas, inclusive por outra tela).
   useEffect(() => {
     load();
-    const off = (
-      [
-        "note.created",
-        "note.updated",
-        "note.moved",
-        "note.deleted",
-        "note.restored",
-        "note.purged",
-      ] as const
-    ).map((name) => events.on(name, load));
+    const off = CHANGE_EVENTS.map((name) => events.on(name, load));
     return () => off.forEach((unsubscribe) => unsubscribe());
   }, [events, load]);
 

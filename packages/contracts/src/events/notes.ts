@@ -23,4 +23,9 @@ export interface NotesEvents {
   "note.restored": { readonly id: string };
   /** A nota foi apagada de vez (irreversível). */
   "note.purged": { readonly id: string };
+  /**
+   * Chegaram alterações de outro aparelho (sincronização). Não diz quais páginas mudaram: quem mostra listas ou
+   * páginas simplesmente recarrega.
+   */
+  "notes.synced": Readonly<Record<string, never>>;
 }

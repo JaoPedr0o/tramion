@@ -3565,6 +3565,40 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(platform.syncNow.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
+    it("quando chegam alterações, a lista de páginas da barra lateral se atualiza sozinha", async () => {
+      const { fake, events } = setup({ syncsAutomatically: true, synced: received(1) });
+      // Uma página que "chegou" de outro aparelho: entra direto no armazenamento, sem passar pela tela.
+      await fake.gateway.create({ title: "Veio do computador", body: "", parentId: null });
+
+      await pass(100);
+
+      expect(await sidebar().findByRole("treeitem", { name: "Veio do computador" })).toBeTruthy();
+      expect(events).toBeTruthy();
+    });
+
+    it("avisa as telas com o evento notes.synced só quando algo chegou", async () => {
+      const { events } = setup({ syncsAutomatically: true, synced: received(2) });
+      const heard = vi.fn();
+      events.on("notes.synced", heard);
+      await pass(16_000);
+      act(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+      await pass(100);
+
+      expect(heard).toHaveBeenCalled();
+    });
+
+    it("sem nada novo, o evento não é emitido", async () => {
+      const { events } = setup({ syncsAutomatically: true, synced: received(0) });
+      const heard = vi.fn();
+      events.on("notes.synced", heard);
+
+      await pass(100);
+
+      expect(heard).not.toHaveBeenCalled();
+    });
+
     it("uma falha ao sincronizar (sem rede) não mostra erro nem derruba a tela", async () => {
       const { platform } = setup({ syncsAutomatically: true });
       platform.syncNow.mockRejectedValue(new Error("sem rede"));

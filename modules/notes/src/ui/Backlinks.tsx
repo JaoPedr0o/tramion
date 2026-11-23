@@ -1,16 +1,8 @@
+import { CHANGE_EVENTS } from "../application/change-events.ts";
 import { useCallback, useEffect, useState } from "react";
 import type { NoteSummary, PageRef } from "../domain/note.ts";
 import type { NotesUiDeps } from "./deps.ts";
 import { PageGlyph } from "./PageGlyph.tsx";
-
-const CHANGE_EVENTS = [
-  "note.created",
-  "note.updated",
-  "note.moved",
-  "note.deleted",
-  "note.restored",
-  "note.purged",
-] as const;
 
 /** Pausa antes de recarregar depois de uma mudança (o salvamento automático emite muitos eventos seguidos). */
 const RELOAD_DELAY_MS = 600;

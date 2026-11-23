@@ -1,3 +1,4 @@
+import { CHANGE_EVENTS } from "../application/change-events.ts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { layoutGraph } from "../application/graph-layout.ts";
 import type { PageGraph } from "../domain/note.ts";
@@ -10,15 +11,6 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 4;
 
 type State = { status: "loading" } | { status: "ready"; graph: PageGraph } | { status: "error" };
-
-const CHANGE_EVENTS = [
-  "note.created",
-  "note.updated",
-  "note.moved",
-  "note.deleted",
-  "note.restored",
-  "note.purged",
-] as const;
 
 /**
  * O grafo de conexões: cada página é um ponto; linhas cheias são menções e subpáginas escritas no texto, tracejadas são a

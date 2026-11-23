@@ -34,7 +34,7 @@ export function PairingDialog({ deps }: { deps: NotesUiDeps }) {
 }
 
 function Pairing({ deps }: { deps: NotesUiDeps }) {
-  const { store, platform } = deps;
+  const { store, platform, events } = deps;
   const [mode, setMode] = useState<Mode>(platform.canScanQr ? "scan" : "show");
   const [offer, setOffer] = useState<PairingOffer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +111,10 @@ function Pairing({ deps }: { deps: NotesUiDeps }) {
           (conflicts > 0 ? `, ${conflicts} em conflito (veja as cópias com “~conflito~”)` : "") +
           ".",
       );
-      if (applied > 0) store.reload();
+      if (applied > 0) {
+        store.reload();
+        events.emit("notes.synced", {});
+      }
     } else if (reports.length === 0) {
       setResult("Nenhum aparelho pareado para procurar.");
     }

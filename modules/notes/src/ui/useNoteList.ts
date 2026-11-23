@@ -1,3 +1,4 @@
+import { CHANGE_EVENTS } from "../application/change-events.ts";
 import type { AppEvents, EventBus } from "@tramion/contracts";
 import { useEffect, useState } from "react";
 import type { NotesService } from "../application/notes-service.ts";
@@ -5,15 +6,6 @@ import type { NoteSummary, TrashSummary } from "../domain/note.ts";
 
 export type ListState<T> =
   { status: "loading" } | { status: "ready"; items: readonly T[] } | { status: "error" };
-
-const CHANGE_EVENTS = [
-  "note.created",
-  "note.updated",
-  "note.moved",
-  "note.deleted",
-  "note.restored",
-  "note.purged",
-] as const;
 
 // Funções do módulo (estáveis): servem de dependência dos efeitos sem recriar a assinatura a cada render.
 const fetchPages = (service: NotesService) => service.list();

@@ -1,15 +1,7 @@
 import { useEffect } from "react";
 import { startAutoSync } from "../application/auto-sync.ts";
+import { EDIT_EVENTS } from "../application/change-events.ts";
 import type { NotesUiDeps } from "./deps.ts";
-
-const EDIT_EVENTS = [
-  "note.created",
-  "note.updated",
-  "note.moved",
-  "note.deleted",
-  "note.restored",
-  "note.purged",
-] as const;
 
 /** Rede mudou? (Só alguns navegadores informam; nos outros ficam os demais gatilhos.) */
 type Connection = EventTarget | undefined;
@@ -30,6 +22,7 @@ export function AutoSync({ deps }: { deps: NotesUiDeps }) {
       const received = reports.filter((r) => r.ok).reduce((total, r) => total + r.applied, 0);
       if (received > 0) {
         store.reload();
+        events.emit("notes.synced", {}); // as listas (barra lateral, lixeira, lembretes) recarregam
         store.notify(
           received === 1
             ? "Sincronizado: 1 alteração recebida."
