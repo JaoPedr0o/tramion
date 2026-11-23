@@ -75,17 +75,65 @@ de reserva). CSS próprio em `modules/focus/src/ui/focus.css`, só com tokens do
 `tablist`/`tab`/`tabpanel` com setas, `role="timer"`, `aria-pressed` nas marcações, diálogo modal com foco preso, devolvido ao
 fechar, e Esc.
 
+## Pomodoro com o app fechado (emenda)
+
+**Cronômetro persistido.** Migração 2 do módulo: `focus_timer`, uma linha (`id = 1`) com `phase` (`idle`/`running`/`paused`),
+`kind`, `started_at`, `duration_ms`, `ends_at` (só rodando), `remaining_ms` (só pausado), `note_id` e `cycle` (sessões de foco
+do ciclo atual, que vale também com o cronômetro parado). Um `CHECK` garante a coerência entre fase e campos, e o Rust valida
+de novo. Escolhida em vez de `focus_setting` porque o estado tem forma própria e precisa de restrições. Comandos:
+`timer_get`, `timer_set` e `timer_finish(cycle)`, que numa **transação** registra a sessão de foco (início e duração do
+cronômetro guardado) e deixa o cronômetro parado; é **idempotente** (só conclui o que está "rodando"), então abrir o app duas
+vezes ou o fim por dois caminhos nunca duplica a sessão.
+
+**Abrir o app.** O módulo chama `init()` ao registrar (só LÊ: ajustes, cronômetro, sessões; nada é mostrado, perguntado ou
+tocado). Rodando e no prazo: a tela retoma com o restante certo. Já terminou: a sessão é registrada como concluída, com o
+início real e a duração planejada ("sem inventar tempo"), o estado final aparece e **o sino não toca** (término "atrasado":
+mais de 10 s). Pausado: volta pausado. O `Timer` em memória continua sendo calculado pela hora de término.
+
+**Avisos do sistema (Android), atrás da porta `FocusPlatform`** (implementação em `infrastructure/tauri-focus-platform.ts`,
+com o plugin injetável nos testes; o Foco não importa o módulo de notas):
+
+- `domain/notification-plan.ts`: função pura que, dado o cronômetro, devolve o **plano**: notificação fixa e aviso do fim.
+- **Aviso do fim**: agendado para `endsAt` (via `plugin:notification|batch`, que também o guarda para sobreviver a reiniciar o
+  aparelho; se falhar, `Schedule.at(date, false, true)` com `allowWhileIdle`). Pausar ou cancelar cancela; retomar reagenda com
+  o restante; só se cancela o que ainda está pendente (depois de disparar, cancelar apagaria o aviso visível).
+- **Notificação fixa** (`ongoing`, silenciosa, importância baixa): "Foco em andamento — termina às 19:15", com contagem
+  regressiva **nativa** (`when` + `usesChronometer` + `chronometerCountDown`), então nada precisa atualizar a cada segundo;
+  "Foco — pausado" ao pausar. Os dois avisos usam ids DIFERENTES (`1940001`/`1940002`): o plugin cancela o que já usa o mesmo id.
+- **Canais** (o som e a importância só valem na PRIMEIRA criação e o Android não deixa mudar): `foco-fim-v1` (alta, som
+  `res/raw/pomodoro_end.wav`, vibração), `foco-fim-mudo-v1` (alta, com `pomodoro_silent.wav`, quando "Som ao terminar" está
+  desligado) e `foco-andamento-v1` (baixa). Para trocar o som, crie `foco-fim-v2`. Os sons são sintetizados por
+  `apps/desktop/src-tauri/scripts/gerar-som-pomodoro.py` (sem arquivos de terceiros) e protegidos do encolhimento de recursos
+  por `res/raw/keep.xml`.
+- No celular o alarme do sistema avisa até com o app **aberto**; por isso a tela NÃO toca o sino nem notifica de novo nesse
+  caso (dobraria o aviso). No computador, ao fim com o app aberto: sino Web Audio (sintetizado em JS, `ring()`) se "Som ao
+  terminar" (ligado por padrão) e notificação do sistema só se a pessoa ligou (desligada por padrão). O áudio é liberado no
+  clique de "Iniciar" (`unlock()`), porque o navegador só deixa tocar depois de um gesto.
+- O plugin descarta a notificação ao tocar nela (abrir o app); ao voltar a ficar visível o módulo a refaz.
+
+## Interface (emenda: novo visual)
+
+Anel de progresso em SVG (`pathLength=100`, transição só sem `prefers-reduced-motion`) em torno de um tomate em SVG
+(corpo na cor da fase: terracota no foco, verde-sálvia nas pausas; folhas e caule verdes; brilho sutil), tempo em Fraunces com
+números tabulares, tomatinhos do ciclo, "Ajustes" como botão (engrenagem + rótulo) que abre uma janela com `−`/`+`,
+interruptores (`role="switch"`) e "Ouvir". Hábitos: cartões com cor de destaque derivada do id (paleta de seis, sem coluna
+nova), botão grande de marcar (com pequena animação), selo de sequência com chama, faixa dos 7 dias e mapa de calor em cartão
+próprio, com rampa de UM matiz (terracota) e legenda. No celular as abas viram um rodapé fixo com margens seguras. Sem
+dependências novas.
+
 ## Limites desta versão
 
-- O cronômetro vive na memória do app: **fechar o app encerra** a sessão em andamento (nada é registrado). Retomar depois de
-  reabrir fica para depois.
 - A interface ainda **não oferece escolher a página associada** à sessão (o campo existe no banco, no Rust e no store).
   Falta um contrato em `packages/contracts` com "página aberta agora" (por exemplo, um evento `note.opened`) para o Foco
   sugerir a página sem importar as notas.
+- Se o Android encerrar o alarme (economia agressiva de bateria do fabricante) ou a pessoa negar a permissão de notificações, o
+  aviso do fim com o app fechado não chega; o registro da sessão continua correto ao reabrir. Uma notificação fixa de um
+  cronômetro que terminou com o app fechado fica na barra (mostrando 00:00) até a pessoa abrir o app.
 - O mapa de calor é geral (todos os hábitos ativos); o de um hábito só fica para depois.
 - A sequência é calculada na interface a partir de **todo** o histórico de marcações (poucas linhas por hábito).
 - Hábitos não têm reordenação nem exclusão definitiva (só arquivar).
-- Não testado em aparelho real (celular): só há testes automatizados.
+- Não testado em aparelho real (celular): só há testes automatizados (ver "Pomodoro com o app fechado" e o que não foi
+  verificado em aparelho).
 
 ## Sincronização (NÃO faz parte desta versão)
 
