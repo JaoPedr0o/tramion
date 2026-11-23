@@ -1,6 +1,6 @@
 # Visão do produto
 
-O Aesthetic Notes é uma plataforma desktop de organização pessoal. A inspiração inicial é o Notion,
+O Tramion é uma plataforma desktop de organização pessoal. A inspiração inicial é o Notion,
 mas o objetivo **não** é copiá-lo: é ter uma base mais modular, em que funcionalidades possam ser
 adicionadas, substituídas ou removidas sem reescrever o restante.
 

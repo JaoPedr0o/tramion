@@ -1,11 +1,11 @@
 //! Testes da hierarquia de páginas: criar sob um pai, mover, excluir/restaurar/apagar subárvores.
 //! Usam banco em memória e as migrações reais.
 
-use aesthetic_infra_sqlite::Database;
-use aesthetic_notes::MIGRATIONS;
-use aesthetic_notes::error::NotesError;
-use aesthetic_notes::model::{MoveNote, NewNote, Note};
-use aesthetic_notes::service;
+use tramion_infra_sqlite::Database;
+use tramion_notes::MIGRATIONS;
+use tramion_notes::error::NotesError;
+use tramion_notes::model::{MoveNote, NewNote, Note};
+use tramion_notes::service;
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

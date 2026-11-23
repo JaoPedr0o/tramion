@@ -1,8 +1,8 @@
 [package]
 name = "desktop"
 version = "0.1.0"
-description = "Aesthetic Notes: aplicativo desktop local-first de organização pessoal"
-authors = ["Aesthetic Notes"]
+description = "Tramion: aplicativo desktop local-first de organização pessoal"
+authors = ["Tramion"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -24,5 +24,5 @@ tempfile = "3.27.0"
 tauri = { version = "2", features = ["protocol-asset"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-aesthetic-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
-aesthetic-notes = { version = "0.1.0", path = "../../../modules/notes/rust" }
+tramion-infra-sqlite = { version = "0.1.0", path = "../../../packages/infra-sqlite" }
+tramion-notes = { version = "0.1.0", path = "../../../modules/notes/rust" }

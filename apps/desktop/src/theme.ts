@@ -1,14 +1,16 @@
 /** Preferência de aparência: forçar claro ou escuro, ou seguir o tema do sistema. */
 export type ThemePreference = "light" | "dark" | "system";
 
-const STORAGE_KEY = "aesthetic.theme";
-/** Chave do nome antigo do app: a preferência de quem já usava continua valendo. */
-const LEGACY_STORAGE_KEY = "aun.theme";
+const STORAGE_KEY = "tramion.theme";
+/** Chaves dos nomes antigos do app: a preferência de quem já usava continua valendo. */
+const LEGACY_STORAGE_KEYS = ["aesthetic.theme", "aun.theme"];
 
 // O armazenamento pode faltar (janela privada, dados bloqueados): nesse caso o tema só não é lembrado.
 export function readTheme(): ThemePreference {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+    const stored = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]
+      .map((key) => localStorage.getItem(key))
+      .find((value) => value !== null);
     return stored === "light" || stored === "dark" ? stored : "system";
   } catch {
     return "system";

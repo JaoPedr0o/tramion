@@ -1,24 +1,37 @@
-//! Dados do nome antigo ("Aesthetic Ugly Notes"). Quando o aplicativo mudou de nome, o identificador mudou de
-//! `dev.aun.notes` para `dev.aesthetic.notes`, e com ele a pasta de dados. Na primeira abertura com o nome novo,
-//! os dados da pasta antiga são MOVIDOS (não copiados) para a nova, para ninguém perder nada.
+//! Dados dos nomes antigos do aplicativo. Cada mudança de nome mudou o identificador (e com ele a pasta de dados) e o
+//! nome do banco. Na primeira abertura com o nome atual, os dados da pasta mais recente que existir são MOVIDOS
+//! (não copiados) para a pasta nova, para ninguém perder nada.
+//!
+//! Gerações, da mais nova para a mais antiga:
+//! 1. "Aesthetic Notes": `dev.aesthetic.notes` / `aesthetic-notes.db`
+//! 2. "Aesthetic Ugly Notes": `dev.aun.notes` / `aesthetic-ugly-notes.db`
 
 use std::fs;
 use std::io;
 use std::path::Path;
 
-/// Nome do banco antes e depois da mudança.
-pub const LEGACY_DB: &str = "aesthetic-ugly-notes.db";
-pub const CURRENT_DB: &str = "aesthetic-notes.db";
+/// Nome do banco atual.
+pub const CURRENT_DB: &str = "tramion.db";
+
+/// Onde os dados ficavam em cada nome antigo: `(pasta de dados, banco)`, da geração mais nova para a mais antiga.
+pub const LEGACY_LOCATIONS: [(&str, &str); 2] = [
+    ("dev.aesthetic.notes", "aesthetic-notes.db"),
+    ("dev.aun.notes", "aesthetic-ugly-notes.db"),
+];
 
 /// O banco guarda mais dois arquivos ao lado (modo WAL); os três andam juntos.
 const DB_SUFFIXES: [&str; 3] = ["", "-wal", "-shm"];
 
-/// Move os dados de `legacy_dir` para `data_dir`, se houver o que mover e a pasta nova ainda não tiver banco.
-/// Devolve `true` se moveu. Nunca sobrescreve nada que já exista na pasta nova.
+/// Move os dados de `legacy_dir` (cujo banco se chama `legacy_db`) para `data_dir`, se houver o que mover e a pasta
+/// nova ainda não tiver banco. Devolve `true` se moveu. Nunca sobrescreve nada que já exista na pasta nova.
 ///
 /// Mover a pasta inteira (`rename`) é atômico no mesmo disco: ou tudo foi, ou nada foi.
-pub fn migrate_legacy_data(data_dir: &Path, legacy_dir: &Path) -> io::Result<bool> {
-    if data_dir.join(CURRENT_DB).exists() || !legacy_dir.join(LEGACY_DB).exists() {
+pub fn migrate_legacy_data(
+    data_dir: &Path,
+    legacy_dir: &Path,
+    legacy_db: &str,
+) -> io::Result<bool> {
+    if data_dir.join(CURRENT_DB).exists() || !legacy_dir.join(legacy_db).exists() {
         return Ok(false);
     }
 
@@ -39,11 +52,25 @@ pub fn migrate_legacy_data(data_dir: &Path, legacy_dir: &Path) -> io::Result<boo
     }
 
     for suffix in DB_SUFFIXES {
-        let from = data_dir.join(format!("{LEGACY_DB}{suffix}"));
+        let from = data_dir.join(format!("{legacy_db}{suffix}"));
         let to = data_dir.join(format!("{CURRENT_DB}{suffix}"));
         if from.exists() && !to.exists() {
             fs::rename(from, to)?;
         }
     }
     Ok(true)
+}
+
+/// Procura os dados nas pastas dos nomes antigos (irmãs de `data_dir`) e move os da geração mais nova que existir.
+/// Devolve o nome da pasta de onde moveu, se moveu.
+pub fn migrate_from_any_legacy(data_dir: &Path) -> io::Result<Option<&'static str>> {
+    let Some(parent) = data_dir.parent() else {
+        return Ok(None);
+    };
+    for (dir_name, db_name) in LEGACY_LOCATIONS {
+        if migrate_legacy_data(data_dir, &parent.join(dir_name), db_name)? {
+            return Ok(Some(dir_name));
+        }
+    }
+    Ok(None)
 }

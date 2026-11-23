@@ -1,5 +1,5 @@
-import { createEventBus } from "@aesthetic/core";
-import type { AppEvents } from "@aesthetic/contracts";
+import { createEventBus } from "@tramion/core";
+import type { AppEvents } from "@tramion/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { NotesError } from "../domain/errors.ts";
 import { aNote, aSummary, gatewayStub } from "../test-support.ts";

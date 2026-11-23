@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { ViewContribution, ViewRegistry } from "@aesthetic/contracts";
+import type { ViewContribution, ViewRegistry } from "@tramion/contracts";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

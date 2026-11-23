@@ -1,4 +1,4 @@
-import { Logo } from "@aesthetic/ui";
+import { Logo } from "@tramion/ui";
 import type { ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { NotePanel } from "./NotePanel.tsx";
@@ -26,7 +26,7 @@ export function createMain(deps: NotesUiDeps): ComponentType {
         ) : (
           <div className="notes-empty">
             <Logo size={72} />
-            <h1 className="notes-empty__title">Aesthetic Notes</h1>
+            <h1 className="notes-empty__title">Tramion</h1>
             <p className="notes-main__placeholder">Selecione ou crie uma página.</p>
           </div>
         )}

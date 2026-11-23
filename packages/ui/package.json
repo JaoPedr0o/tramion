@@ -1,5 +1,5 @@
 {
-  "name": "@aesthetic/ui",
+  "name": "@tramion/ui",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "./tokens.css": "./src/tokens.css"
   },
   "dependencies": {
-    "@aesthetic/contracts": "workspace:*",
+    "@tramion/contracts": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

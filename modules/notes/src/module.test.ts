@@ -1,4 +1,4 @@
-import { createEventBus, createModuleRegistry, createViewRegistry } from "@aesthetic/core";
+import { createEventBus, createModuleRegistry, createViewRegistry } from "@tramion/core";
 import { describe, expect, it } from "vitest";
 import { createNotesModule } from "./module.ts";
 import { gatewayStub } from "./test-support.ts";

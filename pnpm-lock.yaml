@@ -217,18 +217,6 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@aesthetic/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@aesthetic/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@aesthetic/notes':
-        specifier: workspace:*
-        version: link:../../modules/notes
-      '@aesthetic/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@fontsource-variable/fraunces':
         specifier: ^5.3.0
         version: 5.3.0
@@ -238,6 +226,18 @@ importers:
       '@tauri-apps/api':
         specifier: ^2
         version: 2.12.5
+      '@tramion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@tramion/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@tramion/notes':
+        specifier: workspace:*
+        version: link:../../modules/notes
+      '@tramion/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: ^19.1.0
         version: 19.3.1
@@ -266,12 +266,6 @@ importers:
 
   modules/notes:
     dependencies:
-      '@aesthetic/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@aesthetic/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@blocknote/code-block':
         specifier: ^0.57.0
         version: 0.57.0(@blocknote/core@0.57.0(@types/hast@3.0.5)(highlight.js@11.12.0))
@@ -293,6 +287,12 @@ importers:
       '@tauri-apps/api':
         specifier: ^2
         version: 2.12.5
+      '@tramion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@tramion/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       highlight.js:
         specifier: ^11.12.0
         version: 11.12.0
@@ -300,7 +300,7 @@ importers:
         specifier: ^19.1.0
         version: 19.3.1
     devDependencies:
-      '@aesthetic/core':
+      '@tramion/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@types/react':
@@ -321,13 +321,13 @@ importers:
 
   packages/core:
     dependencies:
-      '@aesthetic/contracts':
+      '@tramion/contracts':
         specifier: workspace:*
         version: link:../contracts
 
   packages/ui:
     dependencies:
-      '@aesthetic/contracts':
+      '@tramion/contracts':
         specifier: workspace:*
         version: link:../contracts
       react:

@@ -1,11 +1,11 @@
 //! Teste da migração 2 sobre um banco que JÁ TEM páginas criadas na versão 1, como o do usuário.
 
-use aesthetic_infra_sqlite::rusqlite::Connection;
-use aesthetic_infra_sqlite::{Database, ModuleMigrations, OpenOptions};
-use aesthetic_notes::MIGRATIONS;
-use aesthetic_notes::service;
 use std::fs;
 use tempfile::TempDir;
+use tramion_infra_sqlite::rusqlite::Connection;
+use tramion_infra_sqlite::{Database, ModuleMigrations, OpenOptions};
+use tramion_notes::MIGRATIONS;
+use tramion_notes::service;
 
 /// O módulo como era antes da migração 2 (só a primeira migração).
 /// É uma função porque o Rust ainda não permite fatiar (`[..1]`) dentro de uma `const`.

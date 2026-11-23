@@ -1,5 +1,5 @@
-use aesthetic_infra_sqlite::rusqlite;
 use std::fmt;
+use tramion_infra_sqlite::rusqlite;
 
 /// O que pode dar errado nas operações de notas.
 ///

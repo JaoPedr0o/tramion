@@ -1,5 +1,5 @@
 {
-  "name": "@aesthetic/notes",
+  "name": "@tramion/notes",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,8 +8,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@aesthetic/contracts": "workspace:*",
-    "@aesthetic/ui": "workspace:*",
+    "@tramion/contracts": "workspace:*",
+    "@tramion/ui": "workspace:*",
     "@blocknote/code-block": "^0.57.0",
     "@blocknote/core": "^0.57.0",
     "@blocknote/mantine": "^0.57.0",
@@ -21,7 +21,7 @@
     "react": "^19.1.0"
   },
   "devDependencies": {
-    "@aesthetic/core": "workspace:*",
+    "@tramion/core": "workspace:*",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.3.0",
     "react-dom": "^19.3.1"

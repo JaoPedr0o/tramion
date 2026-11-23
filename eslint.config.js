@@ -39,44 +39,44 @@ export default tseslint.config(
       "boundaries/dependencies": [
         2,
         {
-          checkAllOrigins: true, // também confere imports por nome de pacote (@aesthetic/*)
+          checkAllOrigins: true, // também confere imports por nome de pacote (@tramion/*)
           checkInternals: true,
           default: "allow",
           // Atenção: a ÚLTIMA política que casa vence.
           policies: [
             // 1) Entre pacotes do projeto, tudo é proibido por padrão...
             {
-              disallow: { to: { module: { origin: "external", source: "@aesthetic/*" } } },
+              disallow: { to: { module: { origin: "external", source: "@tramion/*" } } },
               message:
                 "Dependência entre pacotes não permitida pela arquitetura (ver docs/architecture.md)",
             },
             // 2) ...e só liberamos o que a arquitetura permite.
-            // contracts: nenhum pacote @aesthetic.
+            // contracts: nenhum pacote @tramion.
             {
               from: { element: { type: "core" } },
-              allow: { to: { module: { source: "@aesthetic/contracts" } } },
+              allow: { to: { module: { source: "@tramion/contracts" } } },
             },
             {
               from: { element: { type: "ui" } },
-              allow: { to: { module: { source: "@aesthetic/contracts" } } },
+              allow: { to: { module: { source: "@tramion/contracts" } } },
             },
             {
               from: { element: { type: "infra" } },
-              allow: { to: { module: { source: ["@aesthetic/contracts", "@aesthetic/core"] } } },
+              allow: { to: { module: { source: ["@tramion/contracts", "@tramion/core"] } } },
             },
             // módulos: contracts, core e ui. NUNCA outro módulo.
             {
               from: { element: { type: "module" } },
               allow: {
                 to: {
-                  module: { source: ["@aesthetic/contracts", "@aesthetic/core", "@aesthetic/ui"] },
+                  module: { source: ["@tramion/contracts", "@tramion/core", "@tramion/ui"] },
                 },
               },
             },
             // app = composition root: liga tudo.
             {
               from: { element: { type: "app" } },
-              allow: { to: { module: { source: "@aesthetic/*" } } },
+              allow: { to: { module: { source: "@tramion/*" } } },
             },
             // 3) Import RELATIVO que sai do próprio pacote é sempre proibido.
             //    Para cruzar a fronteira, use o nome do pacote.

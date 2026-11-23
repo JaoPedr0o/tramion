@@ -1,4 +1,4 @@
-import type { ViewContribution, ViewRegistry } from "@aesthetic/contracts";
+import type { ViewContribution, ViewRegistry } from "@tramion/contracts";
 import { AppError } from "./errors.ts";
 
 export function createViewRegistry(): ViewRegistry {

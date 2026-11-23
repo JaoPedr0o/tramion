@@ -1,4 +1,4 @@
-import { PlusIcon, TrashIcon } from "@aesthetic/ui";
+import { PlusIcon, TrashIcon } from "@tramion/ui";
 import { useMemo, useRef, useState } from "react";
 import {
   OPERATOR_LABELS,

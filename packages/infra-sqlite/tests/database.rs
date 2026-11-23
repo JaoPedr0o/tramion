@@ -1,10 +1,10 @@
 //! Testes da API pública: abrir, migrar, recusar bancos suspeitos e fazer backup.
 
-use aesthetic_infra_sqlite::{Database, DbError, Migration, ModuleMigrations, OpenOptions};
 use rusqlite::Connection;
 use std::fs;
 use std::path::Path;
 use tempfile::TempDir;
+use tramion_infra_sqlite::{Database, DbError, Migration, ModuleMigrations, OpenOptions};
 
 // Migrações de exemplo (nenhum módulo real existe ainda). `static`/`const` mantêm o `'static`.
 static NOTES_ALL: [Migration; 4] = [

@@ -9,7 +9,7 @@ ficam para o futuro e não são impedidos por este desenho.
 ## Estrutura de diretórios
 
 ```
-aesthetic-notes/
+tramion/
 ├─ apps/desktop/        App Tauri + React: a "composition root" que liga módulos ao core
 │  └─ src-tauri/        Rust: janela, permissões, comandos e (futuramente) acesso ao SQLite
 ├─ packages/
@@ -46,7 +46,7 @@ Nunca por importação direta. Por **contratos** (tipos em `contracts`) e **even
 Pelo ESLint (`eslint-plugin-boundaries`), configurado em `eslint.config.js`, executado em `pnpm lint`.
 Regras resumidas:
 
-1. Entre pacotes do projeto só se importa pelo **nome do pacote** (`@aesthetic/core`), nunca por caminho relativo.
+1. Entre pacotes do projeto só se importa pelo **nome do pacote** (`@tramion/core`), nunca por caminho relativo.
 2. Cada tipo de pacote só pode importar os pacotes da tabela acima.
 3. Imports dentro do mesmo pacote são livres.
 
@@ -58,7 +58,7 @@ Os crates Rust formam um **workspace do Cargo** (`Cargo.toml` na raiz): `apps/de
 `packages/infra-sqlite` compartilham o `target/` e o `Cargo.lock`. Perfis de compilação (como
 `[profile.release]`) só valem na raiz.
 
-`aesthetic-infra-sqlite` não conhece nenhum módulo. Cada módulo entregará suas migrações
+`tramion-infra-sqlite` não conhece nenhum módulo. Cada módulo entregará suas migrações
 (`ModuleMigrations`) e o crate as aplica na ordem de `depends_on`, com backup e verificação de integridade.
 Detalhes e garantias em [ADR 0008](adr/0008-persistencia-em-crates-rust-por-modulo.md).
 

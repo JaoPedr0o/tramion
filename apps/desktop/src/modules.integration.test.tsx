@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import type { AppEvents, ViewContribution } from "@aesthetic/contracts";
-import { createEventBus, createModuleRegistry, createViewRegistry } from "@aesthetic/core";
-import { createNotesModule, NotesError, type Note, type NotesGateway } from "@aesthetic/notes";
+import type { AppEvents, ViewContribution } from "@tramion/contracts";
+import { createEventBus, createModuleRegistry, createViewRegistry } from "@tramion/core";
+import { createNotesModule, NotesError, type Note, type NotesGateway } from "@tramion/notes";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";

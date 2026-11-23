@@ -9,29 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
-name = "aesthetic-infra-sqlite"
-version = "0.1.0"
-dependencies = [
- "rusqlite",
- "sha2 0.11.1",
- "tempfile",
-]
-
-[[package]]
-name = "aesthetic-notes"
-version = "0.1.0"
-dependencies = [
- "aesthetic-infra-sqlite",
- "open",
- "serde",
- "serde_json",
- "sha2 0.11.1",
- "tauri",
- "tauri-plugin",
- "tempfile",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -620,13 +597,13 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
- "aesthetic-infra-sqlite",
- "aesthetic-notes",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tempfile",
+ "tramion-infra-sqlite",
+ "tramion-notes",
 ]
 
 [[package]]
@@ -3968,6 +3945,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a"
 dependencies = [
  "once_cell",
+]
+
+[[package]]
+name = "tramion-infra-sqlite"
+version = "0.1.0"
+dependencies = [
+ "rusqlite",
+ "sha2 0.11.1",
+ "tempfile",
+]
+
+[[package]]
+name = "tramion-notes"
+version = "0.1.0"
+dependencies = [
+ "open",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tauri",
+ "tauri-plugin",
+ "tempfile",
+ "tramion-infra-sqlite",
 ]
 
 [[package]]

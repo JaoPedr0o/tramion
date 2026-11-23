@@ -1,7 +1,7 @@
 //! Testes do esquema e do repositório, com banco em memória e as migrações reais do módulo.
 
-use aesthetic_infra_sqlite::Database;
-use aesthetic_notes::{MIGRATIONS, repository};
+use tramion_infra_sqlite::Database;
+use tramion_notes::{MIGRATIONS, repository};
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

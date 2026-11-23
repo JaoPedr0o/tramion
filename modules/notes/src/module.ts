@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@aesthetic/contracts";
+import type { ModuleManifest } from "@tramion/contracts";
 import type { NotesGateway } from "./application/notes-gateway.ts";
 import { createNavigationStore } from "./application/navigation-store.ts";
 import type { EmojiData } from "./application/emoji.ts";

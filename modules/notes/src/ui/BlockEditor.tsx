@@ -1,4 +1,4 @@
-import { LinkIcon, PageIcon, TableIcon } from "@aesthetic/ui";
+import { LinkIcon, PageIcon, TableIcon } from "@tramion/ui";
 import {
   BlockNoteSchema,
   defaultBlockSpecs,

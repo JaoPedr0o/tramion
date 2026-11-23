@@ -1,12 +1,12 @@
 //! Testes das bases de dados: colunas, linhas, células e as regras de cada tipo.
 
-use aesthetic_infra_sqlite::Database;
-use aesthetic_notes::MIGRATIONS;
-use aesthetic_notes::database::{self, MAX_PROPERTIES};
-use aesthetic_notes::error::NotesError;
-use aesthetic_notes::model::{NewNote, Note};
-use aesthetic_notes::service;
 use serde_json::{Value, json};
+use tramion_infra_sqlite::Database;
+use tramion_notes::MIGRATIONS;
+use tramion_notes::database::{self, MAX_PROPERTIES};
+use tramion_notes::error::NotesError;
+use tramion_notes::model::{NewNote, Note};
+use tramion_notes::service;
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")

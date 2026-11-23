@@ -1,5 +1,5 @@
 {
-  "name": "@aesthetic/core",
+  "name": "@tramion/core",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@aesthetic/contracts": "workspace:*"
+    "@tramion/contracts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

@@ -1,4 +1,4 @@
-import { ComposeIcon, IconButton, TableIcon } from "@aesthetic/ui";
+import { ComposeIcon, IconButton, TableIcon } from "@tramion/ui";
 import type { ComponentType } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 

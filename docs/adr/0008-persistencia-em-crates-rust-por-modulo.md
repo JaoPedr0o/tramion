@@ -12,7 +12,7 @@ TypeScript; (C) um crate Rust por módulo; (D) pasta central de migrações.
 
 **Opção C, em duas fases.**
 
-1. `packages/infra-sqlite` (crate `aesthetic-infra-sqlite`): infraestrutura que **não conhece nenhum módulo**.
+1. `packages/infra-sqlite` (crate `tramion-infra-sqlite`): infraestrutura que **não conhece nenhum módulo**.
    Recebe `ModuleMigrations` (módulo, `depends_on`, lista de migrações) e cuida do resto.
 2. Cada módulo ganhará o seu crate Rust (`modules/<nome>/rust/`) com migrações e comandos, e o app só
    junta as peças. Será validado com o módulo de notas (etapa 5); se for pesado demais, recuamos para a

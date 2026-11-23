@@ -13,9 +13,9 @@ pub mod model;
 pub mod repository;
 pub mod service;
 
-use aesthetic_infra_sqlite::{Migration, ModuleMigrations};
 use tauri::Runtime;
 use tauri::plugin::{Builder, TauriPlugin};
+use tramion_infra_sqlite::{Migration, ModuleMigrations};
 
 /// As migrações deste módulo. O SQL é embutido no binário em tempo de compilação.
 pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
@@ -45,6 +45,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
         Migration {
             version: 6,
             sql: include_str!("../migrations/0006_rename_app_data_paths.sql"),
+        },
+        Migration {
+            version: 7,
+            sql: include_str!("../migrations/0007_rename_app_data_paths_tramion.sql"),
         },
     ],
 };

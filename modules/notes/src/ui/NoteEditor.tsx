@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { ErrorBoundary } from "@aesthetic/ui";
+import { ErrorBoundary } from "@tramion/ui";
 import {
   createNoteAutosaver,
   type Draft,

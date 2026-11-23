@@ -19,21 +19,24 @@ describe("tema", () => {
     expect(readTheme()).toBe("light");
   });
 
-  it("quem já usava o nome antigo do app mantém o tema escolhido", () => {
-    localStorage.setItem("aun.theme", "dark");
-
+  it("quem já usava um nome antigo do app mantém o tema escolhido", () => {
+    localStorage.setItem("aesthetic.theme", "dark");
     expect(readTheme()).toBe("dark");
+
+    localStorage.clear();
+    localStorage.setItem("aun.theme", "light");
+    expect(readTheme()).toBe("light");
   });
 
   it("a preferência nova vale mais que a antiga", () => {
-    localStorage.setItem("aun.theme", "dark");
+    localStorage.setItem("aesthetic.theme", "dark");
     saveTheme("light");
 
     expect(readTheme()).toBe("light");
   });
 
   it("um valor inválido guardado vira 'sistema'", () => {
-    localStorage.setItem("aesthetic.theme", "roxo");
+    localStorage.setItem("tramion.theme", "roxo");
 
     expect(readTheme()).toBe("system");
   });

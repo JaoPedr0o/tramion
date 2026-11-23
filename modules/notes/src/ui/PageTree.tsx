@@ -1,4 +1,4 @@
-import { ChevronIcon, IconButton, Menu, MoreIcon, PlusIcon } from "@aesthetic/ui";
+import { ChevronIcon, IconButton, Menu, MoreIcon, PlusIcon } from "@tramion/ui";
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { buildTree, visibleRows } from "../application/page-tree.ts";
 import type { NoteSummary } from "../domain/note.ts";

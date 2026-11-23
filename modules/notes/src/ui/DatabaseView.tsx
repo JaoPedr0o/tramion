@@ -1,4 +1,4 @@
-import { TrashIcon } from "@aesthetic/ui";
+import { TrashIcon } from "@tramion/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   filterRows,

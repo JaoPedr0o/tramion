@@ -4,7 +4,7 @@ import App from "./App";
 import { bootstrap } from "./bootstrap";
 import "@fontsource-variable/fraunces";
 import "@fontsource-variable/inter";
-import "@aesthetic/ui/tokens.css";
+import "@tramion/ui/tokens.css";
 import "./App.css";
 import { applyTheme, readTheme } from "./theme";
 import { installErrorReporting } from "./error-reporting";

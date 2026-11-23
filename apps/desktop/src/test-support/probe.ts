@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@aesthetic/contracts";
+import type { ModuleManifest } from "@tramion/contracts";
 
 /**
  * Um "segundo módulo" mínimo, definido AQUI, só para provar que o app aceita outro módulo. Escuta eventos

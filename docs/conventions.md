@@ -1,7 +1,7 @@
 # Convenções
 
 - **TypeScript estrito** (`tsconfig.base.json`): inclui `noUncheckedIndexedAccess` e `exactOptionalPropertyTypes`.
-- **Nomes de pacotes:** `@aesthetic/<nome>`. Todo pacote declara `main` e `exports` apontando para `src/index.ts`
+- **Nomes de pacotes:** `@tramion/<nome>`. Todo pacote declara `main` e `exports` apontando para `src/index.ts`
   (ver ADR 0004 sobre o porquê do `main`).
 - **API pública:** o que não está exportado em `src/index.ts` de um pacote é privado.
 - **Interface:** estilos via variáveis de `src/styles/tokens.css`. Nada de cores ou espaçamentos soltos.

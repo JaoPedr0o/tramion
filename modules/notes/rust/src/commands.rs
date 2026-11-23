@@ -10,11 +10,11 @@ use crate::model::{
     DatabaseData, MoveNote, NewNote, Note, NoteSummary, Property, TrashSummary, UpdateNote,
 };
 use crate::service;
-use aesthetic_infra_sqlite::SharedDatabase;
-use aesthetic_infra_sqlite::rusqlite::Connection;
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager, Runtime, State};
+use tramion_infra_sqlite::SharedDatabase;
+use tramion_infra_sqlite::rusqlite::Connection;
 
 /// Erro enviado à interface: um código estável (para ela traduzir em mensagem) e um texto técnico.
 #[derive(Debug, Serialize)]

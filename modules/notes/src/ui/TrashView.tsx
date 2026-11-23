@@ -1,4 +1,4 @@
-import { PageIcon } from "@aesthetic/ui";
+import { PageIcon } from "@tramion/ui";
 import { useState } from "react";
 import type { NotesUiDeps } from "./deps.ts";
 import { subpagesText } from "./format.ts";

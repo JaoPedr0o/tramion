@@ -1,4 +1,4 @@
-import type { AppEvents, EventBus } from "@aesthetic/contracts";
+import type { AppEvents, EventBus } from "@tramion/contracts";
 import type {
   DatabaseData,
   NewProperty,

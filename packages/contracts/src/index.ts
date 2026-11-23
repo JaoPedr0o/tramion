@@ -15,7 +15,7 @@ export type Unsubscribe = () => void;
  */
 export type AppEvents = NotesEvents;
 
-/** Barramento de eventos tipado. A implementação vive em @aesthetic/core. */
+/** Barramento de eventos tipado. A implementação vive em @tramion/core. */
 export interface EventBus<E extends object> {
   /** Escuta um evento. Devolve a função que cancela a assinatura. */
   on<K extends keyof E & string>(name: K, handler: (payload: E[K]) => void): Unsubscribe;
@@ -42,7 +42,7 @@ export interface ViewContribution {
   readonly main: ComponentType;
 }
 
-/** Onde os módulos registram suas telas. A implementação vive em @aesthetic/core. */
+/** Onde os módulos registram suas telas. A implementação vive em @tramion/core. */
 export interface ViewRegistry {
   register(view: ViewContribution): void;
   list(): readonly ViewContribution[];
