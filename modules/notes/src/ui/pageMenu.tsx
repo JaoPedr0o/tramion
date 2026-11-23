@@ -6,6 +6,7 @@ export interface PageMenuHandlers {
   onDuplicate(page: NoteSummary): void;
   onExport(page: NoteSummary): void;
   onHistory(page: NoteSummary): void;
+  onSaveTemplate(page: NoteSummary): void;
   onMove(page: NoteSummary): void;
   onToggleFavorite(page: NoteSummary): void;
   onDelete(page: NoteSummary): void;
@@ -27,6 +28,12 @@ export function pageMenuItems(page: NoteSummary, handlers: PageMenuHandlers): Me
       onSelect: () => handlers.onExport(page),
     },
     { id: "history", label: "Histórico de versões", onSelect: () => handlers.onHistory(page) },
+    {
+      id: "template",
+      label: "Salvar como modelo",
+      disabled: page.isDatabase,
+      onSelect: () => handlers.onSaveTemplate(page),
+    },
     { id: "move", label: "Mover para…", onSelect: () => handlers.onMove(page) },
     {
       id: "favorite",

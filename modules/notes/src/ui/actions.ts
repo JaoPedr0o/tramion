@@ -107,6 +107,14 @@ export function createPageActions(
         store.notify(`Importado: ${title}`);
       }),
 
+    /** Salva a página como modelo (depois de salvar o que estiver pendente no editor) e avisa. */
+    saveAsTemplate: (page: NoteSummary) =>
+      guard(async () => {
+        await store.flush();
+        const template = await service.saveAsTemplate(page.id);
+        store.notify(`Modelo criado: ${template.name}. Ele aparece em Modelos.`);
+      }),
+
     /** Cria uma página a partir de um modelo (na raiz ou dentro de `parentId`) e a abre. */
     createFromTemplate: (
       templateId: string,

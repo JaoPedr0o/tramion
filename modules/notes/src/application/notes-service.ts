@@ -55,6 +55,8 @@ export interface NotesService {
   /** Duplica a página e a subárvore; devolve os ids criados (a cópia da página escolhida primeiro). */
   duplicate(id: string): Promise<readonly string[]>;
   listTemplates(): Promise<readonly TemplateInfo[]>;
+  saveAsTemplate(noteId: string): Promise<TemplateInfo>;
+  deleteTemplate(templateId: string): Promise<void>;
   createFromTemplate(input: { templateId: string; parentId: string | null }): Promise<Note>;
   /** Busca global nas páginas ativas. */
   search(query: string, limit?: number): Promise<readonly SearchHit[]>;
@@ -159,6 +161,8 @@ export function createNotesService(deps: {
     },
 
     listTemplates: () => gateway.listTemplates(),
+    saveAsTemplate: (noteId) => gateway.saveAsTemplate(noteId),
+    deleteTemplate: (templateId) => gateway.deleteTemplate(templateId),
 
     async createFromTemplate(input) {
       const note = await gateway.createFromTemplate(input);

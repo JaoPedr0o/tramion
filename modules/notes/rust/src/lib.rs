@@ -73,6 +73,10 @@ pub const MIGRATIONS: ModuleMigrations = ModuleMigrations {
             version: 11,
             sql: include_str!("../migrations/0011_versions.sql"),
         },
+        Migration {
+            version: 12,
+            sql: include_str!("../migrations/0012_user_templates.sql"),
+        },
     ],
 };
 
@@ -98,6 +102,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::duplicate_note,
             commands::list_templates,
             commands::create_from_template,
+            commands::save_as_template,
+            commands::delete_template,
             commands::save_markdown,
             commands::set_reminders,
             commands::due_tasks,

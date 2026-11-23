@@ -72,6 +72,10 @@ export function gatewayStub(overrides: Partial<NotesGateway> = {}): NotesGateway
     graph: vi.fn(async () => ({ nodes: [], edges: [] })),
     duplicate: vi.fn(async () => []),
     listTemplates: vi.fn(async () => []),
+    saveAsTemplate: vi.fn(async () => {
+      throw new Error("saveAsTemplate não configurado no stub");
+    }),
+    deleteTemplate: vi.fn(async () => {}),
     createFromTemplate: vi.fn(async () => aNote()),
     createDatabase: vi.fn(async () => aNote()),
     getDatabase: vi.fn(async () => ({
@@ -116,6 +120,13 @@ export function createFakeGateway() {
   let seq = 0;
   let clock = 1_000;
   const notes = new Map<string, Note>();
+  const userTemplates: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    body: string;
+    content: string;
+  }> = [];
   const versions = new Map<string, Array<{ id: string; noteId: string; note: Note; at: number }>>();
   const databases = new Set<string>();
   const properties = new Map<string, Property>();
@@ -467,17 +478,70 @@ export function createFakeGateway() {
 
     async listTemplates() {
       return [
-        { id: "meeting", name: "Notas de reunião", icon: "🗒️", description: "Pauta e decisões" },
-        { id: "journal", name: "Entrada de diário", icon: "📓", description: "Um espaço livre" },
+        {
+          id: "meeting",
+          name: "Notas de reunião",
+          icon: "🗒️",
+          description: "Pauta e decisões",
+          custom: false,
+        },
+        {
+          id: "journal",
+          name: "Entrada de diário",
+          icon: "📓",
+          description: "Um espaço livre",
+          custom: false,
+        },
+        ...userTemplates.map((t) => ({
+          id: `user:${t.id}`,
+          name: t.name,
+          icon: t.icon,
+          description: "Criado por você",
+          custom: true,
+        })),
       ];
+    },
+
+    async saveAsTemplate(noteId) {
+      const note = must(noteId);
+      if (note.deletedAt !== null) throw new NotesError("notes.in-trash", "lixeira");
+      if (databases.has(noteId) || userTemplates.length >= 30) {
+        throw new NotesError("notes.template-invalid", "modelo");
+      }
+      const template = {
+        id: `t${++seq}`,
+        name: note.title,
+        icon: note.icon ?? "📄",
+        body: note.body,
+        content: note.content,
+      };
+      userTemplates.push(template);
+      return {
+        id: `user:${template.id}`,
+        name: template.name,
+        icon: template.icon,
+        description: "Criado por você",
+        custom: true,
+      };
+    },
+
+    async deleteTemplate(templateId) {
+      const index = userTemplates.findIndex((t) => `user:${t.id}` === templateId);
+      if (index < 0) throw new NotesError("notes.not-found", "modelo");
+      userTemplates.splice(index, 1);
     },
 
     async createFromTemplate({ templateId, parentId }) {
       const template = (await this.listTemplates()).find((t) => t.id === templateId);
       if (!template) throw new NotesError("notes.not-found", "modelo");
-      const note = await gateway.create({ title: template.name, body: "", parentId });
-      const next = { ...note, icon: template.icon };
-      notes.set(note.id, next);
+      const created = await gateway.create({ title: template.name, body: "", parentId });
+      const own = userTemplates.find((t) => `user:${t.id}` === templateId);
+      const next = {
+        ...created,
+        icon: template.icon,
+        ...(own ? { body: own.body, content: own.content } : {}),
+      };
+      notes.set(created.id, next);
       return next;
     },
 

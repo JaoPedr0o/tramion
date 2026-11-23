@@ -9,6 +9,8 @@ const MESSAGES: Record<NotesErrorCode, string> = {
   "notes.not-database": "Esta página não é uma base de dados.",
   "notes.property-not-found": "Esta coluna não existe mais.",
   "notes.property-invalid": "O nome, o tipo ou as opções desta coluna não são válidos.",
+  "notes.template-invalid":
+    "Esta página não pode virar modelo (bases de dados não viram modelo, e há um limite de 30 modelos).",
   "notes.view-not-found": "Esta visão não existe mais.",
   "notes.view-invalid":
     "O nome ou a configuração desta visão não são válidos (a última visão de uma base não pode ser apagada).",

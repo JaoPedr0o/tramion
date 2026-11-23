@@ -18,9 +18,9 @@ export function TemplatesButton({
   const anchor = useRef<HTMLDivElement>(null);
   const ignore = useMemo(() => [anchor], []);
 
-  // Os modelos vêm do Rust uma vez, quando a lista é aberta pela primeira vez.
+  // Os modelos são lidos do Rust toda vez que a lista abre (podem ter sido criados ou apagados desde a última vez).
   useEffect(() => {
-    if (!open || templates !== null) return;
+    if (!open) return;
     let current = true;
     service.listTemplates().then(
       (list) => current && setTemplates(list),
@@ -29,7 +29,7 @@ export function TemplatesButton({
     return () => {
       current = false;
     };
-  }, [open, templates, service]);
+  }, [open, service]);
 
   return (
     <div ref={anchor} className="templates">
@@ -56,7 +56,7 @@ export function TemplatesButton({
           {templates?.length === 0 && <p className="popover__note">Nenhum modelo disponível.</p>}
           <ul className="templates__list">
             {templates?.map((template) => (
-              <li key={template.id}>
+              <li key={template.id} className="templates__row">
                 <button
                   type="button"
                   className="templates__item"
@@ -71,6 +71,24 @@ export function TemplatesButton({
                     <span className="templates__description">{template.description}</span>
                   </span>
                 </button>
+                {template.custom && (
+                  <button
+                    type="button"
+                    className="templates__delete"
+                    aria-label={`Apagar o modelo ${template.name}`}
+                    onClick={() => {
+                      void service.deleteTemplate(template.id).then(
+                        () =>
+                          setTemplates(
+                            (current) => current?.filter((t) => t.id !== template.id) ?? null,
+                          ),
+                        () => {},
+                      );
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             ))}
           </ul>

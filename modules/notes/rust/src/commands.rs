@@ -372,8 +372,10 @@ pub async fn duplicate_note(
 }
 
 #[tauri::command]
-pub async fn list_templates() -> Result<Vec<TemplateInfo>, CommandError> {
-    Ok(templates::list_templates())
+pub async fn list_templates(
+    db: State<'_, SharedDatabase>,
+) -> Result<Vec<TemplateInfo>, CommandError> {
+    with_db(&db, templates::list_templates)
 }
 
 #[tauri::command]
@@ -476,5 +478,25 @@ pub async fn restore_version(
 ) -> Result<Note, CommandError> {
     with_db(&db, |conn| {
         versions::restore_version(conn, &note_id, &version_id, expected_updated_at)
+    })
+}
+
+/// Salva uma página comum como modelo.
+#[tauri::command]
+pub async fn save_as_template(
+    db: State<'_, SharedDatabase>,
+    note_id: String,
+) -> Result<TemplateInfo, CommandError> {
+    with_db(&db, |conn| templates::save_as_template(conn, &note_id))
+}
+
+/// Apaga um modelo criado pela pessoa.
+#[tauri::command]
+pub async fn delete_template(
+    db: State<'_, SharedDatabase>,
+    template_id: String,
+) -> Result<(), CommandError> {
+    with_db(&db, |conn| {
+        templates::delete_user_template(conn, &template_id)
     })
 }

@@ -97,6 +97,7 @@ export function createTopbar({ service, events, store, actions }: NotesUiDeps): 
             onDuplicate: (target) => void actions.duplicatePage(target.id, list),
             onExport: (target) => void actions.exportMarkdown(target, list),
             onHistory: (target) => store.showHistory(target.id),
+            onSaveTemplate: (target) => void actions.saveAsTemplate(target),
             onMove: setMoving,
             onToggleFavorite: (target) => void actions.toggleFavorite(target),
             onDelete: (target) => void actions.deletePage(target.id),

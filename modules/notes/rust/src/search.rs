@@ -4,6 +4,8 @@
 
 use crate::error::NotesError;
 use serde::Serialize;
+use serde_json::Value;
+use std::collections::HashMap;
 use tramion_infra_sqlite::rusqlite::Connection;
 
 /// Máximo de caracteres da busca (o resto é ignorado).
@@ -71,6 +73,65 @@ fn snippet_around(original: &[char], at: usize) -> String {
     )
 }
 
+/// O texto das células de cada linha de base de dados ("Coluna: valor · Coluna: valor"), para a busca achar linhas pelo
+/// que está nas colunas. Seleções entram pelo NOME da opção; caixas de seleção não entram.
+fn cell_texts(conn: &Connection) -> Result<HashMap<String, String>, NotesError> {
+    let mut stmt = conn.prepare(
+        "SELECT c.note_id, c.value, p.kind, p.name, p.options
+           FROM notes_cell c JOIN notes_property p ON p.id = c.property_id
+          ORDER BY c.note_id, p.position, p.id",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, String>(3)?,
+            row.get::<_, String>(4)?,
+        ))
+    })?;
+    let mut texts: HashMap<String, Vec<String>> = HashMap::new();
+    for row in rows {
+        let (note_id, raw, kind, name, options) = row?;
+        let Ok(value) = serde_json::from_str::<Value>(&raw) else {
+            continue;
+        };
+        let option_name = |id: &str| -> String {
+            serde_json::from_str::<Value>(&options)
+                .ok()
+                .and_then(|list| {
+                    list.as_array()?
+                        .iter()
+                        .find(|o| o.get("id").and_then(Value::as_str) == Some(id))
+                        .and_then(|o| o.get("name")?.as_str().map(str::to_string))
+                })
+                .unwrap_or_else(|| id.to_string())
+        };
+        let text = match (kind.as_str(), &value) {
+            ("select", Value::String(id)) => option_name(id),
+            ("multi_select", Value::Array(ids)) => ids
+                .iter()
+                .filter_map(Value::as_str)
+                .map(option_name)
+                .collect::<Vec<_>>()
+                .join(", "),
+            (_, Value::String(text)) => text.clone(),
+            (_, Value::Number(number)) => number.to_string(),
+            _ => continue,
+        };
+        if !text.is_empty() {
+            texts
+                .entry(note_id)
+                .or_default()
+                .push(format!("{name}: {text}"));
+        }
+    }
+    Ok(texts
+        .into_iter()
+        .map(|(id, parts)| (id, parts.join(" · ")))
+        .collect())
+}
+
 struct Candidate {
     hit: SearchHit,
     score: i64,
@@ -106,9 +167,16 @@ pub fn search(conn: &Connection, query: &str, limit: usize) -> Result<Vec<Search
         ))
     })?;
 
+    let cells = cell_texts(conn)?;
     let mut found: Vec<Candidate> = Vec::new();
     for row in rows {
         let (id, title, body, icon, updated_at, is_database) = row?;
+        // Linhas de bases também são achadas pelo que está nas colunas.
+        let body = match cells.get(&id) {
+            None => body,
+            Some(cell) if body.is_empty() => cell.clone(),
+            Some(cell) => format!("{body} · {cell}"),
+        };
         let title_folded: Vec<char> = fold(&title).chars().collect();
         let body_folded: Vec<char> = fold(&body).chars().collect();
 

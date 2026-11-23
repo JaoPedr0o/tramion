@@ -67,6 +67,10 @@ export interface NotesGateway {
   duplicate(id: string): Promise<readonly string[]>;
   /** Os modelos de página embutidos. */
   listTemplates(): Promise<readonly TemplateInfo[]>;
+  /** Salva uma página comum como modelo (texto, símbolo e nome; sem subpáginas). */
+  saveAsTemplate(noteId: string): Promise<TemplateInfo>;
+  /** Apaga um modelo criado pela pessoa. */
+  deleteTemplate(templateId: string): Promise<void>;
   /** Cria uma página (ou base) a partir de um modelo, na raiz (`parentId` nulo) ou dentro de outra página. */
   createFromTemplate(input: { templateId: string; parentId: string | null }): Promise<Note>;
   /** Busca nas páginas ativas (título e texto), sem diferenciar acento nem maiúscula; no máximo `limit` resultados. */

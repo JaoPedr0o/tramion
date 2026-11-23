@@ -19,6 +19,8 @@ permissions = [
   "allow-duplicate-note",
   "allow-list-templates",
   "allow-create-from-template",
+  "allow-save-as-template",
+  "allow-delete-template",
   "allow-save-markdown",
   "allow-set-reminders",
   "allow-due-tasks",

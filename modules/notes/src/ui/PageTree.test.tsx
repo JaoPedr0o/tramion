@@ -27,6 +27,7 @@ function renderTree(
   const onDuplicate = vi.fn();
   const onExport = vi.fn();
   const onHistory = vi.fn();
+  const onSaveTemplate = vi.fn();
   const onMove = vi.fn();
   const onToggleFavorite = vi.fn();
   const onDelete = vi.fn();
@@ -41,6 +42,7 @@ function renderTree(
       onDuplicate={onDuplicate}
       onExport={onExport}
       onHistory={onHistory}
+      onSaveTemplate={onSaveTemplate}
       onMove={onMove}
       onToggleFavorite={onToggleFavorite}
       onDelete={onDelete}
@@ -55,6 +57,7 @@ function renderTree(
     onDuplicate,
     onExport,
     onHistory,
+    onSaveTemplate,
     onMove,
     onToggleFavorite,
     onDelete,
@@ -218,6 +221,7 @@ describe("árvore de páginas (teclado e acessibilidade)", () => {
         "Duplicar",
         "Exportar como Markdown",
         "Histórico de versões",
+        "Salvar como modelo",
         "Mover para…",
         "Adicionar aos favoritos",
         "Mover para a lixeira",

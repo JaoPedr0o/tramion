@@ -2809,4 +2809,67 @@ describe("módulo de notas (a tela inteira)", () => {
       expect(await history().findByText("Não foi possível carregar o histórico.")).toBeTruthy();
     });
   });
+
+  describe("modelos criados pela pessoa", () => {
+    const templates = () => within(screen.getByRole("dialog", { name: "Modelos de página" }));
+
+    it("Salvar como modelo avisa e o modelo aparece em Modelos; criar dele abre uma página com o nome dele", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Outra");
+      await openPageMenu(user, "Salvar como modelo");
+      expect(await main().findByText(/Modelo criado: Outra/)).toBeTruthy();
+
+      await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
+
+      const entry = await templates().findByRole("button", { name: /^Outra/ });
+      await user.click(entry);
+      await vi.waitFor(() =>
+        expect([...fake.notes.values()].filter((n) => n.title === "Outra")).toHaveLength(2),
+      );
+      expect(await main().findByRole("textbox", { name: "Título" })).toHaveProperty(
+        "value",
+        "Outra",
+      );
+    });
+
+    it("dá para apagar um modelo seu; os embutidos não têm botão de apagar", async () => {
+      const { user, fake } = setup();
+      await newPageTitled(user, "Minha base");
+      await openPageMenu(user, "Salvar como modelo");
+      await main().findByText(/Modelo criado/);
+
+      await user.click(sidebar().getByRole("button", { name: /Modelos/ }));
+      expect(
+        templates().queryByRole("button", { name: /Apagar o modelo Notas de reunião/ }),
+      ).toBeNull();
+      await user.click(
+        await templates().findByRole("button", { name: "Apagar o modelo Minha base" }),
+      );
+
+      await vi.waitFor(() =>
+        expect(templates().queryByRole("button", { name: /Minha base/ })).toBeNull(),
+      );
+      expect(await fake.gateway.listTemplates()).toHaveLength(2);
+    });
+
+    it("base de dados não vira modelo (o item fica desativado) e falhas aparecem", async () => {
+      const { user, fake } = setup();
+      await user.click(sidebar().getByRole("button", { name: "Nova base de dados" }));
+      await main().findByRole("region", { name: "Base de dados" });
+      await user.click(topbar().getByRole("button", { name: "Mais ações da página" }));
+      expect(
+        screen.getByRole("menuitem", { name: "Salvar como modelo" }).hasAttribute("disabled"),
+      ).toBe(true);
+      await user.keyboard("{Escape}");
+
+      await user.click(sidebar().getByRole("button", { name: "Nova página" }));
+      await main().findByRole("textbox", { name: "Título" });
+      vi.spyOn(fake.gateway, "saveAsTemplate").mockRejectedValue(
+        new NotesError("notes.template-invalid", "x"),
+      );
+      await openPageMenu(user, "Salvar como modelo");
+
+      expect((await main().findByRole("alert")).textContent).toContain("não pode virar modelo");
+    });
+  });
 });

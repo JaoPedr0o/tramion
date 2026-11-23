@@ -9,6 +9,7 @@ export type NotesErrorCode =
   | "notes.property-not-found"
   | "notes.property-invalid"
   | "notes.cell-invalid"
+  | "notes.template-invalid"
   | "notes.view-not-found"
   | "notes.view-invalid"
   | "notes.limit-reached"

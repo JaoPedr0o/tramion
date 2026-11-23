@@ -159,6 +159,7 @@ export function createSidebar(deps: NotesUiDeps): ComponentType {
               onDuplicate={(page) => void actions.duplicatePage(page.id, list)}
               onExport={(page) => void actions.exportMarkdown(page, list)}
               onHistory={(page) => store.showHistory(page.id)}
+              onSaveTemplate={(page) => void actions.saveAsTemplate(page)}
               onMove={setMoving}
               onToggleFavorite={(page) => void actions.toggleFavorite(page)}
               onDelete={(page) => void actions.deletePage(page.id)}

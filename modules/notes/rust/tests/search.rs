@@ -215,3 +215,100 @@ fn simbolo_vem_no_resultado() {
         Some("🚀")
     );
 }
+
+#[test]
+fn acha_linhas_de_bases_pelo_que_esta_nas_colunas_com_trecho() {
+    let db = db();
+    let base = database::create_database(db.connection(), "Clientes", None).unwrap();
+    let nome = database::add_property(db.connection(), &base.id, "Cidade", "text").unwrap();
+    let status = database::add_property(db.connection(), &base.id, "Status", "select").unwrap();
+    database::update_property(
+        db.connection(),
+        &status.id,
+        None,
+        Some(&serde_json::json!([{ "id": "x1", "name": "Em negociação", "color": "blue" }])),
+    )
+    .unwrap();
+    let linha = database::create_row(db.connection(), &base.id, "Maria").unwrap();
+    database::set_cell(
+        db.connection(),
+        &linha.id,
+        &nome.id,
+        &serde_json::json!("São Paulo"),
+    )
+    .unwrap();
+    database::set_cell(
+        db.connection(),
+        &linha.id,
+        &status.id,
+        &serde_json::json!("x1"),
+    )
+    .unwrap();
+
+    let by_city = search(db.connection(), "sao paulo", 20).unwrap();
+    let by_option = search(db.connection(), "negociacao", 20).unwrap();
+
+    assert_eq!(by_city.len(), 1);
+    assert_eq!(by_city[0].title, "Maria");
+    assert!(by_city[0].snippet.contains("Cidade: São Paulo"));
+    assert!(by_city[0].snippet.contains("Status: Em negociação"));
+    assert_eq!(
+        by_option[0].title, "Maria",
+        "seleção entra pelo nome da opção, não pelo id"
+    );
+    assert!(
+        search(db.connection(), "x1", 20).unwrap().is_empty(),
+        "o id interno da opção não é buscável"
+    );
+}
+
+#[test]
+fn celulas_de_numero_entram_e_linhas_apagadas_ou_de_bases_na_lixeira_nao() {
+    let db = db();
+    let base = database::create_database(db.connection(), "Notas", None).unwrap();
+    let valor = database::add_property(db.connection(), &base.id, "Valor", "number").unwrap();
+    let viva = database::create_row(db.connection(), &base.id, "Viva").unwrap();
+    let morta = database::create_row(db.connection(), &base.id, "Morta").unwrap();
+    database::set_cell(
+        db.connection(),
+        &viva.id,
+        &valor.id,
+        &serde_json::json!(1234.5),
+    )
+    .unwrap();
+    database::set_cell(
+        db.connection(),
+        &morta.id,
+        &valor.id,
+        &serde_json::json!(1234.5),
+    )
+    .unwrap();
+    service::delete(db.connection(), &morta.id).unwrap();
+
+    assert_eq!(titles(&db, "1234.5"), ["Viva"]);
+
+    service::delete(db.connection(), &base.id).unwrap();
+    assert!(titles(&db, "1234.5").is_empty());
+}
+
+#[test]
+fn texto_da_pagina_e_celulas_juntos_nao_atrapalham_o_titulo_primeiro() {
+    let db = db();
+    let base = database::create_database(db.connection(), "B", None).unwrap();
+    let coluna = database::add_property(db.connection(), &base.id, "Obs", "text").unwrap();
+    let linha = database::create_row(db.connection(), &base.id, "Pão de queijo").unwrap();
+    database::set_cell(
+        db.connection(),
+        &linha.id,
+        &coluna.id,
+        &serde_json::json!("receita"),
+    )
+    .unwrap();
+    page(&db, "Receita", "");
+
+    assert_eq!(
+        titles(&db, "receita"),
+        ["Receita", "Pão de queijo"],
+        "título vale mais que célula"
+    );
+}

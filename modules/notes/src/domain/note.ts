@@ -85,6 +85,8 @@ export interface TemplateInfo {
   readonly name: string;
   readonly icon: string;
   readonly description: string;
+  /** `true` para os modelos criados pela pessoa (que podem ser apagados). */
+  readonly custom: boolean;
 }
 
 /** Uma página citada numa lista de ligações. */

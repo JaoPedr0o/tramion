@@ -19,6 +19,8 @@ const COMMANDS: &[&str] = &[
     "duplicate_note",
     "list_templates",
     "create_from_template",
+    "save_as_template",
+    "delete_template",
     "save_markdown",
     "set_reminders",
     "due_tasks",

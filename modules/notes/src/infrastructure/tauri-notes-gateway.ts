@@ -51,6 +51,8 @@ export function createTauriNotesGateway(): NotesGateway {
     graph: () => call<PageGraph>("graph"),
     duplicate: (id) => call<string[]>("duplicate_note", { id }),
     listTemplates: () => call<TemplateInfo[]>("list_templates"),
+    saveAsTemplate: (noteId) => call<TemplateInfo>("save_as_template", { noteId }),
+    deleteTemplate: (templateId) => call<void>("delete_template", { templateId }),
     createFromTemplate: ({ templateId, parentId }) =>
       call<Note>("create_from_template", { templateId, parentId }),
     search: (query, limit) => call<SearchHit[]>("search", { query, limit }),

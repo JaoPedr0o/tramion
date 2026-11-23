@@ -7,7 +7,10 @@ use tramion_notes::database;
 use tramion_notes::duplicate::duplicate;
 use tramion_notes::model::{NewNote, Note, UpdateNote};
 use tramion_notes::service;
-use tramion_notes::templates::{TEMPLATES, create_from_template, list_templates};
+use tramion_notes::templates::{
+    MAX_USER_TEMPLATES, TEMPLATES, create_from_template, delete_user_template, list_templates,
+    save_as_template,
+};
 
 fn db() -> Database {
     Database::open_in_memory(&[MIGRATIONS]).expect("as migrações reais devem aplicar")
@@ -236,15 +239,14 @@ fn duplicar_uma_subpagina_deixa_a_copia_ao_lado_dela() {
 
 #[test]
 fn ha_cinco_modelos_com_nome_e_simbolo() {
-    let templates = list_templates();
+    let db = db();
+    let templates = list_templates(db.connection()).unwrap();
 
     assert_eq!(templates.len(), 5);
-    assert!(
-        templates
-            .iter()
-            .all(|t| !t.name.is_empty() && !t.icon.is_empty() && !t.description.is_empty())
-    );
-    let mut ids: Vec<_> = templates.iter().map(|t| t.id).collect();
+    assert!(templates.iter().all(|t| {
+        !t.name.is_empty() && !t.icon.is_empty() && !t.description.is_empty() && !t.custom
+    }));
+    let mut ids: Vec<_> = templates.iter().map(|t| t.id.clone()).collect();
     ids.sort();
     ids.dedup();
     assert_eq!(ids.len(), 5, "ids únicos");
@@ -255,15 +257,15 @@ fn cada_modelo_cria_uma_pagina_valida_na_raiz_ou_dentro_de_outra() {
     let db = db();
     let pai = page(&db, "Pai", None);
 
-    for template in TEMPLATES.iter().filter(|t| t.id != "tasks") {
-        let note = create_from_template(db.connection(), template.id, None).unwrap();
-        assert_eq!(note.title, template.name);
-        assert_eq!(note.icon.as_deref(), Some(template.icon));
+    for (id, name, icon, _) in TEMPLATES.iter().filter(|t| t.0 != "tasks") {
+        let note = create_from_template(db.connection(), id, None).unwrap();
+        assert_eq!(note.title, *name);
+        assert_eq!(note.icon.as_deref(), Some(*icon));
         let blocks: Vec<Value> = serde_json::from_str(&note.content).unwrap();
-        assert!(blocks.len() >= 4, "{} tem esqueleto", template.id);
+        assert!(blocks.len() >= 4, "{id} tem esqueleto");
         assert!(note.parent_id.is_none());
 
-        let inside = create_from_template(db.connection(), template.id, Some(&pai.id)).unwrap();
+        let inside = create_from_template(db.connection(), id, Some(&pai.id)).unwrap();
         assert_eq!(inside.parent_id.as_deref(), Some(pai.id.as_str()));
     }
 }
@@ -304,4 +306,114 @@ fn modelo_desconhecido_ou_pai_invalido_falham_sem_deixar_pagina() {
         "notes.parent-not-found"
     );
     assert!(service::list(db.connection()).unwrap().is_empty());
+}
+
+#[test]
+fn salvar_como_modelo_copia_titulo_simbolo_e_texto_e_remove_subpaginas() {
+    let db = db();
+    let pai = page(&db, "Reunião semanal", None);
+    let filha = page(&db, "Filha", Some(&pai.id));
+    set_content(
+        &db,
+        &pai,
+        "Pauta do dia",
+        &json!([
+            { "type": "paragraph", "content": [{ "type": "text", "text": "Pauta do dia", "styles": {} }] },
+            { "type": "childPage", "props": { "pageId": filha.id } },
+        ])
+        .to_string(),
+    );
+    service::set_appearance(db.connection(), &pai.id, Some("📣"), None).unwrap();
+
+    let template = save_as_template(db.connection(), &pai.id).unwrap();
+    let all = list_templates(db.connection()).unwrap();
+    let created = create_from_template(db.connection(), &template.id, None).unwrap();
+
+    assert!(template.custom && template.id.starts_with("user:"));
+    assert_eq!(all.last().unwrap().name, "Reunião semanal");
+    assert_eq!(all.len(), 6);
+    assert_eq!(created.title, "Reunião semanal");
+    assert_eq!(created.icon.as_deref(), Some("📣"));
+    assert_eq!(created.body, "Pauta do dia");
+    assert!(
+        !created.content.contains(&filha.id),
+        "a subpágina não vai para o modelo"
+    );
+    assert!(created.content.contains("Pauta do dia"));
+    assert_ne!(created.id, pai.id);
+}
+
+#[test]
+fn modelo_da_pessoa_pode_ser_criado_dentro_de_outra_pagina_e_apagado() {
+    let db = db();
+    let origem = page(&db, "Origem", None);
+    let destino = page(&db, "Destino", None);
+    let template = save_as_template(db.connection(), &origem.id).unwrap();
+
+    let inside = create_from_template(db.connection(), &template.id, Some(&destino.id)).unwrap();
+    assert_eq!(inside.parent_id.as_deref(), Some(destino.id.as_str()));
+
+    delete_user_template(db.connection(), &template.id).unwrap();
+    assert_eq!(list_templates(db.connection()).unwrap().len(), 5);
+    assert_eq!(
+        create_from_template(db.connection(), &template.id, None)
+            .unwrap_err()
+            .code(),
+        "notes.not-found"
+    );
+    assert_eq!(
+        delete_user_template(db.connection(), &template.id)
+            .unwrap_err()
+            .code(),
+        "notes.not-found"
+    );
+}
+
+#[test]
+fn embutidos_nao_podem_ser_apagados_nem_bases_viram_modelo() {
+    let db = db();
+    let base = database::create_database(db.connection(), "Base", None).unwrap();
+
+    assert_eq!(
+        delete_user_template(db.connection(), "meeting")
+            .unwrap_err()
+            .code(),
+        "notes.not-found"
+    );
+    assert_eq!(
+        save_as_template(db.connection(), &base.id)
+            .unwrap_err()
+            .code(),
+        "notes.template-invalid"
+    );
+    assert_eq!(
+        save_as_template(db.connection(), "nao-existe")
+            .unwrap_err()
+            .code(),
+        "notes.not-found"
+    );
+    let lixo = page(&db, "Lixo", None);
+    service::delete(db.connection(), &lixo.id).unwrap();
+    assert_eq!(
+        save_as_template(db.connection(), &lixo.id)
+            .unwrap_err()
+            .code(),
+        "notes.in-trash"
+    );
+}
+
+#[test]
+fn ha_um_limite_de_modelos_da_pessoa() {
+    let db = db();
+    let origem = page(&db, "Origem", None);
+    for _ in 0..MAX_USER_TEMPLATES {
+        save_as_template(db.connection(), &origem.id).unwrap();
+    }
+
+    assert_eq!(
+        save_as_template(db.connection(), &origem.id)
+            .unwrap_err()
+            .code(),
+        "notes.template-invalid"
+    );
 }
